@@ -12,7 +12,7 @@
             style="width:100%;height:640px;border:0"></iframe>
 
   It fills whatever box the host gives it and has no size of its own. Parameters are
-  documented in the README (§Embed contract). demo.html is a worked example.
+  documented in the README (§Embed contract). demo.html embeds it twice as a worked example.
 
   MapLibre's stylesheet is the one external stylesheet; everything else is local and
   relative, so this works both at http://localhost:8000/ and under a GitHub Pages
@@ -26,7 +26,21 @@
 <div id="root">
 
   <header class="block-header">
-    <h1 id="block-title">SNAP volunteer opportunities</h1>
+    <!--
+      The heading is in the markup but not on the screen. The block is an iframe inside a
+      nyc.gov page that already has its own <h1> naming what the page is about, so drawing
+      the name a second time at the top of the map spent a line of vertical space telling
+      the resident something they had just read.
+
+      It stays in the DOM, visually hidden, because it is doing three jobs that have
+      nothing to do with being seen: it is the block's only <h1>, so removing it would
+      leave an iframe whose document has no heading outline at all; it is what a screen
+      reader announces on entering the frame, which is the only way a non-sighted user
+      learns what the frame contains; and it is the landmark the list and map sit under.
+      embed.js still writes `title` from the config or the ?title= parameter into it, and
+      still mirrors it to document.title.
+    -->
+    <h1 id="block-title" class="visually-hidden">SNAP volunteer opportunities</h1>
     <!--
       Rendered but invisible until the counts are known: `hidden` would collapse the line
       and then push the map down when it appears, which is a layout shift the block gets
@@ -38,21 +52,12 @@
       not English's cannot be served from it. Two complete alternatives, each its own text
       node, translate correctly on their own.
     -->
-    <p class="counts" id="header-counts" data-pending>
-      <span id="header-orgs"></span>
-      <span data-plural="header-orgs">organizations</span>
-      <span data-singular="header-orgs" hidden>organization</span>
-      <span aria-hidden="true">·</span>
-      <span id="header-sites"></span>
-      <span data-plural="header-sites">sites</span>
-      <span data-singular="header-sites" hidden>site</span>
-    </p>
   </header>
 
   <!--
-    75 organizations is 75 tab stops before a keyboard user reaches the map's own
-    controls. This is the standard escape hatch: invisible until it takes focus, first
-    in the tab order, and it lands on the map container.
+    185 sites is 185 tab stops before a keyboard user reaches the map's own controls.
+    This is the standard escape hatch: invisible until it takes focus, first in the tab
+    order, and it lands on the map container.
   -->
   <a class="skip-link" href="#map">Skip the list and go to the map</a>
 
@@ -66,7 +71,7 @@
     -->
     <nav class="panel" id="panel" aria-label="Volunteer sites">
       <button class="sheet-handle" id="sheet-handle" type="button"
-              aria-expanded="false" aria-controls="org-list">
+              aria-expanded="false" aria-controls="site-list">
         <span class="counts">
           <span id="sheet-orgs"></span>
           <span data-plural="sheet-orgs">organizations</span>
@@ -77,14 +82,14 @@
           <span data-singular="sheet-sites" hidden>site</span>
         </span>
         <span class="chev" aria-hidden="true">▲</span>
-        <span class="visually-hidden">Show the list of organizations</span>
+        <span class="visually-hidden">Show the list of sites</span>
       </button>
 
       <p class="panel-intro">
-        <span>Every organization on the map. Select one to see its sites.</span>
+        <span>Every site on the map. Select one to see the details.</span>
       </p>
 
-      <ul class="org-list" id="org-list"></ul>
+      <ul class="site-list" id="site-list"></ul>
     </nav>
 
     <div class="map" id="map" tabindex="-1">

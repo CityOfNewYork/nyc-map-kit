@@ -29,7 +29,7 @@ Then open:
 
 | | |
 |---|---|
-| <http://localhost:8000/demo.html> | a mock host page with the block embedded twice |
+| <http://localhost:8000/demo.html> | the demo page — the block embedded twice, at two sizes |
 | <http://localhost:8000/embed.html> | the block on its own |
 | <http://localhost:8000/demo.html?lang=es> | the same page with the basemap in Spanish |
 
@@ -118,17 +118,23 @@ Each address goes through, in order: **overrides → cache → GeoSearch → cac
 - `data/geocode_cache.json` is keyed by the raw address string, so a rebuild costs zero
   network calls. Delete it to re-resolve everything.
 - `data/overrides.json` is consulted **first**, so a hand fix survives both a rebuild and
-  a cache wipe. Two forms:
+  a cache wipe. Three forms, and one entry may combine them:
   ```json
   { "<raw address>": { "query": "different text to ask GeoSearch" } }
   { "<raw address>": { "lon": -73.91513, "lat": 40.81403, "note": "why" } }
+  { "<raw address>": { "maps_query": "text for the Open in Google Maps link" } }
   ```
+  The first two move the pin on our map; the third moves only where Google lands when the
+  resident taps through, and is carried onto that one feature as a `maps_query` property.
+  They are separate because the two geocoders fail on different strings: GeoSearch is
+  NYC-only and resolves no intersections, while Google is global and will read a
+  cross-street description as an address somewhere else entirely.
 
 **The 95% gate.** If fewer than 95% of addresses resolve, the build prints the unresolved
 list and exits 1 without writing anything. A bad input file should stop the pipeline, not
 quietly ship a half-empty map. Change `MIN_RESOLVED` in `build/build.py` to move the bar.
 
-**The two addresses that need overrides** (both are in `data/overrides.json` with their
+**The two addresses GeoSearch cannot place** (both in `data/overrides.json` with their
 reasons):
 
 1. `Salvation Army Harlem Temple, 540 Malcolm X Blvd at West 138th Street…` — a venue name
@@ -142,6 +148,40 @@ reasons):
    outreach on that block, so block-level precision is the honest answer anyway.)
 
 With both overrides in place the build resolves **185 / 185**.
+
+**Three more addresses carry a `maps_query`** — the pin is fine, only the Google link needed
+help. They are the strings a global geocoder reads differently from an NYC-only one: a
+hyphenated house-number *range* Google reads the Queens way (`190-192 Brown Place`), a
+programme name and a colon typed into the address field (`Next PAGE: 801 Amsterdam Ave.`),
+and a park with no house number at all, which is the one query in the set that is a place
+name rather than an address — there is exactly one Chelsea Park in Manhattan, so it carries
+none of the branch ambiguity an organization's name would. The two pin overrides above also
+carry one, to strip the cross-street half of the string that Google would read as more
+address.
+
+**GeoSearch's silent fallbacks.** `build.py` takes `features[0]` without checking Pelias's
+`match_type`, and Pelias answers a house number it does not have by returning a *different*
+building on the same street, at confidence 0.8. Cross-checking all 185 addresses against the
+[US Census geocoder](https://geocoding.geo.census.gov/) — an independent engine, run as a
+one-off — found four pins that disagree by more than 300 m, and in each the address string is
+right and our pin is wrong:
+
+| address | our pin resolved to | apart |
+|---|---|---|
+| `115 Liberty Street, Bath New York 14810` | `115 Liberty Street`, **Manhattan** | 329 km |
+| `832 3rd Avenue, Suite 10-10NE, Brooklyn` | `639 3 Avenue, Brooklyn` | 941 m |
+| `25 Thorton Street, Brooklyn` (typo for *Thornton*) | `25 Lorimer Street, Brooklyn` | 779 m |
+| `250 E 117st, New York` | `250 East 122 Street` | 398 m |
+
+A fifth, `748 Beck Street, Bronx`, resolves to `810 Beck Street`. Because the link now carries
+the address rather than the coordinate, these are the sites where the pin and the link will
+point at different blocks — the link being the correct one. Gating on `match_type` and routing
+fallbacks to `overrides.json` is the fix; it is not done.
+
+The Bath one is not a geocoding bug at all. `Steuben County Community Mental Health Center`
+(area code 607, `steubencountyny.gov`) is in Steuben County, 250 miles upstate, with `Borough:
+Manhattan` typed into the source. GeoSearch, being NYC-only, had nowhere else to put it. The
+row does not belong on a map of New York City and should be dropped at the source.
 
 ### A data-quality note you will hit immediately
 
@@ -172,7 +212,7 @@ sets its own size. The host page's only job is the iframe's dimensions and its `
 | `orgs` | relative URL | `orgs.json` | Organization records. If it 404s, the block groups the features by their `org` property instead and the card shows only what the features carry. Organizations and sites not present in `data` are dropped, so the counts and the list always describe what is actually on the map. |
 | `list` | `on` \| `off` | `on` | The list panel / bottom sheet. `off` when the host page already carries the content in text. |
 | `lang` | BCP-47 subtag | `<html lang>`, else `en` | Basemap label language. See §Language notes. |
-| `title` | string | `config.json`'s `title` | The heading inside the block. |
+| `title` | string | `config.json`'s `title` | The block's `<h1>`. **Not drawn** — it is visually hidden, because the host page already has a heading naming the same thing. It still names the frame for a screen reader and still sets `document.title`. |
 
 `data` and `orgs` are **restricted to the block's own origin.** Anyone can iframe this page
 with any query string, so without that restriction the embed is a content proxy: a third
@@ -189,18 +229,179 @@ The two iframes on `demo.html` are the worked examples:
 ### What the card shows
 
 `app/config.json` decides, and it is the only file you edit to point the block at a
-different dataset. Each entry names a field, where to read it from (`site` = the GeoJSON
-feature's properties, `org` = the matching record in `orgs.json`), its label, and
-optionally how to render it (`tel`, `url`).
+different dataset. The card has two parts, and the split is the point:
+
+**`actions`** — the row of buttons directly under the address. The few things a resident is
+most likely to have opened the card *for*, above anything describing the site. Each button
+shows a verb and the information itself, so the number and the domain stay readable and
+copyable on a desktop where `tel:` does nothing.
 
 ```json
-{ "key": "phone", "source": "site", "label": "Phone", "as": "tel" }
+"actions": [
+  { "key": "phone",   "source": "site", "label": "Call",    "as": "tel" },
+  { "key": "website", "source": "site", "label": "Website", "as": "url" }
+]
 ```
 
-`"directions": false` removes the Directions button. The Directions link is a plain deep
-link — `https://www.google.com/maps/dir/?api=1&destination=<lat>,<lon>` — which opens the
-resident's own maps app. No SDK, no API key, no billing account, no third-party script on
-the page.
+**`card`** — the labelled detail below it, in the order given. Each entry names a field,
+where to read it from (`site` = the GeoJSON feature's properties, `org` = the matching
+record in `orgs.json`), its label, and optionally how to render it (`tel`, `url`).
+
+```json
+{ "key": "hours", "source": "org", "label": "Hours" }
+```
+
+**Open in Google Maps** is appended to the action row automatically, and
+`"openInMaps": false` removes it. It is Google's documented
+[Search URL](https://developers.google.com/maps/documentation/urls/get-started),
+`https://www.google.com/maps/search/?api=1&query=…`. It used to be the Directions URL,
+which opens a routing form already asking where the resident is coming from — a question
+they have not been asked and may not want to answer. Showing them the place is the smaller,
+likelier request, and routing is one tap further on inside the app that is better at it. A
+deep link either way: no SDK, no API key, no billing account, no third-party script.
+
+**What goes in `query` is the choice that matters**, and there are three answers, not two:
+
+| `query` carries | what the resident gets | risk of the wrong place |
+|---|---|---|
+| the coordinate | an unlabelled pin. Google's own docs: *"there is a pin in the map, but no additional place information is provided on the map or in the side panel."* No title, no hours, no Street View. | none |
+| **the address** ← what this does | Google's card for that address: the pin, Street View, a Directions button, and the businesses Google knows are there. | ~none |
+| the name + the address | the organization's own Google profile — hours, photos, reviews — *when the name matches something Google has at that address*. | real |
+
+The first row is why this is not the coordinate: an unlabelled dot is something the map the
+resident is already looking at does better, so sending them to Google for one buys nothing.
+The jump from nothing to a real panel is the address.
+
+The third row was built and then removed. The name in this data is typed into a spreadsheet
+by 75 different organizations and is never checked against Google's index, so prepending it
+does not *look up* a place — it biases a text search. A miss is usually harmless, because
+Google falls back to the address and you land on row two anyway. But a miss that matches a
+**different branch of the same organization** sends the resident to the wrong building with
+nothing on screen to say so. That is not hypothetical here: 20 addresses carry no ZIP, every
+one of them belongs to a multi-site organization, and 13 of those are Henry Street Settlement
+— 14 sites sharing one strong Google listing. Hours and photos are not worth a silent wrong
+address.
+
+```json
+"openInMaps": {
+  "query": [
+    { "key": "address", "source": "site" }
+  ]
+}
+```
+
+Each entry is a field reference like the ones in `actions` and `card`, and non-empty values
+are joined with commas — a dataset keeping street, city and state in separate columns lists
+all three. `"openInMaps": true` keeps the coordinate instead, which is the right setting for
+a dataset whose addresses are too rough to hand to a global geocoder.
+
+**If you want the business profile guaranteed rather than guessed**, the mechanism is
+`query_place_id`, not a better-composed string: one Places API Text Search per site at build
+time, store the returned place ID (Google's terms allow caching place IDs indefinitely,
+unlike the rest of the Places response), and emit `&query=<address>&query_place_id=<id>` so
+the address is still the fallback. That needs an API key and a billing account — the first
+metered dependency in this block — and it would also produce a useful QA list of which of the
+75 organizations Google actually has a listing for. Not done.
+
+**The remaining cost is that Google re-geocodes the address with its own engine**, so its pin
+can land somewhere ours did not. Ours came from NYC GeoSearch, which sits on the city's own
+address database and is the more authoritative of the two for a NYC house number — but only
+for strings that are actually NYC addresses. Where Google reads one differently, the fix is a
+`maps_query` in `data/overrides.json`, which moves only the link and leaves the pin alone; see
+§Geocoding. It is written onto just those features, so the other 180 sites pay nothing for it.
+
+A phone number written for a human keeps its extension: `"(212)766-9200 x2224"` becomes
+`tel:2127669200;ext=2224`, the RFC 3966 form. 21 of the 185 sites carry one, and stripping
+every non-digit would hand the phone `21276692002224` to dial.
+
+---
+
+## Overlapping pins
+
+185 pins do not fit on a city-zoom screen, and no amount of styling changes that. At z10 a
+pixel is about 116 m and a pin head is about 16 px, so:
+
+| zoom | pins overlapping ≥1 other | deepest pile |
+|---|---|---|
+| 10 (city) | 166 / 185 (90%) | 49 |
+| 12 | 122 / 185 (66%) | 18 |
+| 14 | 68 / 185 (37%) | 7 |
+| 16 | 27 / 185 (15%) | 3 |
+| 17 | 12 / 185 (6%) | 2 |
+
+**A click takes the topmost pin, at every zoom.** The user pointed at one mark and gets one
+card. Zooming separates a pile, and the list carries every site at any zoom, so nothing is
+unreachable — it is reachable by reading rather than by aiming.
+
+Be honest about the cost: a pin underneath another gives no sign that it is there. Esri's
+community forums carry the same complaint about their paginated popup. It is the price of
+not aggregating, and the list is what pays it.
+
+**Clustering is the alternative and it is off** (`createMap(el, { cluster: true })`). It
+aggregates marks, never cards — a bubble reading "37" is true where 37 overlapping
+teardrops claiming to be 37 clickable places are not — but it trades the sight of where
+every site is for a count, and it puts a numeral on the canvas where the translation proxy
+and a screen reader cannot reach it. Turn it on at the scale where the shape itself stops
+reading; this dataset is not there.
+
+### What was removed, and why it matters for the next dataset
+
+An earlier version answered a click by querying a ±6 px box and listing everything in it
+inside the card, headed "N sites at this address". At z10 that box is **1.4 km wide**. One
+site's card listed 37 others, six of them belonging to different organizations, under a
+heading naming one organization. Pixel proximity is not co-location, and a card that says
+otherwise is wrong rather than merely crowded.
+
+The rule the block keeps instead: **a card is one record, everywhere** — from a pin, from
+the list, always. Anything that helps you get to a different record is chrome around the
+card, never content inside it.
+
+### True co-location: the stepper
+
+Records within **25 m** of each other are one location. The number is not in the data —
+the pair distances in this file run continuously from 0 to 160 m with no gap anywhere, the
+largest jump between consecutive pairs being 8 m — so it comes from what the label
+promises. 25 m is the widest radius where "at this location" is still true: the same
+building or the one next door. At 50 m it starts joining addresses on different streets.
+
+Note this is *not* "what the user cannot separate by zooming", which would be 0 m — at z18
+even a 15 m gap is about 35 px. It is a claim about the places, not the pixels, which is
+why it is a fixed ground distance rather than a function of zoom. A record joins a group
+only if it is within 25 m of every member, not just the nearest, so groups cannot chain.
+
+Five groups in the ABAWD data, covering ten sites, none deeper than two. The card carries
+the only way to reach the second record in one:
+
+```
+┌──────────────────────────────────────┐
+│  ‹     1 of 2 at this location    ›  │   ← chrome: fixed height, any stack depth
+├──────────────────────────────────────┤
+│  Metropolitan New York Coordinating  │   ← the card: exactly one record
+│  Council on Jewish Poverty           │
+│  1 State St 24th Floor…              │
+```
+
+This is Felt's pattern (arrows to step between overlapping features) with ArcGIS's count
+added, which is the part that matters: without it there is no way to know a second record
+is there at all. It wraps rather than disabling at the ends — with a stack of two,
+disabling would leave one arrow permanently dead, and the count already says where you
+are. Focus stays on the arrow you pressed, so a second press steps again.
+
+Co-location is a fact about the **data**, not about the render, so `embed.js` computes it
+from the feature collection (`indexByCoordinate`) and `map-core.js` says nothing about it.
+A finder written against the core does the same with its own UI.
+
+The five, and they differ in kind:
+
+| Sites | Apart | What it is |
+|---|---|---|
+| 1 State St 24th Fl / 1 State Street | 0 m | Met Council and Women In Need genuinely share the building |
+| 399 E Mosholu Pkwy N / 3031 Webster Ave | 0 m | one organization on a corner lot, two real addresses, one geocode |
+| 415 / 417 E 151st Street | 7.9 m | Acacia, two adjacent buildings |
+| 265 / 269 Henry Street | 15.6 m | Henry Street Settlement, two doors of one campus |
+| 701 / 705 Crotona Park North | 17.2 m | Acacia, two adjacent buildings |
+
+All five are "at this location"; only two are "at this address". The copy says location.
 
 ---
 
@@ -211,10 +412,10 @@ The block pushes to `window.dataLayer` inside the iframe and logs every push to 
 | Event | Payload | When |
 |---|---|---|
 | `map_load` | `{sites, orgs, lang}` | Map style and layers are up. |
-| `map_pin_open` | `{org_id, site_id, via}` | A site is selected. `via` is `map`, `list`, or `chooser`. |
-| `map_list_expand` | `{org_id, sites}` | A multi-site organization is expanded in the list. |
-| `map_cluster_expand` | `{count}` | A cluster bubble is clicked. |
-| `map_directions_click` | `{org_id, site_id}` | The Directions button is used. |
+| `map_pin_open` | `{org_id, site_id, via}` | A site is selected. `via` is `map`, `list`, or `stepper`. |
+| `map_cluster_expand` | `{count}` | A cluster bubble is clicked. Only fires with `cluster: true`, which is off by default. |
+| `map_action_click` | `{org_id, site_id, action}` | A configured action button is used; `action` is its config key (`phone`, `website`). |
+| `map_open_in_maps_click` | `{org_id, site_id}` | The Open in Google Maps button is used. |
 
 **Wiring this up is not done.** `dataLayer` is the iframe's own window, so the host page's
 tag does not see it. Two ways out: put the tag inside the block too (simplest, and what
@@ -234,7 +435,25 @@ each swap actually lands.
 
 Today the demo runs on [OpenFreeMap](https://openfreemap.org/)'s hosted `positron` style —
 keyless OpenMapTiles vector tiles, no account, no metering, the same basemap the Medicaid
-demo has run on since 2026-09-10.
+demo has run on since 2026-09-10 — with a warm tint applied at load time by
+`warmTint()` in `app/basemap-style.js`.
+
+**Why tint rather than pick a warmer style.** OpenFreeMap also serves `bright` and
+`liberty`, both of which are warmer out of the box. Both are also more opinionated: green
+parks, blue water, coloured road classes, and in liberty's case 3D building extrusions at
+high zoom. This block is a base for maps whose data nobody has chosen yet, so the basemap
+has to stay neutral enough to sit under any of them — a basemap that is already using
+green and blue for its own purposes takes those colours away from the data. Positron is
+the quiet, flat one; the tint gives it a paper tone without giving it opinions.
+
+The tint holds *chroma* constant rather than saturation, so the same amount of warmth
+lands on the near-white background and on the mid-grey boundary lines — a fixed saturation
+would be invisible on the former and heavy on the latter. Labels are untouched, since
+their colours are a contrast decision. Water and parks are the one exception to
+neutrality: `embed.js` passes them a soft blue and a soft green (`BASEMAP_PALETTE`), enough
+for the rivers and the big parks to work as landmarks and still well under the pins.
+Tuning is two constants (`WARM_HUE`, `WARM_CHROMA`) plus that palette; passing the style
+through unchanged turns it off.
 
 **That is a demo choice, not the production plan.** A keyless free tier is a term of
 service, not an architecture: CARTO's basemaps were keyless until August 2026 and then
@@ -252,8 +471,10 @@ pmtiles extract https://build.protomaps.com/<build>.pmtiles nyc.pmtiles \
 
 The swap is confined to `app/basemap-style.js` plus loading the `pmtiles` protocol script.
 Nothing else in the app changes: `map-core.js` takes a style object and does not care where
-it came from, and the label-language rewrite in `setStyleLanguage()` works on any
-OpenMapTiles-schema style, self-hosted or not.
+it came from, and both the label-language rewrite in `setStyleLanguage()` and the tint in
+`warmTint()` work on any style object, self-hosted or not — neither reads the URL, and the
+tint keys off colour lightness rather than a list of layer ids, so an upstream restyle does
+not silently undo it.
 
 ### Map engine
 
@@ -290,10 +511,13 @@ return the same dicts, and the rest of the pipeline is untouched.
 
 ### Data at scale: GeoJSON → tiled source
 
-At 185 points a static GeoJSON file is the right answer and clustering is the right answer
-for stacked pins. That holds into the tens of thousands of points. Past that, the file
-itself becomes the problem and the data has to be tiled (PMTiles, or PostGIS→MVT for live
-data) so the browser fetches only the current viewport.
+At 185 points a static GeoJSON file is the right answer, and it holds into the tens of
+thousands. Past that the file itself becomes the problem and the data has to be tiled
+(PMTiles, or PostGIS→MVT for live data) so the browser fetches only the current viewport.
+
+Note that clustering (`createMap(el, { cluster: true })`, off by default) is a
+*readability* threshold rather than a data-size one, and the two are far apart: see
+§Overlapping pins.
 
 **Be honest about what that costs in product terms:** with a tiled source the browser no
 longer holds the whole dataset, so "75 organizations · 185 sites" becomes "75 organizations
@@ -306,8 +530,9 @@ default. Make it deliberately, when the data forces it.
 ## Using map-core in a finder
 
 `map-core.js` is the reusable half: MapLibre setup, clustering, selection, highlight, the
-coincident-address chooser, the live region, the map-side analytics. It knows nothing about
-organizations, cards, lists, or URL parameters.
+live region, the map-side analytics. It knows nothing about organizations, cards, lists,
+URL parameters — or co-location, which is a fact about the data and therefore the client's
+to compute. See §Overlapping pins.
 
 A finder — search box, filters, results list whose state is coupled to the map — should
 **not** embed this app in an iframe. A finder's list and its map share too much state to
@@ -316,19 +541,22 @@ own UI around it:
 
 ```js
 import { createMap } from "./map-core.js";
-import { loadBasemapStyle, resolveLang } from "./basemap-style.js";
+import { loadBasemapStyle, resolveLang, warmTint } from "./basemap-style.js";
 
 const lang  = resolveLang(new URLSearchParams(location.search).get("lang"));
-const style = await loadBasemapStyle("https://tiles.openfreemap.org/styles/positron", lang);
+const style = warmTint(                                  // drop warmTint() for stock positron
+  await loadBasemapStyle("https://tiles.openfreemap.org/styles/positron", lang),
+  { water: "hsl(202, 42%, 80%)", park: "hsl(96, 30%, 84%)" });   // both optional
 
 const map = createMap(document.getElementById("map"), {
   style,
   data,                                     // GeoJSON FeatureCollection of Points
-  onSelect(feature, { via, coincident }) {  // via: "map" | "api"
-    renderYourCard(feature);
-    if (coincident) renderYourChooser(coincident);   // >1 site at the clicked coordinate
+  onSelect(feature, { via }) {               // via: "map" | "api"
+    renderYourCard(feature);                 // always exactly one feature
   },
   onClusterExpand(count) { /* … */ },
+  focusPoint: () => [x, y],                  // optional: where a selected pin lands, in
+                                             // container px; default is the map's centre
 });
 
 map.setData(filteredGeojson);   // after a search or a filter change
@@ -347,17 +575,26 @@ that this API is enough for a second consumer to be written against.
 
 Two implementation notes you would otherwise have to rediscover:
 
-- **Three sources, not one.** Clustering is what makes 185 points readable and it is also
-  what makes a highlight invisible — an organization's 60 sites are swallowed by the same
-  count bubbles as everyone else's, at exactly the zoom where "this org is everywhere" is
-  the thing you want to see. So the highlighted subset is drawn a second time from its own
-  unclustered source on top, while the clustered base dims underneath. The selected site
-  gets the same treatment, so a selection made from the list is visible even when its point
-  would otherwise be inside a cluster.
+- **Three sources, not one.** The highlighted subset is drawn a second time from its own
+  source on top, at full size, while the base dims and shrinks underneath — so "this org
+  is everywhere" reads at city zoom, where the base pins are small and dense. The selected
+  site gets the same treatment, so a selection made from the list is always the mark on
+  top. With `cluster: true` this matters more, not less: an organization's 60 sites would
+  otherwise be swallowed by the same count bubbles as everyone else's.
+- **Pins are generated, not fetched.** The teardrop is drawn to a canvas at load and
+  registered with `map.addImage()`, one image per state, because an icon's colour is baked
+  into its image. Three states, three images, and the layer expression picks between them.
+  No asset to host, and no licence taken on the icon set the city's finders drew theirs
+  from.
+- **Size interpolates over zoom.** ~0.55× at city zoom to ~1.15× at street zoom, the same
+  technique the child care finder uses, flattened at the low end so the smallest pin is
+  still a touch target. It reduces the pile-up at z10; it does not remove it — see
+  §Overlapping pins.
 - **Expressions, not feature-state.** Feature-state is the usual way to do
   selected/highlighted styling, but it is a poor fit over a clustered GeoJSON source: the
   ids it keys on change as clusters re-form, so state set at one zoom is lost at the next.
-  At this scale an expression over a literal id list costs nothing and always holds.
+  Since clustering is an option this block can turn on, the styling stays on expressions,
+  which cost nothing at this scale and always hold.
 
 Extract this into a versioned package when there is a second consumer, not before.
 
@@ -370,15 +607,33 @@ is 2027-04-26.
 
 **The list is the map's text alternative.** A canvas cannot be read, and a screen-reader
 user should not be told to "explore the map." Everything the map draws is reachable from
-the list: 75 organizations as buttons, each multi-site organization expanding to its sites.
-It is deliberately *not* a finder — no search, no filter, no sort — because a text
-alternative's job is completeness, not discovery.
+the list: **185 rows, one per site**, each showing the organization and then the address,
+each opening the same card its pin opens. It is deliberately *not* a finder — no search,
+no filter, no sort — because a text alternative's job is completeness, not discovery.
 
-**Focus order** is title → skip link → list → map controls → card. The card is last in the
-DOM and positioned over the map by CSS, which is why that order comes out right without any
-`tabindex` above 0.
+It is flat on purpose. The list used to be 75 organizations, the multi-site ones expanding
+to reveal their sites, which made a row mean two different things depending on which
+organization it named — some opened a card, some opened a sublist, and the only tells were
+a blank chevron and a missing count. A card is one record from every direction, so a row
+is too. The cost is 60 consecutive rows reading "Acacia Housing and Preservation", which is
+what the address line is for.
 
-**There is a skip link**, invisible until it takes focus, because 75 organizations is 72 tab
+**Focus order** is skip link → list → map controls → card. The card is last in the DOM and
+positioned over the map by CSS, which is why that order comes out right without any
+`tabindex` above 0. The block's `<h1>` comes before all of it in *reading* order but is not
+focusable and is not drawn — see below.
+
+**The heading is in the DOM but not on the screen.** The block is an iframe inside a
+nyc.gov page that already carries an `<h1>` naming what the page is about, so drawing the
+name a second time at the top of the map spent a line of vertical space repeating something
+the resident had just read. It stays in the markup, visually hidden, doing three jobs that
+have nothing to do with being seen: it is the block's only `<h1>`, so deleting it would
+leave a frame whose document has no heading outline; it is what a screen reader announces
+on entering the frame, which is the only way a non-sighted user learns what the frame
+contains; and it is the landmark the list and map sit under. `.block-header` is zeroed out
+in `style.css` so the empty element does not still paint its old padding and rule.
+
+**There is a skip link**, invisible until it takes focus, because 185 sites is 185 tab
 stops between the top of the page and the map's own controls. It is the first focusable
 thing in the block and it lands on the map container.
 
@@ -464,13 +719,13 @@ this replaces, benchmarked on the same instrument in the same session.
 | Need | Result | Evidence |
 |---|---|---|
 | **basemap** | ✅ | No API key, no account, no billing relationship anywhere in the stack. Lighthouse network trace: **4 origins** (the app's own, `cdn.jsdelivr.net` for MapLibre, `tiles.openfreemap.org` for the basemap, plus data URIs) and **0 requests to a metered vendor**. The My Map makes 30 metered requests across 12 origins on every load. |
-| **language** | ✅ | Every visible string is a text node in its own element — no concatenated label+value, no `aria-label` carrying visible copy, no canvas text except the cluster counts (numerals). `?lang=es` renders "Ciudad de Jersey", "estrecho de Long Island", "Isla Staten", "Bahía de Nueva York Baja"; `?lang=zh` renders the full CJK label set. Verified by rendering `embed.html` at `en`, `es` and `zh`. |
-| **accessibility (keyboard)** | ✅ keyboard · 🟡 screen reader | Keyboard-only walk with no mouse: Tab 1 is the skip link → Enter lands on the map → Tab reaches the canvas, Zoom in, Zoom out, and Enter zooms. In the list, Enter on an organization opens the card with focus on its `<h2>`; Tab walks phone → website → Directions → Close; Enter on Close, or Escape, closes the card and returns focus to the exact row that opened it. Every one of the 185 sites is reachable this way. **Not yet done:** a VoiceOver/NVDA pass and MOPD sign-off on the pattern. |
+| **language** | ✅ | Every visible string is a text node in its own element — no concatenated label+value, no `aria-label` carrying visible copy, no canvas text at all now that the cluster counts are off by default. `?lang=es` renders "Ciudad de Jersey", "estrecho de Long Island", "Isla Staten", "Bahía de Nueva York Baja"; `?lang=zh` renders the full CJK label set. Verified by rendering `embed.html` at `en`, `es` and `zh`. |
+| **accessibility (keyboard)** | ✅ keyboard · 🟡 screen reader | Keyboard-only walk with no mouse: Tab 1 is the skip link → Enter lands on the map → Tab reaches the canvas, Zoom in, Zoom out, and Enter zooms. In the list, Enter on a row opens that site's card with focus on its `<h2>`; Tab walks Call → Website → Open in Google Maps → Close; Enter on Close, or Escape, closes the card and returns focus to the exact row that opened it. Every one of the 185 sites is reachable this way. **Not yet done:** a VoiceOver/NVDA pass and MOPD sign-off on the pattern. |
 | **mobile-friendly** | ✅ | Rendered at 360 × 740 and at desktop width. No horizontal overflow at 360 px (`scrollWidth` = viewport width). The bottom sheet cycles 48 px → 45 dvh → 85 dvh by tap or drag, and collapses on its own when a card opens so the two never fight for the screen. Every standalone control is ≥ 44 px on touch; the only smaller targets are text links inside a block of text, which SC 2.5.8 exempts. |
-| **analytics** | ✅ events · 🟡 transport | `map_load`, `map_pin_open` (`via: map` / `list` / `chooser`), `map_list_expand`, `map_cluster_expand` and `map_directions_click` all observed on `window.dataLayer` and in the console during the interaction tests. The tag itself is not wired — see §Events. |
+| **analytics** | ✅ events · 🟡 transport | `map_load`, `map_pin_open` (`via: map` / `list` / `stepper`), `map_action_click` and `map_open_in_maps_click` all observed (`map_cluster_expand` fires only with `cluster: true`) on `window.dataLayer` and in the console during the interaction tests. `via: stepper` re-verified 9/15 by CDP. The tag itself is not wired — see §Events. |
 | **data integration** | ✅ | `python3 build/build.py` rebuilds from the KML or the CSV, resolves **185 / 185** addresses, and stamps `"generated"` with the build date, which the card footer renders. Gate tested by forcing a failure: with `MIN_RESOLVED` at 99.9% and one address broken, the build printed the unresolved list, exited 1, and left `app/sites.geojson` byte-identical. |
 | **manual data edits** | ✅ | Hand-placed one address in `data/overrides.json` and rebuilt: the pin moved from `[-73.89262, 40.82877]` to the override's coordinate, proving overrides beat both the cache and the geocoder. Removing the entry and rebuilding restored it. |
-| **stacked pins** | ✅ | Clusters expand on click via `getClusterExpansionZoom`. Selecting Acacia Housing and Preservation lights all **60** of its sites at once, unclustered and on top, while the rest of the city dims. At 1 State Street — where two different organizations share a coordinate — the card opens with a "2 sites at this address" chooser and picking the other one re-selects through the map. |
+| **stacked pins** | ✅ | Re-verified 9/15 in headless Chrome over CDP, after the ±6 px box query was removed (see §Overlapping pins). A click at z10 on the densest block of the South Bronx opens **one** card — one `<h2>`, one button, 494 characters — where the same click previously produced a 37-entry list naming six other organizations. All **five** co-located groups step correctly: 1 of 2 → 2 of 2 → back, the card body swapping to the other record each time, focus following the arrow pressed, and no stepper on any of the other 175 sites. The list is 185 rows with 185 distinct site ids and no other buttons in it, so every row is one card. No console errors. |
 | **performance** | 🟡 | Lighthouse mobile profile (slow-4G, throttled Moto-G), **median of 5 round-robin runs**, served over gzip. Block: **Speed Index 2.4 s · LCP 5.0 s · TBT 325 ms · CLS 0.003 · 1,541 KB · 31 requests · 0 metered**. My Map: **Speed Index 6.7 s · LCP 10.7 s · TBT 433 ms · CLS 0.646 · 1,673 KB · 90 requests · 30 metered**. Faster on every metric, a third of the requests, a fifth of the layout shift, and nothing metered — but 1,541 KB is over the 0.5 MB target. See below. |
 
 ### On that 🟡 — where the 1,541 KB goes

@@ -23,9 +23,39 @@
  */
 
 import { createMap } from "./map-core.js";
-import { loadBasemapStyle, resolveLang } from "./basemap-style.js";
+import { loadBasemapStyle, resolveLang, warmTint } from "./basemap-style.js";
 
 const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
+
+/**
+ * Water and parks get real, if quiet, colour. Positron draws both as greys a few steps
+ * from the land, which is faithful to its brief as a background but leaves a resident
+ * with no landmarks: the East River and Prospect Park are what tell someone which part
+ * of the city they are looking at. Both stay well below the pins in saturation, so the
+ * data is still the loudest thing on the map.
+ */
+const BASEMAP_PALETTE = {
+  water: "hsl(202, 42%, 80%)",
+  park:  "hsl(96, 30%, 84%)",
+};
+
+/**
+ * How close two records have to be to count as one location, in metres.
+ *
+ * There is no answer to this in the data: the pair distances in the ABAWD file run
+ * continuously from 0 to 160 m with no gap anywhere — the largest jump between two
+ * consecutive pair distances in that range is 8 m. So the number comes from what the
+ * stepper's label promises, "at this location", and 25 m is the widest radius where that
+ * stays true. It catches the same building or the one next door: 415 and 417 E 151st
+ * Street (7.9 m), 265 and 269 Henry Street (15.6 m, two doors of one campus), 701 and 705
+ * Crotona Park North (17.2 m), plus the two pairs that geocode to a single point. At 50 m
+ * it starts joining addresses on different streets, and the label stops being honest.
+ *
+ * Note that this is NOT "what the user cannot separate by zooming" — that would be 0 m,
+ * since at z18 even a 15 m gap is about 35 px. It is a claim about the places, not about
+ * the pixels, which is why it is a fixed ground distance and not a function of zoom.
+ */
+const CO_LOCATION_RADIUS_M = 25;
 const DEFAULTS = { data: "sites.geojson", orgs: "orgs.json", list: "on" };
 
 // ---------------------------------------------------------------------------- helpers
@@ -98,8 +128,12 @@ const state = {
   byId: new Map(),
   orgs: [],
   orgById: new Map(),
+  /** Site id -> every feature at that location. See indexByLocation. */
+  atCoord: new Map(),
+  /** Set to "prev"/"next" while a stepper click is in flight, so focus follows the arrow
+   *  instead of jumping back to the card heading on every step. */
+  stepFocus: null,
   generated: "",
-  expandedOrg: null,
   selectedId: null,
   /** The control that caused the current selection, so Escape can return focus to it. */
   returnFocusTo: null,
@@ -125,6 +159,7 @@ async function boot() {
   state.features = data.features;
   state.generated = data.generated || (orgsDoc && orgsDoc.generated) || "";
   for (const f of state.features) state.byId.set(f.properties.id, f);
+  state.atCoord = indexByLocation(state.features);
 
   state.orgs = orgsDoc ? normalizeOrgs(orgsDoc) : groupByOrgProperty(state.features);
   state.orgs = restrictToLoadedSites(state.orgs, state.byId);
@@ -135,7 +170,8 @@ async function boot() {
   renderList();
   setupSheet();
 
-  const style = await loadBasemapStyle(BASEMAP_STYLE, settings.lang);
+  const style = warmTint(
+    await loadBasemapStyle(BASEMAP_STYLE, settings.lang), BASEMAP_PALETTE);
   $("loading").remove();
 
   map = createMap($("map"), {
@@ -143,6 +179,19 @@ async function boot() {
     data,
     onSelect: handleSelect,
     onClusterExpand: () => {},
+    // A selected pin lands at the centre of the whole block, not of the map. On desktop
+    // the list takes the left 320 px, so the map's own centre sits 160 px right of the
+    // frame's and a pin centred there reads as off to one side of the iframe. Measured
+    // rather than hard-coded so the phone layout, where the map is the frame, gets the
+    // same answer for free.
+    focusPoint: () => {
+      const frame = $("root").getBoundingClientRect();
+      const box = $("map").getBoundingClientRect();
+      return [
+        frame.left + frame.width / 2 - box.left,
+        frame.top + frame.height / 2 - box.top,
+      ];
+    },
   });
 
   // A deliberate global. It is the debugging surface for this prototype — open the
@@ -228,6 +277,47 @@ function groupByOrgProperty(features) {
   return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** Metres between two [lon, lat] pairs. Flat-earth, which is exact enough at 25 m. */
+function metresBetween(a, b) {
+  const x = (b[0] - a[0]) * Math.cos((a[1] * Math.PI) / 180) * 111320;
+  const y = (b[1] - a[1]) * 110540;
+  return Math.hypot(x, y);
+}
+
+/**
+ * Group the features into locations: sets of records within CO_LOCATION_RADIUS_M of one
+ * another. Computed once, from the data, because co-location is a fact about the places —
+ * the map only knows about pixels, and a pixel at city zoom is 116 m.
+ *
+ * A record joins a group only if it is within the radius of EVERY member already in it,
+ * not just the nearest one. Single-link grouping would chain — A near B, B near C, and a
+ * group containing two records 50 m apart, which is exactly what the label must not
+ * claim. Data order decides the seed, so the grouping is deterministic.
+ *
+ * Five groups in the ABAWD data, covering ten sites, none deeper than two. Two of them
+ * geocode to a single point and the rest are a building apart. See the radius note above.
+ */
+function indexByLocation(features) {
+  const groups = [];
+  for (const f of features) {
+    const here = f.geometry.coordinates;
+    const group = groups.find((g) => g.every(
+      (other) => metresBetween(here, other.geometry.coordinates) <= CO_LOCATION_RADIUS_M));
+    if (group) group.push(f);
+    else groups.push([f]);
+  }
+  const at = new Map();
+  for (const group of groups) {
+    for (const f of group) at.set(f.properties.id, group);
+  }
+  return at;
+}
+
+/** Every record at this feature's location, in data order, including itself. */
+function coincidentWith(feature) {
+  return state.atCoord.get(feature.properties.id) || [feature];
+}
+
 // ------------------------------------------------------------------------------ chrome
 
 function applyTitle() {
@@ -246,113 +336,60 @@ function setCount(id, n) {
 }
 
 function renderCounts() {
-  setCount("header-orgs", state.orgs.length);
-  setCount("header-sites", state.features.length);
   setCount("sheet-orgs", state.orgs.length);
   setCount("sheet-sites", state.features.length);
-  $("header-counts").removeAttribute("data-pending");
   $("stage").dataset.list = settings.list;
 }
 
 // -------------------------------------------------------------------------------- list
 
+/**
+ * One row per site. Not per organization.
+ *
+ * The list used to be organizations, with the multi-site ones expanding to reveal their
+ * sites. That made a row mean two different things depending on which organization it
+ * named — "Aempowerments Global Foundation Inc." opened a card, "A Blend of Services ·
+ * 2 sites" expanded a sublist — and the only tells were a blank chevron and a missing
+ * count, both of which are absences rather than signals.
+ *
+ * Flat is the version with nothing to learn: every row is one site and opens one card,
+ * the same card the pin opens. The cost is 60 consecutive rows reading "Acacia Housing
+ * and Preservation", which is why the address is a second line rather than a tooltip —
+ * it is what makes each row its own place.
+ *
+ * Sorted by organization, then address, so an organization's sites stay together and the
+ * order does not depend on how the source file happened to be written.
+ */
 function renderList() {
   if (settings.list === "off") return;
-  const list = $("org-list");
+  const list = $("site-list");
   list.replaceChildren();
 
-  for (const org of state.orgs) {
-    const item = el("li");
-    const multi = org.sites.length > 1;
+  const sites = state.features.slice().sort((a, b) =>
+    a.properties.org.localeCompare(b.properties.org) ||
+    a.properties.address.localeCompare(b.properties.address));
 
+  for (const feature of sites) {
+    const p = feature.properties;
     const button = el("button");
     button.type = "button";
-    button.className = "org-button";
-    button.dataset.orgId = org.org_id;
-
-    const chev = span(multi ? "▸" : " ", "chev");
-    chev.setAttribute("aria-hidden", "true");
-    button.append(chev, span(org.name, "name"));
-
-    if (multi) {
-      // Two text nodes, never "60 sites" as one string: the proxy translates the word
-      // and leaves the numeral alone. Single-site orgs carry no badge at all, which
-      // avoids having to pluralize anything in code.
-      const count = el("span", span(String(org.sites.length)), " ", span("sites"));
-      count.className = "count";
-      button.append(count);
-      button.setAttribute("aria-expanded", "false");
-      button.addEventListener("click", () => toggleOrg(org, button));
-    } else {
-      button.addEventListener("click", () => {
-        state.returnFocusTo = button;
-        map.select(org.sites[0].id);
-        track("map_pin_open", { org_id: org.org_id, site_id: org.sites[0].id, via: "list" });
-      });
-    }
-
-    item.append(button);
-    list.append(item);
-  }
-}
-
-function toggleOrg(org, button) {
-  const item = button.parentElement;
-  const open = button.getAttribute("aria-expanded") === "true";
-
-  // One org open at a time: two 60-site orgs expanded at once is a scroll, not a list.
-  for (const other of $("org-list").querySelectorAll('.org-button[aria-expanded="true"]')) {
-    other.setAttribute("aria-expanded", "false");
-    const sub = other.parentElement.querySelector(".site-list");
-    if (sub) sub.remove();
-  }
-
-  if (open) {
-    state.expandedOrg = null;
-    map.highlight([]);
-    return;
-  }
-
-  button.setAttribute("aria-expanded", "true");
-  state.expandedOrg = org.org_id;
-
-  const sub = el("ul");
-  sub.className = "site-list";
-  for (const site of org.sites) {
-    const siteButton = el("button");
-    siteButton.type = "button";
-    siteButton.className = "site-button";
-    siteButton.dataset.siteId = site.id;
-    siteButton.append(span(site.address, "addr"));
-    if (site.borough) siteButton.append(span(site.borough, "boro"));
-    siteButton.addEventListener("click", () => {
-      state.returnFocusTo = siteButton;
-      map.select(site.id);
-      track("map_pin_open", { org_id: org.org_id, site_id: site.id, via: "list" });
+    button.className = "site-button";
+    button.dataset.siteId = p.id;
+    // The borough is already inside the address string, so a row is two lines, not three.
+    button.append(span(p.org, "name"), span(p.address, "addr"));
+    button.addEventListener("click", () => {
+      state.returnFocusTo = button;
+      map.select(p.id);
+      track("map_pin_open", { org_id: p.org_id, site_id: p.id, via: "list" });
     });
-    sub.append(el("li", siteButton));
+    list.append(el("li", button));
   }
-  item.append(sub);
-
-  // This is the move that makes a 60-site organization legible: every one of its sites
-  // lights up at once and the rest of the city recedes.
-  const ids = org.sites.map((s) => s.id);
-  map.highlight(ids);
-  map.fitTo(ids);
-  announce([span("Showing"), " ", span(String(ids.length)), " ",
-            span("sites for"), " ", span(org.name)]);
-  track("map_list_expand", { org_id: org.org_id, sites: ids.length });
 }
 
 /** Mark the list row that corresponds to the current selection, and clear the others. */
 function markCurrent(siteId) {
   if (settings.list === "off") return;
-  const orgId = siteId ? state.byId.get(siteId)?.properties.org_id : null;
-  for (const b of $("org-list").querySelectorAll(".org-button")) {
-    if (b.dataset.orgId === orgId) b.setAttribute("aria-current", "true");
-    else b.removeAttribute("aria-current");
-  }
-  for (const b of $("org-list").querySelectorAll(".site-button")) {
+  for (const b of $("site-list").querySelectorAll(".site-button")) {
     if (b.dataset.siteId === siteId) b.setAttribute("aria-current", "true");
     else b.removeAttribute("aria-current");
   }
@@ -368,7 +405,7 @@ function handleSelect(feature, info) {
   }
   state.selectedId = feature.properties.id;
   markCurrent(state.selectedId);
-  renderCard(feature, info.coincident);
+  renderCard(feature);
   announce([span("Selected"), ": ", span(feature.properties.org), ", ",
             span(feature.properties.address)]);
 
@@ -385,30 +422,44 @@ function handleSelect(feature, info) {
   // it was when the card closes, so the user does not lose their place in the list.
   collapseSheetForCard();
   // Focus the card's heading so a keyboard or screen-reader user lands on the content
-  // they just asked for instead of being left behind in the list.
-  $("card-title").focus();
+  // they just asked for instead of being left behind in the list. The exception is a
+  // stepper click: the card is rebuilt under the user's finger, so focus goes back to the
+  // arrow they pressed and a second press steps again.
+  const arrow = state.stepFocus
+    ? $("card").querySelector(`.step-${state.stepFocus}`)
+    : null;
+  state.stepFocus = null;
+  (arrow || $("card-title")).focus();
 }
 
-function renderCard(feature, coincident) {
+function renderCard(feature) {
   const p = feature.properties;
   const org = state.orgById.get(p.org_id) || {};
   const card = $("card");
   card.replaceChildren();
+
+  // Above the heading, so it reads as chrome belonging to the card rather than as content
+  // belonging to this organization.
+  const group = coincidentWith(feature);
+  if (group.length > 1) card.append(stepper(group, p.id));
 
   const title = el("h2", p.org);
   title.id = "card-title";
   title.tabIndex = -1;
   card.append(title);
 
-  if (p.dba) card.append(dbaLine(p.dba));
-
-  if (coincident && coincident.length > 1) card.append(chooser(coincident, p.id));
+  // A dba identical to the organization name is two lines saying one thing; 22 of the 185
+  // records carry one. The field is still shown whenever it adds something.
+  if (p.dba && p.dba.trim() !== p.org.trim()) card.append(dbaLine(p.dba));
 
   const where = el("p");
   where.className = "where";
   where.append(span(p.address, "addr"));
   if (p.borough) where.append(span(p.borough, "boro"));
   card.append(where);
+
+  const actions = actionRow(feature, org);
+  if (actions) card.append(actions);
 
   const dl = el("dl");
   for (const field of state.config.card || []) {
@@ -418,22 +469,6 @@ function renderCard(feature, coincident) {
     dl.append(el("dd", renderValue(field, value)));
   }
   if (dl.children.length) card.append(dl);
-
-  if (state.config.directions !== false) {
-    const [lon, lat] = feature.geometry.coordinates;
-    const link = el("a", span("Directions"),
-                    hidden("opens in your maps app"));
-    link.className = "directions";
-    // A deep link, not an SDK: no key, no billing account, no third-party script on the
-    // page. It hands the resident off to whichever maps app they already use.
-    link.href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}`;
-    link.target = "_blank";
-    link.rel = "noopener";
-    link.addEventListener("click", () => track("map_directions_click", {
-      org_id: p.org_id, site_id: p.id,
-    }));
-    card.append(link);
-  }
 
   if (state.generated) {
     const footer = el("p", span("Data updated"), " ", stamp(state.generated));
@@ -455,6 +490,135 @@ function renderCard(feature, coincident) {
   card.hidden = false;
 }
 
+/**
+ * Call, website, and a link out to Google Maps — the row directly under the address.
+ *
+ * These are the three things a resident opening a card is most likely to have come for,
+ * and they used to be scattered: the phone number and the website were two rows of the
+ * definition list, below "Hours" and above four fields of programme prose, and the map
+ * link was at the very bottom of the card. Doing anything with a site meant reading past
+ * everything describing it first.
+ *
+ * Which fields appear is config, not code — `actions` in config.json, in the order the
+ * card should show them — so a different dataset moves its own fields up here without
+ * touching this file. The Google Maps link is appended last and is the one composed
+ * rather than read from a single field — see `mapsQuery`.
+ *
+ * Each button carries a label and a detail line: the label is the verb, the detail is the
+ * information. That keeps the phone number and the domain visible and copyable on a
+ * desktop, where `tel:` does nothing, without the row turning into an icon puzzle. Both
+ * are separate text nodes, so the proxy translates the verb and leaves the number alone.
+ */
+function actionRow(feature, org) {
+  const p = feature.properties;
+  const box = el("div");
+  box.className = "actions";
+
+  for (const action of state.config.actions || []) {
+    const value = (action.source === "org" ? org[action.key] : p[action.key]) || "";
+    if (!value) continue;
+    const link = el("a", span(action.label, "action-label"));
+    link.className = "action";
+
+    if (action.as === "tel") {
+      link.href = telHref(value);
+      link.append(span(value, "action-detail"));
+    } else {
+      const href = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+      link.href = href;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.append(span(String(value).replace(/^https?:\/\//i, "").replace(/\/$/, ""),
+                       "action-detail"));
+    }
+
+    link.addEventListener("click", () => track("map_action_click", {
+      org_id: p.org_id, site_id: p.id, action: action.key,
+    }));
+    box.append(link);
+  }
+
+  if (state.config.openInMaps !== false) {
+    const query = mapsQuery(feature, org);
+    const [lon, lat] = feature.geometry.coordinates;
+    const link = el("a", span("Open in Google Maps", "action-label"),
+                       span("see this location on a full map", "action-detail"));
+    link.className = "action";
+    // Google's documented Search URL. It used to be the Directions URL, which opens a
+    // routing form already asking where you are coming from — a question the resident
+    // has not been asked yet and may not want to answer. Showing them the place is the
+    // smaller, more likely request; routing is one tap further on, inside the app that
+    // is better at it than this block would be.
+    //
+    // A deep link either way, not an SDK: no key, no billing account, no third-party
+    // script on the page.
+    link.href = "https://www.google.com/maps/search/?api=1&query="
+              + encodeURIComponent(query || `${lat},${lon}`);
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.addEventListener("click", () => track("map_open_in_maps_click", {
+      org_id: p.org_id, site_id: p.id,
+    }));
+    box.append(link);
+  }
+
+  return box.children.length ? box : null;
+}
+
+/**
+ * The text to hand Google for this site, or null to fall back to its coordinate.
+ *
+ * It is the ADDRESS, and deliberately nothing else. There are three things this link
+ * could carry, and they are not on a single scale of better:
+ *
+ *   coordinate     an unlabelled pin. Google has nothing to look up, so there is no
+ *                  title, no hours, no Street View, no photo — a dot the resident has
+ *                  to take on trust, which the map they are already looking at does
+ *                  better than Google does.
+ *   address        Google's card for that address: the pin, Street View, a Directions
+ *                  button, and the businesses it knows are at that address. This is
+ *                  the jump from nothing to something.
+ *   name + address the organization's own Google profile — hours, photos, reviews —
+ *                  WHEN the name matches something Google has at that address.
+ *
+ * The third was tried and removed. The name in this data is typed into a spreadsheet by
+ * 75 different organizations and is never checked against Google's index, so prepending
+ * it does not look up a place, it biases a text search. When it misses the usual result
+ * is harmless — Google falls back to the address and you get the second row anyway — but
+ * when it misses by matching a DIFFERENT BRANCH of the same organization, the resident is
+ * sent to the wrong building with no sign anything went wrong. That is not hypothetical
+ * here: 20 of the addresses carry no ZIP, every one of them belongs to a multi-site
+ * organization, and 13 are Henry Street Settlement, whose name is a strong Google listing
+ * of its own. The extra hours-and-photos panel is not worth a silent wrong address.
+ *
+ * The remaining cost is that Google re-geocodes the text with its own engine, so its pin
+ * can disagree with ours, which came from NYC GeoSearch — the city's own address database,
+ * and the more authoritative of the two for a NYC house number. Addresses Google reads
+ * differently are corrected by hand in data/overrides.json, which writes a `maps_query`
+ * onto just those features; it is absent everywhere else and so costs the payload nothing
+ * for the 180 sites that do not need it.
+ *
+ * Which fields compose the query is config, like the rest of the card: `openInMaps.query`
+ * is a list of field references, joined with commas — a dataset that keeps street, city and
+ * state in separate columns lists all three. Setting `openInMaps` to `true` instead of an
+ * object keeps the coordinate, which is the right choice for a dataset whose addresses are
+ * too rough to hand to a global geocoder.
+ */
+function mapsQuery(feature, org) {
+  const parts = (state.config.openInMaps || {}).query;
+  if (!Array.isArray(parts)) return null;              // `true` => use the coordinate
+  const p = feature.properties;
+  if (p.maps_query) return p.maps_query;               // hand fix from overrides.json
+
+  const out = [];
+  for (const part of parts) {
+    const src = part.source === "org" ? (org || {}) : p;
+    const value = String(src[part.key] || "").trim();
+    if (value && !out.includes(value)) out.push(value);
+  }
+  return out.join(", ") || null;
+}
+
 function dbaLine(text) {
   const p = el("p", span(text));
   p.className = "dba";
@@ -471,6 +635,63 @@ function stamp(iso) {
   return time;
 }
 
+/**
+ * Turn one field's value into readable structure.
+ *
+ * The source strings carry their own shape and the card used to throw it away — a
+ * semicolon-separated list and a five-line block of prose both arrived as one run-on
+ * paragraph held together by `white-space: pre-line`. Both are hard to read for the same
+ * reason: nothing tells the eye where one item ends and the next begins.
+ *
+ *   "a; b; c"                 -> a list, one item per line
+ *   "intro:\nx\ny\nz"          -> a sentence, then a list
+ *   "para one\npara two"       -> separate paragraphs
+ *
+ * No colour and no new type sizes involved — the readability comes from the line breaks
+ * being real elements instead of characters inside one string.
+ */
+function structure(value) {
+  const lines = String(value).split("\n").map((l) => l.trim()).filter(Boolean);
+
+  if (lines.length > 1) {
+    const out = [];
+    // A line ending in a colon is introducing what follows, so the rest is a list.
+    if (lines[0].endsWith(":") && lines.length > 2) {
+      out.push(el("p", span(lines[0])));
+      const ul = el("ul");
+      for (const line of lines.slice(1)) ul.append(el("li", span(line)));
+      out.push(ul);
+      return out;
+    }
+    for (const line of lines) out.push(el("p", span(line)));
+    return out;
+  }
+
+  const parts = lines[0].split(";").map((x) => x.trim()).filter(Boolean);
+  if (parts.length > 1) {
+    const ul = el("ul");
+    for (const part of parts) ul.append(el("li", span(part)));
+    return [ul];
+  }
+
+  return [span(lines[0] || "")];
+}
+
+/**
+ * A dial string from a number written for a human to read.
+ *
+ * 21 of the 185 sites carry an extension — "(212)766-9200 x2224". Stripping every
+ * non-digit turns that into 21276692002224, which is not a phone number, and a phone
+ * handed it will try to dial it anyway. RFC 3966 keeps the extension in its own field:
+ * tel:2127669200;ext=2224.
+ */
+function telHref(value) {
+  const [main, ext] = String(value).split(/\s*(?:x|ext\.?|extension)\s*/i);
+  const digits = String(main).replace(/[^\d+]/g, "");
+  const extension = (ext || "").replace(/\D/g, "");
+  return `tel:${digits}${extension ? `;ext=${extension}` : ""}`;
+}
+
 function renderValue(field, value) {
   if (field.as === "url") {
     const href = /^https?:\/\//i.test(value) ? value : `https://${value}`;
@@ -482,40 +703,65 @@ function renderValue(field, value) {
   }
   if (field.as === "tel") {
     const a = el("a", span(value));
-    a.href = `tel:${value.replace(/[^\d+]/g, "")}`;
+    a.href = telHref(value);
     return a;
   }
-  return span(value);
+  return structure(value);
 }
 
 /**
- * More than one site at the clicked coordinate. The map cannot separate them — they are
- * the same pixel at every zoom — so the card offers the choice in text.
+ * More than one record on this exact coordinate: step between them, one card at a time.
+ *
+ * A stepper rather than a list, because a card has to stay atomic. The list this replaced
+ * put N organizations' names inside one organization's card — unbounded height, and at
+ * city zoom it was listing pixel neighbours a kilometre away as though they shared an
+ * address. A stepper is two arrows and a count: constant height whatever the stack depth,
+ * and the card below it is always exactly one site.
+ *
+ * The count is the part Felt's version omits and ArcGIS's includes, and it is the part
+ * that matters — without it there is no way to know a second record is there at all.
+ *
+ * It wraps rather than disabling at the ends. With a stack of two, disabling would leave
+ * one of the two arrows permanently dead; the count already says where you are.
  */
-function chooser(features, currentId) {
-  const box = el("div");
-  box.className = "chooser";
-  box.append(el("p", span(String(features.length)), " ", span("sites at this address")));
-  const list = el("ul");
-  for (const f of features) {
-    const button = el("button", span(f.properties.org));
-    button.type = "button";
-    if (f.properties.id === currentId) {
-      button.setAttribute("aria-current", "true");
-      button.disabled = true;
-    } else {
-      button.addEventListener("click", () => {
-        // Re-select through the core so the map's own state moves with the card.
-        map.select(f.properties.id);
-        track("map_pin_open", {
-          org_id: f.properties.org_id, site_id: f.properties.id, via: "chooser",
-        });
-      });
-    }
-    list.append(el("li", button));
-  }
-  box.append(list);
-  return box;
+function stepper(group, currentId) {
+  const index = group.findIndex((f) => f.properties.id === currentId);
+  const bar = el("div");
+  bar.className = "stepper";
+  bar.setAttribute("role", "group");
+
+  const go = (delta, dir) => {
+    const next = group[(index + delta + group.length) % group.length];
+    state.stepFocus = dir;
+    // Re-select through the core so the map's own state moves with the card.
+    map.select(next.properties.id);
+    track("map_pin_open", {
+      org_id: next.properties.org_id, site_id: next.properties.id, via: "stepper",
+    });
+  };
+
+  bar.append(arrowButton("prev", "\u2039", "Previous site at this location", () => go(-1, "prev")));
+
+  // Separate text nodes, never "1 of 2" as one string: the proxy translates the words and
+  // leaves the numerals alone. See the language note at the top of this file.
+  const count = el("p", span(String(index + 1)), " ", span("of"), " ",
+                     span(String(group.length)), " ", span("at this location"));
+  count.className = "step-count";
+  bar.append(count);
+
+  bar.append(arrowButton("next", "\u203a", "Next site at this location", () => go(1, "next")));
+  return bar;
+}
+
+/** One stepper arrow. The glyph is decoration; the label is what is announced. */
+function arrowButton(dir, glyph, label, onClick) {
+  const mark = span(glyph);
+  mark.setAttribute("aria-hidden", "true");
+  const button = el("button", mark, hidden(label));
+  button.type = "button";
+  button.className = `step step-${dir}`;
+  button.addEventListener("click", onClick);
+  return button;
 }
 
 function closeCard() {

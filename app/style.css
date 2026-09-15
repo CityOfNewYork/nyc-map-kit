@@ -13,15 +13,23 @@
  */
 
 :root {
-  --ink:        #1a1a1a;   /* 15.3:1 on white */
-  --ink-muted:  #565656;   /* 7.3:1  on white — still AA at any size */
+  /* Neutral throughout. The link is the only thing in the interface that carries a hue,
+     so a coloured word means "this goes somewhere" and nothing else competes with it.
+     The map carries its own colour; the panel around it does not. */
+  --ink:        #1b1b1b;   /* USWDS "ink" (gray-90) — 17.2:1 on white */
+  --ink-muted:  #454545;   /* USWDS gray-70 — 9.6:1 on white, 8.8:1 on --surface-2.
+                              Every muted thing in the card is small (the 14 px labels,
+                              the 13 px footer and stepper count), and small grey text is
+                              where contrast is actually spent. The previous step,
+                              gray-60 #5c5c5c, is 6.7:1 on white and 6.1:1 on --surface-2:
+                              AA, but under the 7:1 AAA line at exactly the sizes that
+                              need it most. gray-70 clears AAA on both grounds and still
+                              reads as secondary against --ink's 17.2:1. */
   --line:       #d4d4d4;
   --surface:    #ffffff;
   --surface-2:  #f5f5f5;
-  --accent:     #1d4ed8;   /* matches PIN.base in map-core.js */
-  --accent-ink: #1a3fb0;   /* 6.4:1 on white — the accent as *text* */
-  --selected:   #b91c1c;   /* matches PIN.selected */
-  --focus:      #0b3d91;
+  --link:       #005ea2;   /* USWDS "primary" (blue-60v) — 6.7:1 on white */
+  --link-hover: #1a4480;   /* USWDS "primary-dark" (blue-warm-70v) — 9.6:1 */
   --radius:     8px;
   --tap:        44px;      /* minimum touch target, WCAG 2.2 SC 2.5.8 */
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -34,7 +42,7 @@ html, body, #root { height: 100%; }
 body {
   margin: 0;
   font-family: var(--font);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.5;
   color: var(--ink);
   background: var(--surface);
@@ -45,7 +53,7 @@ body {
 
 /* Visible focus everywhere, including for the MapLibre controls. */
 :focus-visible {
-  outline: 3px solid var(--focus);
+  outline: 3px solid var(--link);
   outline-offset: 2px;
 }
 
@@ -75,8 +83,8 @@ body {
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  color: var(--accent-ink);
-  font-size: 0.875rem;
+  color: var(--link);
+  font-size: 1rem;
   text-decoration: none;
   transition: top 0.12s ease;
 }
@@ -93,22 +101,13 @@ body {
 /* Deliberately block, not a flex row. The counts are not known until the data lands, so
    a flex row re-wraps when they appear and the map below it jumps — measured as a CLS of
    0.153, the block's entire layout-shift score. Two fixed lines never move. */
+/* The header's only child is the visually-hidden <h1> (see embed.html), so it has
+   nothing left to draw. Without this it would still paint its old padding and rule as a
+   ~20px empty bar above the map, and the block would have given up the vertical space
+   without getting the heading back. The element stays for the document structure. */
 .block-header {
-  padding: 9px 14px 10px;
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
-}
-.block-header h1 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-}
-.block-header .counts {
-  margin: 1px 0 0;
-  font-size: 0.8125rem;
-  line-height: 1.35;
-  color: var(--ink-muted);
+  padding: 0;
+  border: 0;
 }
 /* Occupies its space before the numbers arrive — see the comment in embed.html. */
 .counts[data-pending] { visibility: hidden; }
@@ -135,12 +134,16 @@ body {
 
 .panel-intro {
   padding: 10px 14px 8px;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--ink-muted);
   border-bottom: 1px solid var(--line);
 }
 
-.org-list {
+/* One row per site: organization name, then its address. Flat, because a row that is
+   sometimes a destination and sometimes a container has to be learned before it can be
+   used. The borough is not repeated here — it is already inside the address string — so
+   a row is two lines and the panel scrolls a third less. */
+.site-list {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -148,16 +151,16 @@ body {
   flex: 1;
   -webkit-overflow-scrolling: touch;
 }
-.org-list > li { border-bottom: 1px solid var(--line); }
+.site-list > li { border-bottom: 1px solid var(--line); }
 
-.org-button,
 .site-button {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
   width: 100%;
   min-height: var(--tap);
-  padding: 10px 14px;
+  padding: 9px 14px;
   border: 0;
   background: none;
   font: inherit;
@@ -165,45 +168,13 @@ body {
   text-align: left;
   cursor: pointer;
 }
-.org-button:hover,
 .site-button:hover { background: var(--surface-2); }
-
-.org-button .name { flex: 1; font-weight: 550; }
-.org-button .count {
-  flex: none;
-  font-size: 0.75rem;
-  color: var(--ink-muted);
-  font-variant-numeric: tabular-nums;
-}
-.org-button .chev {
-  flex: none;
-  width: 12px;
-  color: var(--ink-muted);
-  transition: transform 0.15s ease;
-}
-.org-button[aria-expanded="true"] .chev { transform: rotate(90deg); }
-.org-button[aria-expanded="true"] { background: #eef2ff; }
-
-.site-list {
-  margin: 0;
-  padding: 0 0 4px;
-  list-style: none;
-  background: var(--surface-2);
-}
-.site-button {
-  padding-left: 28px;
-  min-height: var(--tap);
-  font-size: 0.875rem;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 1px;
-}
-.site-button .addr { color: var(--ink); }
-.site-button .boro { font-size: 0.75rem; color: var(--ink-muted); }
-.org-button[aria-current="true"],
+.site-button .name { font-weight: 700; }
+.site-button .addr { font-size: 0.9375rem; color: var(--ink-muted); }
 .site-button[aria-current="true"] {
-  box-shadow: inset 4px 0 0 var(--selected);
-  background: #fff1f1;
+  /* The selected row is marked by a rule and a tint, not by a colour. */
+  box-shadow: inset 4px 0 0 var(--ink);
+  background: var(--surface-2);
 }
 
 /* ------------------------------------------------------------------ map ---------- */
@@ -237,7 +208,7 @@ body {
   color: var(--ink-muted);
   background: var(--surface-2);
 }
-.load-error { color: #8a1010; }
+.load-error { color: var(--ink); }
 
 /* ------------------------------------------------------------------ card --------- */
 
@@ -258,13 +229,13 @@ body {
 .card[hidden] { display: none; }
 .card h2 {
   margin: 0 36px 2px 0;
-  font-size: 1.0625rem;
+  font-size: 1.375rem;
   line-height: 1.3;
 }
 .card h2:focus-visible { outline-offset: 4px; }
 .card .dba {
   margin: 0 0 8px;
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: var(--ink-muted);
 }
 .card .where {
@@ -273,7 +244,7 @@ body {
   border-bottom: 1px solid var(--line);
 }
 .card .where .addr { display: block; }
-.card .where .boro { display: block; font-size: 0.8125rem; color: var(--ink-muted); }
+.card .where .boro { display: block; font-size: 0.875rem; color: var(--ink-muted); }
 
 .card-close {
   position: absolute;
@@ -294,72 +265,131 @@ body {
 
 .card dl { margin: 0; }
 .card dt {
-  margin-top: 10px;
-  font-size: 0.75rem;
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  /* The label was 12px uppercase with letter-spacing, which is the least readable setting
+     in the card and the one repeated most often. Sentence case at a readable size, told
+     apart from its value by weight and by the space above it rather than by letterforms. */
+  margin-top: 18px;
+  font-size: 0.875rem;
+  font-weight: 700;
   color: var(--ink-muted);
 }
 .card dd {
-  margin: 2px 0 0;
-  font-size: 0.875rem;
-  white-space: pre-line;   /* the source prose carries its own line breaks */
+  margin: 3px 0 0;
+  font-size: 1rem;
+  line-height: 1.55;
+  /* A reading measure. Without it these values set to the full width of a desktop panel,
+     and prose at that length is hard to track from one line to the next. */
+  max-width: 60ch;
   overflow-wrap: anywhere;
 }
-.card a { color: var(--accent-ink); }
+/* Structure built by structure() in embed.js — real paragraphs and real lists, so the
+   spacing between items is spacing rather than a newline character. */
+.card dd p { margin: 0 0 10px; }
+.card dd p:last-child { margin-bottom: 0; }
+.card dd ul {
+  margin: 0;
+  /* Markers sit in the gutter (list-style-position: outside, the default), so a wrapped
+     item aligns under its own first word rather than under the bullet. */
+  padding-left: 1.1em;
+}
+.card dd li {
+  /* Short entries — "Adults 25+" — are one line each, so the 1.55 line-height meant for
+     running prose is already generous; a margin on top of it made them drift apart.
+     Items separate by 3px, and the list as a whole separates from the next label by the
+     18px above it. */
+  margin: 0;
+  line-height: 1.45;
+}
+.card dd li + li { margin-top: 3px; }
+.card a { color: var(--link); }
 
-.directions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+/* Call, website, open-in-maps: the row under the address, above everything descriptive.
+   Stacked full-width rather than three across — at a 360 px card width a row would break
+   every label onto two lines, and each of these is a 44 px touch target in its own right.
+   Selectors are `.card .action` so they outrank `.card a`, which would otherwise paint
+   these link-blue and undo the button. */
+.actions {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 4px;
+}
+.card .action {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-height: var(--tap);
-  margin-top: 14px;
-  padding: 0 14px;
+  padding: 5px 14px;
+  border: 1px solid var(--ink);
   border-radius: var(--radius);
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 600;
+  background: var(--surface);
+  color: var(--ink);
   text-decoration: none;
 }
-.directions:hover { background: var(--accent-ink); }
+.card .action:hover { background: var(--surface-2); }
+.card .action .action-label { font-size: 1rem; font-weight: 700; }
+/* The number and the domain, kept visible and copyable: on a desktop `tel:` does nothing
+   and the label alone would be a dead end. */
+.card .action .action-detail {
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
 
 .card-footer {
   margin: 14px 0 0;
   padding-top: 10px;
   border-top: 1px solid var(--line);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--ink-muted);
 }
 
-/* The coincident-address chooser: more than one site at the clicked address. */
-.chooser {
-  margin: 0 0 10px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-2);
+/* The stepper: more than one record at this location.
+   Small and bold, above the heading, with no panel around it. It was a full-width tinted
+   bar the height of a button, which is how it came to read as another field of the card
+   rather than as a control over it. The card's own content is what should occupy the
+   card; this is a count and two arrows. */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 36px 12px 0;
 }
-.chooser > p {
-  margin: 0 0 4px;
-  font-size: 0.75rem;
-  color: var(--ink-muted);
+.card .step-count {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ink);
 }
-.chooser ul { margin: 0; padding: 0; list-style: none; }
-.chooser button {
-  width: 100%;
-  min-height: 36px;
-  padding: 6px 4px;
+.card .step {
+  position: relative;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-content: center;
+  padding: 0;
   border: 0;
   background: none;
   font: inherit;
-  font-size: 0.8125rem;
-  text-align: left;
-  color: var(--accent-ink);
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--link);
   cursor: pointer;
 }
-.chooser button[aria-current="true"] { color: var(--ink); font-weight: 600; cursor: default; }
+/* The glyph is small; the target is not. A transparent box centred on each arrow brings
+   it to the 44 px the rest of the block keeps, without spending 44 px of card height on
+   a control that is absent from 175 of the 185 sites. */
+.card .step::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--tap);
+  height: var(--tap);
+  transform: translate(-50%, -50%);
+}
+.card .step:hover { color: var(--link-hover); }
 
 /* ------------------------------------------------------------- phone layout ------ */
 
@@ -408,7 +438,7 @@ body {
     border-radius: 2px;
     background: var(--line);
   }
-  .sheet-handle .counts { flex: 1; font-size: 0.8125rem; }
+  .sheet-handle .counts { flex: 1; font-size: 0.875rem; }
   .sheet-handle .chev { color: var(--ink-muted); }
 
   .panel-intro { display: none; }

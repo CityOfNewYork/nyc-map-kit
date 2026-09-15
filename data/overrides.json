@@ -1,14 +1,26 @@
 {
-  "_README": "Hand fixes for addresses NYC GeoSearch cannot resolve. Keyed by the RAW address string exactly as it appears in the input. Two forms: {\"query\": \"...\"} re-asks GeoSearch with different text, and {\"lon\": ..., \"lat\": ...} places the pin directly. Consulted before the cache, so an override always wins and survives a rebuild or a cache wipe. Keys starting with _ are ignored.",
-
+  "_README": "Hand fixes for addresses a geocoder cannot read. Keyed by the RAW address string exactly as it appears in the input. Three forms, and an entry may combine them: {\"query\": \"...\"} re-asks GeoSearch with different text; {\"lon\": ..., \"lat\": ...} places the pin directly; {\"maps_query\": \"...\"} sets the text the card's Open in Google Maps link searches for, instead of the name and address embed.js would compose. The first two move the pin on our map, the third only moves where Google lands — they are separate because the two geocoders fail on different strings: GeoSearch is NYC-only and resolves no intersections, Google is global and will happily read a cross-street description as somewhere else entirely. Keep a maps_query to the address. The composed query carries no organisation name on purpose — an unverified name biases Google's search and can match a different branch — so an override should not reintroduce one except where the row has no address to use at all, as with a park. Consulted before the cache, so an override always wins and survives a rebuild or a cache wipe. Keys starting with _ are ignored.",
   "Brooke Ave between East 147th Street and East 148th Street, Bronx, NY 10455": {
     "lon": -73.91513,
     "lat": 40.81403,
-    "note": "Hand-placed. Two problems: the input spells it 'Brooke Ave' (the street is Brook Avenue), and it names a block between two cross-streets. GeoSearch is Pelias, which resolves addresses and places but NOT intersections, so no query text fixes this. Coordinate is 510 Brook Avenue, the mid-block addressed point between E 147th and E 148th St, geocoded 2026-09-14. City Relief runs mobile outreach on this block, so a block-level placement is the honest precision."
+    "note": "Hand-placed. Two problems: the input spells it 'Brooke Ave' (the street is Brook Avenue), and it names a block between two cross-streets. GeoSearch is Pelias, which resolves addresses and places but NOT intersections, so no query text fixes this. Coordinate is 510 Brook Avenue, the mid-block addressed point between E 147th and E 148th St, geocoded 2026-09-14. City Relief runs mobile outreach on this block, so a block-level placement is the honest precision.",
+    "maps_query": "510 Brook Avenue, Bronx, NY 10455"
   },
-
   "Salvation Army Harlem Temple, 540 Malcolm X Blvd at West 138th Street, New York, NY 10037": {
     "query": "540 Malcolm X Blvd, New York, NY 10037",
-    "note": "A venue name plus a cross-street defeat the geocoder; the house number alone resolves."
+    "note": "A venue name plus a cross-street defeat the geocoder; the house number alone resolves. maps_query strips the same two extras for Google, which would otherwise read 'at West 138th Street' as more address.",
+    "maps_query": "540 Malcolm X Blvd, New York, NY 10037"
+  },
+  "Chelsea Park, West 28th Street between 9th Avenue and 10th Avenue, New York, NY 10001": {
+    "maps_query": "Chelsea Park, New York, NY 10001",
+    "note": "The pin is fine; only the Google link needed help. This is the one query that is a place name rather than an address, because the row has no house number to use — City Relief runs mobile outreach in the park. A public park is not the ambiguous case a business name would be: there is one Chelsea Park in Manhattan, and no branches to confuse it with. The cross-street half of the raw string is dropped because a global geocoder reads 'between 9th Avenue and 10th Avenue' as more address, not as a description of a block."
+  },
+  "Next PAGE: 801 Amsterdam Ave. New York, NY 10025": {
+    "maps_query": "801 Amsterdam Avenue, New York, NY 10025",
+    "note": "The raw string carries a programme name and a colon inside the address field. The pin is fine; this is the address on its own, which is all the link wants."
+  },
+  "190-192 Brown Place, Bronx, NY 10454": {
+    "maps_query": "192 Brown Place, Bronx, NY 10454",
+    "note": "A hyphenated house-number RANGE, which in Queens is instead a single valid address (77-17 Queens Blvd). Google resolves the hyphen the Queens way and can miss the block; the single number matches the pin GeoSearch returned."
   }
 }

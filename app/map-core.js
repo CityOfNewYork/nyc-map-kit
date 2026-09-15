@@ -18,8 +18,10 @@
  *   const map = createMap(document.getElementById("map"), {
  *     style,                         // style URL or style object (see basemap-style.js)
  *     data,                          // GeoJSON FeatureCollection of Points
- *     onSelect(feature, info),       // info = {via, coincident}
+ *     onSelect(feature, info),       // info = {via}
  *     onClusterExpand(count),
+ *     focusPoint,                    // optional () => [x, y]: where a selected pin lands,
+ *                                    // in container pixels. Default: the container's centre.
  *   });
  *
  *   map.setData(geojson);            // replace the data
@@ -31,12 +33,34 @@
  * `id` throughout is the `id` PROPERTY of a feature (a stable string from the data
  * pipeline), not MapLibre's internal numeric feature id.
  *
- * COINCIDENT ADDRESSES. Several organizations list the same building. Clustering hides
- * that below zoom 14 and stacking hides it above. So when a click lands on a spot where
- * two or more sites share a coordinate, `onSelect` is called with the first feature and
- * `info.coincident` set to all of them; the client renders the chooser (it is visible
- * text, so it has to be the client's DOM to stay translatable) and calls `select()` for
- * whichever the user picks.
+ * OVERLAPPING PINS. 185 pins do not fit on a city-zoom screen. At z10 a pin head is
+ * ~16 px across and a pixel is ~116 m, so 90% of them touch another one and the worst
+ * pile is 49 deep. Two things absorb that, and neither aggregates a card:
+ *
+ * The click always takes the TOPMOST pin, at every zoom. That is the honest answer to a
+ * pile: the user pointed at one mark and gets the card for one mark. Zooming separates the
+ * pile (~7 deep at z14, ~3 at z16, ~2 at z17), and the client's list carries every site
+ * regardless of zoom, so nothing is unreachable — it is reachable by reading rather than
+ * by aiming. The cost, and it is a real one, is that a pin sitting underneath another
+ * gives the user no sign it is there. Esri's own forums report the same complaint about
+ * their paginated popup; it is the price of not aggregating.
+ *
+ * What this core does NOT do is guess which pin a click "meant". An earlier version
+ * queried a +/-6 px box and handed the client every feature in it; at z10 that box is
+ * 1.4 km wide, so one site's card listed 37 others, six of them from different
+ * organizations, under the heading "sites at this address". Pixel proximity is not
+ * co-location, and a card that says otherwise is wrong rather than merely crowded.
+ *
+ * Clustering (`cluster: true`) is the other way to absorb a pile and it stays available,
+ * off by default. It aggregates marks, never cards — a bubble reading "37" is true where
+ * 37 overlapping teardrops claiming to be 37 clickable places are not — but it trades the
+ * sight of where every site is for a count, and it puts a number on the canvas where the
+ * translation proxy and a screen reader cannot reach it.
+ *
+ * TRUE co-location — two records on one coordinate, which no zoom will ever separate —
+ * is a property of the DATA, not of the render. So this core says nothing about it and
+ * the client computes it from the feature collection it already has. `embed.js` does,
+ * and offers a counted stepper. There are two such pairs in the ABAWD data.
  *
  * MapLibre is loaded as an ES module from a CDN. v6 ships no UMD build, so there is no
  * `<script src>`+global form of this any more; native `import` is the no-build path.
@@ -47,15 +71,78 @@ import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.8.0/dist
 
 // --------------------------------------------------------------------------- appearance
 // Marks, not text, so the bar is WCAG 2.2 SC 1.4.11 non-text contrast (3:1) against the
-// positron basemap and against each other — not the 4.5:1 text ratio.
+// warm-tinted positron basemap and against each other — not the 4.5:1 text ratio.
 const PIN = {
-  base: "#1d4ed8",        // blue-700 on a near-white basemap
-  dimmed: "#94a3b8",      // slate-400 — "still here, not what you asked about"
-  selected: "#b91c1c",    // red-700 — the one you are looking at
-  cluster: "#1d4ed8",
+  // The orange the city's child care finder draws its centre-based sites in — the
+  // uniqueValue renderer on its PROD_childcarenyc layer.
+  base: "#f38600",
+  dimmed: "#f7cc97",      // the same orange, lightened — "still here, not what you asked about"
+  selected: "#854900",    // the same orange, darkened — the one you are looking at
+  cluster: "#f38600",
   stroke: "#ffffff",
+  // Amber ring on the selected pin, and now close enough in hue to the base that it is
+  // purely decorative: the darker fill and the larger size are what say "selected".
+  halo: "#ffab00",
 };
-const CLUSTER_MAX_ZOOM = 14;   // above this, points render individually and can stack
+
+// The teardrop itself. Drawn rather than fetched: it is a circle, two tangent lines and a
+// hole, so generating it costs less than an asset to host and avoids taking a licence on
+// the icon set the finders drew theirs from. Sized in CSS pixels; rendered at PIN_DPR and
+// handed to MapLibre with a matching pixelRatio, so it stays crisp on retina.
+const PIN_SHAPE = { width: 26, height: 34, stroke: 1.5, hole: 0.34, halo: 2.5 };
+const PIN_DPR = 2;
+
+/** One pin as ImageData, in `fill`, optionally ringed in `halo`. The ring is drawn inside
+ *  the same canvas — the pin shrinks to make room — so every state shares one geometry and
+ *  the tip still lands on the coordinate. */
+function pinImage(fill, halo) {
+  const { width: w, height: h, stroke, hole, halo: haloWidth } = PIN_SHAPE;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.ceil(w * PIN_DPR);
+  canvas.height = Math.ceil(h * PIN_DPR);
+  const ctx = canvas.getContext("2d");
+  ctx.scale(PIN_DPR, PIN_DPR);
+
+  const inset = halo ? haloWidth : 0;
+  const r = (w - stroke) / 2 - inset;
+  const cx = w / 2;
+  const cy = r + stroke / 2 + inset;
+  const tip = h - stroke / 2 - inset;
+  // Where the tangent lines from the tip meet the head, so the tail joins it smoothly
+  // instead of cutting a notch into it.
+  const phi = Math.acos(Math.min(1, r / (tip - cy)));
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, Math.PI / 2 + phi, Math.PI / 2 - phi);   // over the top of the head
+  ctx.lineTo(cx, tip);
+  ctx.closePath();
+  if (halo) {
+    ctx.lineWidth = stroke + haloWidth * 2;
+    ctx.strokeStyle = halo;
+    ctx.stroke();
+  }
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.lineWidth = stroke;
+  ctx.strokeStyle = PIN.stroke;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * hole, 0, Math.PI * 2);
+  ctx.fillStyle = PIN.stroke;
+  ctx.fill();
+
+  return ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+/** Image ids registered on the map, one per state. */
+const PIN_IMAGE = { base: "pin-base", dimmed: "pin-dimmed", selected: "pin-selected" };
+// Clustering is off: every site draws as its own pin at every zoom, and a click takes the
+// topmost. Be clear-eyed about what that costs — at z10 a pin head is ~16 px and a pixel
+// is ~116 m, so 90% of this dataset's pins touch another one and the worst pile is 49
+// deep. What the map shows there is a shape, not a countable set; the list is what makes
+// the set countable. The option stays for the scale where even the shape stops reading.
+const CLUSTER_MAX_ZOOM = 14;   // with cluster:true, above this points draw individually
 const CLUSTER_RADIUS = 40;
 const NYC_BOUNDS = [[-74.30, 40.47], [-73.65, 40.95]];
 
@@ -66,8 +153,8 @@ const NO_SELECTION = "∅";
 const EMPTY = { type: "FeatureCollection", features: [] };
 
 // The three layers that draw individual sites (as opposed to cluster bubbles). A click
-// anywhere in this set is a click on a site, and a coincident-address query has to look
-// at all three or the answer depends on which one happens to be on top.
+// anywhere in this set is a click on a site; MapLibre hands back the topmost one, which
+// is the one the user actually pointed at.
 const POINT_LAYERS = ["focus-site", "overlay-sites", "sites"];
 
 /** Push a map-side analytics event. The host page's tag reads window.dataLayer. */
@@ -83,8 +170,10 @@ export function createMap(container, options = {}) {
   const {
     style,
     data = EMPTY,
+    cluster = false,
     onSelect = () => {},
     onClusterExpand = () => {},
+    focusPoint = null,
   } = options;
 
   // ------------------------------------------------------------------ live region
@@ -157,15 +246,43 @@ export function createMap(container, options = {}) {
   // At 185 points an expression over a literal id list costs nothing and always holds.)
   const isSelected = () => ["==", ["get", "id"], selectedId ?? NO_SELECTION];
 
-  function sitesColor() {
-    if (!highlighted.length) return ["case", isSelected(), PIN.selected, PIN.base];
-    return PIN.dimmed;            // the highlighted ones are drawn by the overlay instead
+  // State is carried by which pin image is drawn and how big, rather than by a fill
+  // colour: an icon's colour is baked into its image, so the three states are three
+  // registered images and the expression picks between them.
+  function sitesIcon() {
+    if (!highlighted.length) {
+      return ["case", isSelected(), PIN_IMAGE.selected, PIN_IMAGE.base];
+    }
+    return PIN_IMAGE.dimmed;      // the highlighted ones are drawn by the overlay instead
   }
-  function sitesRadius() {
-    return highlighted.length ? 4 : ["case", isSelected(), 9, 6];
+  /**
+   * Pin size, as a multiple of the drawn image, interpolated over zoom.
+   *
+   * Unclustered points need this. At city zoom 185 full-size pins are a single red mass;
+   * at street zoom small ones are hard to hit. The city's child care finder solves it the
+   * same way — a size visual variable running ~6px at city scale to ~29px at street
+   * scale — so the curve here is theirs, flattened at the low end: their smallest pin is
+   * decorative, ours has to stay clickable, and a 44px touch target is the floor that
+   * sets.
+   *
+   * The zoom interpolation has to be the OUTER expression: MapLibre only accepts `zoom`
+   * at the top level of a layout property, so the per-state multiplier goes inside each
+   * stop rather than wrapping the whole thing.
+   */
+  function sitesSize() {
+    const state = highlighted.length ? 0.72 : ["case", isSelected(), 1.25, 1];
+    const at = (k) => ["*", k, state];
+    return ["interpolate", ["linear"], ["zoom"],
+      9, at(0.55), 12, at(0.75), 15, at(1), 18, at(1.15)];
+  }
+
+  /** The same curve for the layers that are always drawn at one state. */
+  function fixedSize(factor) {
+    return ["interpolate", ["linear"], ["zoom"],
+      9, 0.55 * factor, 12, 0.75 * factor, 15, 1 * factor, 18, 1.15 * factor];
   }
   function sitesOpacity() {
-    return highlighted.length ? 0.45 : 0.95;
+    return highlighted.length ? 0.55 : 1;
   }
 
   /**
@@ -188,11 +305,13 @@ export function createMap(container, options = {}) {
 
   function repaint() {
     if (!ready || destroyed) return;
-    map.setPaintProperty("sites", "circle-color", sitesColor());
-    map.setPaintProperty("sites", "circle-radius", sitesRadius());
-    map.setPaintProperty("sites", "circle-opacity", sitesOpacity());
-    map.setPaintProperty("clusters", "circle-opacity", highlighted.length ? 0.35 : 0.9);
-    map.setPaintProperty("cluster-count", "text-opacity", highlighted.length ? 0.5 : 1);
+    map.setLayoutProperty("sites", "icon-image", sitesIcon());
+    map.setLayoutProperty("sites", "icon-size", sitesSize());
+    map.setPaintProperty("sites", "icon-opacity", sitesOpacity());
+    if (cluster) {
+      map.setPaintProperty("clusters", "circle-opacity", highlighted.length ? 0.35 : 0.9);
+      map.setPaintProperty("cluster-count", "text-opacity", highlighted.length ? 0.5 : 1);
+    }
     map.getSource("overlay").setData(subset(highlighted));
     map.getSource("focus").setData(subset(selectedId ? [selectedId] : []));
   }
@@ -200,17 +319,24 @@ export function createMap(container, options = {}) {
   // ------------------------------------------------------------------ layers
   map.on("load", () => {
     if (destroyed) return;
+    for (const [state, id] of Object.entries(PIN_IMAGE)) {
+      if (!map.hasImage(id)) {
+        const halo = state === "selected" ? PIN.halo : null;
+        map.addImage(id, pinImage(PIN[state], halo), { pixelRatio: PIN_DPR });
+      }
+    }
+
     map.addSource("sites", {
       type: "geojson",
       data: currentData,
-      cluster: true,
+      cluster,
       clusterRadius: CLUSTER_RADIUS,
-      // Deliberately below maxZoom: past this zoom every point draws on its own, which
-      // is what lets two sites at one address stack and be caught by the chooser.
+      // Deliberately below maxZoom: past this zoom every point draws on its own and a
+      // click takes the topmost. Only consulted when `cluster` is on.
       clusterMaxZoom: CLUSTER_MAX_ZOOM,
     });
 
-    map.addLayer({
+    if (cluster) map.addLayer({
       id: "clusters",
       type: "circle",
       source: "sites",
@@ -223,7 +349,7 @@ export function createMap(container, options = {}) {
         "circle-radius": ["step", ["get", "point_count"], 15, 10, 20, 30, 26],
       },
     });
-    map.addLayer({
+    if (cluster) map.addLayer({
       id: "cluster-count",
       type: "symbol",
       source: "sites",
@@ -239,29 +365,35 @@ export function createMap(container, options = {}) {
     });
     map.addLayer({
       id: "sites",
-      type: "circle",
+      type: "symbol",
       source: "sites",
       filter: ["!", ["has", "point_count"]],
-      paint: {
-        "circle-color": sitesColor(),
-        "circle-radius": sitesRadius(),
-        "circle-opacity": sitesOpacity(),
-        "circle-stroke-width": 1.5,
-        "circle-stroke-color": PIN.stroke,
+      layout: {
+        "icon-image": sitesIcon(),
+        "icon-size": sitesSize(),
+        // The point is the tip of the pin, not its middle.
+        "icon-anchor": "bottom",
+        // Symbol layers hide colliding icons by default. That is right for labels and
+        // wrong for data: a pin that silently disappears at one zoom is a site the map
+        // is lying about. Overlap is resolved by zooming, and by the client's list.
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
       },
+      paint: { "icon-opacity": sitesOpacity() },
     });
 
     // The highlighted organization's sites, drawn unclustered over the dimmed base.
     map.addSource("overlay", { type: "geojson", data: EMPTY });
     map.addLayer({
       id: "overlay-sites",
-      type: "circle",
+      type: "symbol",
       source: "overlay",
-      paint: {
-        "circle-color": PIN.base,
-        "circle-radius": 7,
-        "circle-stroke-width": 2,
-        "circle-stroke-color": PIN.stroke,
+      layout: {
+        "icon-image": PIN_IMAGE.base,
+        "icon-size": fixedSize(1),
+        "icon-anchor": "bottom",
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
       },
     });
 
@@ -269,22 +401,23 @@ export function createMap(container, options = {}) {
     map.addSource("focus", { type: "geojson", data: EMPTY });
     map.addLayer({
       id: "focus-site",
-      type: "circle",
+      type: "symbol",
       source: "focus",
-      paint: {
-        "circle-color": PIN.selected,
-        "circle-radius": 10,
-        "circle-stroke-width": 3,
-        "circle-stroke-color": PIN.stroke,
+      layout: {
+        "icon-image": PIN_IMAGE.selected,
+        "icon-size": fixedSize(1.25),
+        "icon-anchor": "bottom",
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
       },
     });
 
-    for (const name of ["clusters", ...POINT_LAYERS]) {
+    for (const name of [...(cluster ? ["clusters"] : []), ...POINT_LAYERS]) {
       map.on("mouseenter", name, () => { map.getCanvas().style.cursor = "pointer"; });
       map.on("mouseleave", name, () => { map.getCanvas().style.cursor = ""; });
     }
 
-    map.on("click", "clusters", (e) => {
+    if (cluster) map.on("click", "clusters", (e) => {
       const feature = e.features && e.features[0];
       if (!feature) return;
       const count = feature.properties.point_count;
@@ -298,9 +431,10 @@ export function createMap(container, options = {}) {
 
     for (const layer of POINT_LAYERS) {
       map.on("click", layer, (e) => {
-        const hits = coincidentAt(e.point, e.features && e.features[0]);
-        if (!hits.length) return;
-        applySelection(hits[0].properties.id, "map", hits.length > 1 ? hits : null);
+        const feature = e.features && e.features[0];
+        const id = feature && feature.properties && feature.properties.id;
+        if (!id) return;
+        applySelection(id, "map");
       });
     }
 
@@ -312,32 +446,6 @@ export function createMap(container, options = {}) {
     fitToIds([], 0);
     while (pending.length) pending.shift()();
   });
-
-  /**
-   * Every site rendered under this click, nearest first. Two sites at one address are
-   * drawn at the same pixel, so a click returns both and only the top one would ever be
-   * reachable without this.
-   */
-  function coincidentAt(point, first) {
-    const box = [
-      [point.x - 6, point.y - 6],
-      [point.x + 6, point.y + 6],
-    ];
-    const found = map.queryRenderedFeatures(box, { layers: POINT_LAYERS });
-    const seen = new Set();
-    const out = [];
-    if (first && first.properties && first.properties.id) {
-      seen.add(first.properties.id);
-      out.push(byId.get(first.properties.id) || first);
-    }
-    for (const f of found) {
-      const id = f.properties && f.properties.id;
-      if (!id || seen.has(id)) continue;
-      seen.add(id);
-      out.push(byId.get(id) || f);
-    }
-    return out;
-  }
 
   function fitToIds(ids, duration) {
     const list = (ids && ids.length ? ids.map((i) => byId.get(i)) : [...byId.values()])
@@ -352,19 +460,44 @@ export function createMap(container, options = {}) {
     map.fitBounds(b, { padding: 60, maxZoom: 15, duration });
   }
 
-  function applySelection(id, via, coincident) {
+  // Where the camera puts a selected pin, as MapLibre's `offset` from the container's
+  // centre. The core does not know what surrounds its container — a list beside it, a
+  // card over it — so the client says where the pin should land and the core only does
+  // the arithmetic. No `focusPoint` means the container's own centre.
+  function focusOffset() {
+    const point = focusPoint ? focusPoint() : null;
+    if (!point) return [0, 0];
+    const box = map.getContainer().getBoundingClientRect();
+    return [point[0] - box.width / 2, point[1] - box.height / 2];
+  }
+
+  function applySelection(id, via) {
+    const previous = byId.get(selectedId) || null;
     selectedId = id;
     repaint();
     const feature = byId.get(id) || null;
     if (feature) {
       const [lon, lat] = feature.geometry.coordinates;
       // A map click needs no camera move — the user is already looking at the pin. A
-      // selection from the list does, because the pin may be off screen.
-      if (via !== "map") {
-        map.easeTo({ center: [lon, lat], zoom: Math.max(map.getZoom(), 15), duration: 700 });
+      // selection from the list does, because the pin may be off screen. Stepping between
+      // two records at one location needs none while they are drawn within a pin's reach
+      // of each other: the camera is already there, and a lurch on every step would say
+      // the map had gone somewhere when it had not. Measured in pixels rather than metres
+      // because it is a question about what is on screen, which is the core's business;
+      // what counts as one *place* is the client's, and it decides that in metres.
+      const from = previous ? map.project(previous.geometry.coordinates) : null;
+      const to = map.project([lon, lat]);
+      const alreadyThere = from && Math.hypot(to.x - from.x, to.y - from.y) < 60;
+      if (via !== "map" && !alreadyThere) {
+        map.easeTo({
+          center: [lon, lat],
+          zoom: Math.max(map.getZoom(), 15),
+          duration: 700,
+          offset: focusOffset(),
+        });
       }
     }
-    onSelect(feature, { via, coincident: coincident || null });
+    onSelect(feature, { via });
   }
 
   // ------------------------------------------------------------------ public API
@@ -388,10 +521,10 @@ export function createMap(container, options = {}) {
       if (id == null) {
         selectedId = null;
         repaint();
-        onSelect(null, { via: "api", coincident: null });
+        onSelect(null, { via: "api" });
         return api;
       }
-      whenReady(() => applySelection(id, "api", null));
+      whenReady(() => applySelection(id, "api"));
       return api;
     },
 

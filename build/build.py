@@ -272,6 +272,15 @@ def main():
             "org_type": r["org_type"],
             "service_locations": r["service_locations"],
         }
+        # A hand-written Google Maps search string for this address, from
+        # data/overrides.json. Carried only for the few addresses Google's geocoder
+        # reads differently from GeoSearch's — a block described by its cross-streets,
+        # a suite number, a venue name glued to the front — so it costs the payload
+        # nothing for the sites that need no help. embed.js prefers it over the query
+        # it would otherwise compose from the name and address.
+        maps_query = (overrides.get(r["address"]) or {}).get("maps_query", "")
+        if maps_query:
+            props["maps_query"] = maps_query
         features.append({
             "type": "Feature",
             "id": len(features) + 1,          # numeric id: MapLibre feature-state needs one
@@ -290,6 +299,8 @@ def main():
         print("  Fix by adding an entry to data/overrides.json:")
         print('    {"<raw address>": {"query": "<alternate text>"}}')
         print('    {"<raw address>": {"lon": -73.9, "lat": 40.8, "note": "hand-placed from ..."}}')
+        print("  A third key, maps_query, fixes only the Open in Google Maps link:")
+        print('    {"<raw address>": {"maps_query": "<text to search Google for>"}}')
     if resolved_share < MIN_RESOLVED:
         sys.exit("\nFAIL: only %.1f%% of addresses resolved (gate is %.1f%%). Nothing written."
                  % (resolved_share * 100, MIN_RESOLVED * 100))
