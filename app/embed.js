@@ -23,7 +23,7 @@
  */
 
 import { createMap } from "./map-core.js";
-import { loadBasemapStyle, resolveLang, warmTint } from "./basemap-style.js";
+import { addLandcoverParks, loadBasemapStyle, resolveLang, warmTint } from "./basemap-style.js";
 
 const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 
@@ -171,7 +171,8 @@ async function boot() {
   setupSheet();
 
   const style = warmTint(
-    await loadBasemapStyle(BASEMAP_STYLE, settings.lang), BASEMAP_PALETTE);
+    addLandcoverParks(await loadBasemapStyle(BASEMAP_STYLE, settings.lang)),
+    BASEMAP_PALETTE);
   $("loading").remove();
 
   map = createMap($("map"), {
@@ -426,7 +427,7 @@ function handleSelect(feature, info) {
   // stepper click: the card is rebuilt under the user's finger, so focus goes back to the
   // arrow they pressed and a second press steps again.
   const arrow = state.stepFocus
-    ? $("card").querySelector(`.step-${state.stepFocus}`)
+    ? $("stepper").querySelector(`.step-${state.stepFocus}`)
     : null;
   state.stepFocus = null;
   (arrow || $("card-title")).focus();
@@ -438,19 +439,14 @@ function renderCard(feature) {
   const card = $("card");
   card.replaceChildren();
 
-  // Above the heading, so it reads as chrome belonging to the card rather than as content
-  // belonging to this organization.
-  const group = coincidentWith(feature);
-  if (group.length > 1) card.append(stepper(group, p.id));
+  // The stepper is a sibling of the card, not part of it: chrome for reaching the other
+  // record at this location, kept out of the record itself.
+  renderStepper(coincidentWith(feature), p.id);
 
   const title = el("h2", p.org);
   title.id = "card-title";
   title.tabIndex = -1;
   card.append(title);
-
-  // A dba identical to the organization name is two lines saying one thing; 22 of the 185
-  // records carry one. The field is still shown whenever it adds something.
-  if (p.dba && p.dba.trim() !== p.org.trim()) card.append(dbaLine(p.dba));
 
   const where = el("p");
   where.className = "where";
@@ -465,6 +461,10 @@ function renderCard(feature) {
   for (const field of state.config.card || []) {
     const value = (field.source === "org" ? org[field.key] : p[field.key]) || "";
     if (!value) continue;
+    // The source's "DBA or Program Name" column is a mix of trading names, acronyms and
+    // programme names, so it is shown as a labelled field rather than as a subtitle. 22
+    // of the 185 records repeat the organization name in it; that is not a second name.
+    if (field.key === "dba" && value.trim() === p.org.trim()) continue;
     dl.append(el("dt", span(field.label)));
     dl.append(el("dd", renderValue(field, value)));
   }
@@ -619,12 +619,6 @@ function mapsQuery(feature, org) {
   return out.join(", ") || null;
 }
 
-function dbaLine(text) {
-  const p = el("p", span(text));
-  p.className = "dba";
-  return p;
-}
-
 function stamp(iso) {
   const time = el("time");
   time.dateTime = iso;
@@ -724,11 +718,12 @@ function renderValue(field, value) {
  * It wraps rather than disabling at the ends. With a stack of two, disabling would leave
  * one of the two arrows permanently dead; the count already says where you are.
  */
-function stepper(group, currentId) {
+function renderStepper(group, currentId) {
+  const bar = $("stepper");
+  bar.replaceChildren();
+  bar.hidden = group.length < 2;
+  if (bar.hidden) return;
   const index = group.findIndex((f) => f.properties.id === currentId);
-  const bar = el("div");
-  bar.className = "stepper";
-  bar.setAttribute("role", "group");
 
   const go = (delta, dir) => {
     const next = group[(index + delta + group.length) % group.length];
@@ -750,7 +745,6 @@ function stepper(group, currentId) {
   bar.append(count);
 
   bar.append(arrowButton("next", "\u203a", "Next site at this location", () => go(1, "next")));
-  return bar;
 }
 
 /** One stepper arrow. The glyph is decoration; the label is what is announced. */
@@ -768,6 +762,9 @@ function closeCard() {
   const card = $("card");
   card.hidden = true;
   card.replaceChildren();
+  const bar = $("stepper");
+  bar.hidden = true;
+  bar.replaceChildren();
   state.selectedId = null;
   markCurrent(null);
   if (map) map.select(null);

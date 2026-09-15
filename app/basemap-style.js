@@ -82,6 +82,42 @@ export function setStyleLanguage(style, lang) {
   return style;
 }
 
+/**
+ * Add a fill layer for grass landcover, in place, so city parks are drawn at all.
+ *
+ * In the OpenMapTiles data positron draws, Central Park is not in the `park`
+ * source-layer — that holds nature reserves, state parks and the Gateway National
+ * Recreation Area. City parks are `landcover` polygons with class `grass` (subclass
+ * `park`, `golf_course`, `garden`, …), at every zoom, and positron paints `landcover`
+ * only for wood, ice and glaciers. Without this layer the only green over Central Park
+ * is its wooded patches.
+ *
+ * The layer id contains "park", so warmTint() gives it the `park` colour. It is inserted
+ * directly after positron's own `park` layer (below water and roads); a style with no
+ * `park` layer gets it directly above the background.
+ */
+export function addLandcoverParks(style) {
+  const layers = style.layers || [];
+  if (layers.some((l) => l.id === "landcover_park")) return style;
+  const source = Object.keys(style.sources || {})
+    .find((k) => style.sources[k] && style.sources[k].type === "vector");
+  if (!source) return style;
+  const layer = {
+    id: "landcover_park",
+    type: "fill",
+    source,
+    "source-layer": "landcover",
+    filter: ["all",
+      ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false],
+      ["==", ["get", "class"], "grass"]],
+    paint: { "fill-color": "rgb(230, 233, 229)", "fill-antialias": false },
+  };
+  let at = layers.findIndex((l) => l.id === "park");
+  if (at < 0) at = layers.findIndex((l) => l.type === "background");
+  layers.splice(at + 1, 0, layer);
+  return style;
+}
+
 /* ---------------------------------------------------------------- warm tint
 
  * WHY THIS EXISTS

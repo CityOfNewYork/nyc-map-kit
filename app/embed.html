@@ -97,10 +97,17 @@
     </div>
 
     <!--
-      The card is the last thing in the DOM so that focus reaches it after the map
-      controls. It is visually positioned over the map by style.css.
+      The dock is the last thing in the DOM so that focus reaches it after the map
+      controls. It is visually positioned over the map by style.css and holds two
+      separate things: the stepper, which is chrome for moving between records that
+      share a location, and the card, which is always exactly one record. They are
+      siblings, not parent and child, so the card's content is never mixed with the
+      controls around it.
     -->
-    <article class="card" id="card" aria-labelledby="card-title" hidden></article>
+    <div class="card-dock" id="card-dock">
+      <div class="stepper" id="stepper" role="group" hidden></div>
+      <article class="card" id="card" aria-labelledby="card-title" hidden></article>
+    </div>
 
   </div>
 </div>

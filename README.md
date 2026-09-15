@@ -354,7 +354,8 @@ otherwise is wrong rather than merely crowded.
 
 The rule the block keeps instead: **a card is one record, everywhere** — from a pin, from
 the list, always. Anything that helps you get to a different record is chrome around the
-card, never content inside it.
+card, never content inside it — in the DOM as well as on screen: the stepper is a sibling
+of the `<article>`, not a child.
 
 ### True co-location: the stepper
 
@@ -374,8 +375,9 @@ the only way to reach the second record in one:
 
 ```
 ┌──────────────────────────────────────┐
-│  ‹     1 of 2 at this location    ›  │   ← chrome: fixed height, any stack depth
-├──────────────────────────────────────┤
+│  ‹     1 of 2 at this location    ›  │   ← chrome: its own element, fixed height
+└──────────────────────────────────────┘
+┌──────────────────────────────────────┐
 │  Metropolitan New York Coordinating  │   ← the card: exactly one record
 │  Council on Jewish Poverty           │
 │  1 State St 24th Floor…              │
@@ -451,7 +453,10 @@ lands on the near-white background and on the mid-grey boundary lines — a fixe
 would be invisible on the former and heavy on the latter. Labels are untouched, since
 their colours are a contrast decision. Water and parks are the one exception to
 neutrality: `embed.js` passes them a soft blue and a soft green (`BASEMAP_PALETTE`), enough
-for the rivers and the big parks to work as landmarks and still well under the pins.
+for the rivers and the big parks to work as landmarks and still well under the pins. Note
+that positron does not draw city parks at all — in OpenMapTiles data Central Park is
+`landcover` class `grass`, not a `park` feature, and positron paints `landcover` only for
+wood and ice — so `addLandcoverParks()` inserts a fill layer for grass landcover first.
 Tuning is two constants (`WARM_HUE`, `WARM_CHROMA`) plus that palette; passing the style
 through unchanged turns it off.
 
@@ -541,11 +546,12 @@ own UI around it:
 
 ```js
 import { createMap } from "./map-core.js";
-import { loadBasemapStyle, resolveLang, warmTint } from "./basemap-style.js";
+import { addLandcoverParks, loadBasemapStyle, resolveLang, warmTint } from "./basemap-style.js";
 
 const lang  = resolveLang(new URLSearchParams(location.search).get("lang"));
 const style = warmTint(                                  // drop warmTint() for stock positron
-  await loadBasemapStyle("https://tiles.openfreemap.org/styles/positron", lang),
+  addLandcoverParks(                                     // city parks; positron omits them
+    await loadBasemapStyle("https://tiles.openfreemap.org/styles/positron", lang)),
   { water: "hsl(202, 42%, 80%)", park: "hsl(96, 30%, 84%)" });   // both optional
 
 const map = createMap(document.getElementById("map"), {
