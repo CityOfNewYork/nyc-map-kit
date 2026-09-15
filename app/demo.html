@@ -56,6 +56,19 @@
   figure.single iframe { height: 320px; min-height: 0; }
 
   .switch { margin: 0 0 24px; font-size: 0.9375rem; }
+
+  /* The demo can be linked directly, so the provenance note travels with it rather than
+     living only on the landing page. Same words, fewer of them. */
+  .note {
+    margin: 0 0 24px;
+    padding: 12px 16px;
+    border: 1px solid #d9c79a;
+    border-radius: 6px;
+    background: #fbf7ec;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
+  .note p { margin: 0; }
   a { color: var(--accent); text-underline-offset: 2px; }
   a:focus-visible {
     outline: 3px solid var(--accent);
@@ -72,6 +85,14 @@
 
 <body>
 <main>
+
+  <div class="note">
+    <p><strong>Prototype, not a City service.</strong> The data is a September 2026 snapshot
+    and is not authoritative; pins are geocoded from street addresses and some are
+    approximate. For current information see the City's
+    <a href="https://www.nyc.gov/main/services/snap-benefits/abawd">ABAWD volunteering
+    page</a>, and confirm any site with the organization that runs it.</p>
+  </div>
 
   <figure>
     <iframe id="map-all" title="Map of SNAP volunteer opportunities in New York City"

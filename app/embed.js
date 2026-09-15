@@ -623,10 +623,12 @@ function actionRow(feature, org) {
  * it does not look up a place, it biases a text search. When it misses the usual result
  * is harmless — Google falls back to the address and you get the second row anyway — but
  * when it misses by matching a DIFFERENT BRANCH of the same organization, the resident is
- * sent to the wrong building with no sign anything went wrong. That is not hypothetical
- * here: 20 of the addresses carry no ZIP, every one of them belongs to a multi-site
- * organization, and 13 are Henry Street Settlement, whose name is a strong Google listing
- * of its own. The extra hours-and-photos panel is not worth a silent wrong address.
+ * sent to the wrong building with no sign anything went wrong. The risk is concentrated
+ * rather than hypothetical: 20 of the addresses carry no ZIP, every one of them belongs to
+ * an organization running several sites, and most belong to one organization whose 14 sites
+ * share a single well-indexed listing — exactly the conditions where a name-biased search
+ * lands confidently on the wrong branch. The extra hours-and-photos panel is not worth a
+ * silent wrong address.
  *
  * The remaining cost is that Google re-geocodes the text with its own engine, so its pin
  * can disagree with ours, which came from NYC GeoSearch — the city's own address database,

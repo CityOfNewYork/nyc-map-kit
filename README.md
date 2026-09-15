@@ -5,14 +5,32 @@
 A **basic embedded map**: a framework-free, no-build web component you drop into any page
 with an `<iframe>`. It is meant to be the first of several building blocks for city maps —
 the one every map needs before it needs anything else, so that the next map starts here
-instead of at zero. This repository proves it on 185 SNAP volunteer service sites run by
-75 organizations across New York City, the dataset behind the
+instead of at zero. It is exercised here on 185 SNAP volunteer service sites run by 75
+organizations across New York City — the dataset behind the
 [ABAWD volunteering page](https://www.nyc.gov/main/services/snap-benefits/abawd), which
-today points residents at a Google My Map.
+currently links residents to a Google My Map.
 
 The code is written to be read and adapted, not just run. If you are the engineer who is
 going to own the production version, this README is the handoff and the rest of this file
 is addressed to you.
+
+## Status and provenance
+
+**This is a prototype, not a City service.** It is published so the approach can be
+reviewed and adapted. It is not operated, monitored or supported, it has not been through
+accessibility or security review, and nothing here is an official source of information
+for New Yorkers.
+
+**The data is a dated snapshot and is not authoritative.** It is a hand export of the SNAP
+Employment and Training volunteer site list taken in September 2026, carried through the
+pipeline described below. The authoritative version is whatever the
+[ABAWD volunteering page](https://www.nyc.gov/main/services/snap-benefits/abawd) links to
+today. Locations are derived by geocoding street addresses, so a pin is as good as the
+address string it came from and no better — see §Geocoding for how far that goes and where
+it stops. Anyone relying on a specific site should confirm it with the organization.
+
+**The measurements below are self-reported**, taken on one build with one instrument on
+one day, and are described so they can be re-run rather than taken on trust.
 
 ---
 
@@ -38,9 +56,17 @@ rewrite rule.
 
 Every URL inside `app/` is relative, so the same files work unchanged at
 `http://localhost:8000/` and under a GitHub Pages project subpath
-(`https://<account>.github.io/nyc-map-kit/`). **Keep them relative.** A single leading
+(`https://cityofnewyork.github.io/nyc-map-kit/`). **Keep them relative.** A single leading
 slash anywhere in `app/` breaks the subpath deployment and nothing else, which makes it an
 expensive mistake to find later.
+
+### The published demo
+
+<https://cityofnewyork.github.io/nyc-map-kit/> — GitHub Pages, served from the repository
+root on `main`, so `index.html` is a landing page and the app is under `app/`. `.nojekyll`
+turns off Jekyll processing; there is no build step here either. Read the prototype and
+data-provenance note on that page before sharing the link — it is there because a map of
+185 real service locations is easy to mistake for an official one.
 
 One caveat if you are *measuring* rather than developing: `python3 -m http.server` does not
 gzip, so `sites.geojson` and `orgs.json` go over the wire at four times their real size.
@@ -159,39 +185,45 @@ none of the branch ambiguity an organization's name would. The two pin overrides
 carry one, to strip the cross-street half of the string that Google would read as more
 address.
 
-**GeoSearch's silent fallbacks.** `build.py` takes `features[0]` without checking Pelias's
-`match_type`, and Pelias answers a house number it does not have by returning a *different*
-building on the same street, at confidence 0.8. Cross-checking all 185 addresses against the
-[US Census geocoder](https://geocoding.geo.census.gov/) — an independent engine, run as a
-one-off — found four pins that disagree by more than 300 m, and in each the address string is
-right and our pin is wrong:
+**Silent fallbacks are the failure mode to design against.** `build.py` takes `features[0]`
+without checking Pelias's `match_type`. Pelias answers a house number it does not hold by
+returning a *different* building on the same street, at confidence 0.8 — a plausible pin
+rather than an error, which is the kind of wrong that survives review.
 
-| address | our pin resolved to | apart |
-|---|---|---|
-| `115 Liberty Street, Bath New York 14810` | `115 Liberty Street`, **Manhattan** | 329 km |
-| `832 3rd Avenue, Suite 10-10NE, Brooklyn` | `639 3 Avenue, Brooklyn` | 941 m |
-| `25 Thorton Street, Brooklyn` (typo for *Thornton*) | `25 Lorimer Street, Brooklyn` | 779 m |
-| `250 E 117st, New York` | `250 East 122 Street` | 398 m |
+Measuring that matters more than assuming it away, so all 185 addresses were cross-checked
+against the [US Census geocoder](https://geocoding.geo.census.gov/), an independent engine,
+as a one-off. **Four pins disagree by more than 300 m, and a fifth by a smaller margin**, and in each
+case the disagreement traces to the address string rather than to either engine: a suite
+number in the house-number field, a misspelled street name, a missing or malformed ZIP, or a
+house number that does not exist on that street. One row is an organization located outside
+New York City with a NYC borough entered in the source; an NYC-only geocoder has nowhere
+sensible to put it, and the row should be filtered at the source rather than placed.
 
-A fifth, `748 Beck Street, Bronx`, resolves to `810 Beck Street`. Because the link now carries
-the address rather than the coordinate, these are the sites where the pin and the link will
-point at different blocks — the link being the correct one. Gating on `match_type` and routing
-fallbacks to `overrides.json` is the fix; it is not done.
+**What that means for this build:** on a small number of sites the pin and the *Open in
+Google Maps* link resolve to different blocks, because the link carries the address string
+and the pin carries our geocode of it. Gating on `match_type`, routing anything below the
+bar to `overrides.json`, and dropping out-of-city rows in the reader is the fix. **It is not
+done** — which is why the accuracy claim this README makes is about the pipeline, not about
+all 185 pins. Re-run the cross-check against a second geocoder on any new extract; it is the
+cheapest check in the pipeline and the only one that catches a confident wrong answer.
 
-The Bath one is not a geocoding bug at all. `Steuben County Community Mental Health Center`
-(area code 607, `steubencountyny.gov`) is in Steuben County, 250 miles upstate, with `Borough:
-Manhattan` typed into the source. GeoSearch, being NYC-only, had nowhere else to put it. The
-row does not belong on a map of New York City and should be dropped at the source.
+### Source data is hand-maintained, and the pipeline does not hide that
 
-### A data-quality note you will hit immediately
+This list is maintained as a spreadsheet, and it carries the artefacts any hand-maintained
+spreadsheet carries: editing notes typed into a name column, inconsistent spellings of the
+same organization, addresses written for a human reader rather than a geocoder. One row in
+this extract is an editing note that has become an organization name, which is why the
+organization count reads one higher than the number of distinct organizations.
 
-The source has a 75th "organization" named
-`Acacia Housing and Preservation 3-64 Column P udated`, with one site. It is a note
-somebody typed into the organization-name column of the source spreadsheet, typo included,
-and it is live on the public My Map right now. The pipeline does not silently correct it:
-the map should show what the data says, and a visible wrong record is how the data gets
-fixed at the source. If you need it gone before the source is fixed, the right place is a
-name-normalization table in `build.py`, not a hand edit of `orgs.json`.
+**The pipeline does not silently correct any of it**, and that is a deliberate choice rather
+than an omission. Quietly cleaning a record in the build leaves the source wrong, hides that
+it is wrong, and puts the correction somewhere no one maintaining the spreadsheet will ever
+see it. Rendering what the data says is what gets the data fixed at the source.
+
+If a specific record has to be suppressed before the source can be corrected, the place for
+it is an explicit, reviewable normalization table in `build.py` — never a hand edit of
+`orgs.json`, which the next rebuild silently reverts. A production version of this pipeline
+should also report its corrections back to whoever owns the spreadsheet.
 
 ---
 
@@ -277,10 +309,14 @@ by 75 different organizations and is never checked against Google's index, so pr
 does not *look up* a place — it biases a text search. A miss is usually harmless, because
 Google falls back to the address and you land on row two anyway. But a miss that matches a
 **different branch of the same organization** sends the resident to the wrong building with
-nothing on screen to say so. That is not hypothetical here: 20 addresses carry no ZIP, every
-one of them belongs to a multi-site organization, and 13 of those are Henry Street Settlement
-— 14 sites sharing one strong Google listing. Hours and photos are not worth a silent wrong
-address.
+nothing on screen to say so — and silently, which is the part that makes it worse than a
+blank result.
+
+That risk is concentrated, not hypothetical: 20 addresses in this extract carry no ZIP code,
+every one of them belongs to an organization running several sites, and most belong to a
+single organization whose 14 sites share one well-indexed listing. Those are exactly the
+conditions under which a name-biased search lands confidently on the wrong branch. Hours and
+photos are not worth a silent wrong address.
 
 ```json
 "openInMaps": {
@@ -397,11 +433,11 @@ The five, and they differ in kind:
 
 | Sites | Apart | What it is |
 |---|---|---|
-| 1 State St 24th Fl / 1 State Street | 0 m | Met Council and Women In Need genuinely share the building |
-| 399 E Mosholu Pkwy N / 3031 Webster Ave | 0 m | one organization on a corner lot, two real addresses, one geocode |
-| 415 / 417 E 151st Street | 7.9 m | Acacia, two adjacent buildings |
-| 265 / 269 Henry Street | 15.6 m | Henry Street Settlement, two doors of one campus |
-| 701 / 705 Crotona Park North | 17.2 m | Acacia, two adjacent buildings |
+| 1 State St 24th Fl / 1 State Street | 0 m | two organizations sharing one building |
+| 399 E Mosholu Pkwy N / 3031 Webster Ave | 0 m | one organization on a corner lot: two real addresses, one geocode |
+| 415 / 417 E 151st Street | 7.9 m | one organization, two adjacent buildings |
+| 265 / 269 Henry Street | 15.6 m | one organization, two doors of one campus |
+| 701 / 705 Crotona Park North | 17.2 m | one organization, two adjacent buildings |
 
 All five are "at this location"; only two are "at this address". The copy says location.
 
@@ -436,9 +472,8 @@ each swap actually lands.
 ### Basemap: OpenFreeMap → Protomaps on Azure blob
 
 Today the demo runs on [OpenFreeMap](https://openfreemap.org/)'s hosted `positron` style —
-keyless OpenMapTiles vector tiles, no account, no metering, the same basemap the Medicaid
-demo has run on since 2026-09-10 — with a warm tint applied at load time by
-`warmTint()` in `app/basemap-style.js`.
+keyless OpenMapTiles vector tiles, no account, no metering — with a warm tint applied at
+load time by `warmTint()` in `app/basemap-style.js`.
 
 **Why tint rather than pick a warmer style.** OpenFreeMap also serves `bright` and
 `liberty`, both of which are warmer out of the box. Both are also more opinionated: green
@@ -487,8 +522,8 @@ MapLibre GL JS is pinned at **6.8.0**, loaded as an ES module from jsDelivr. Two
 know about v6 if you go to change the version:
 
 - **There is no UMD build any more.** `dist/maplibre-gl.js` does not exist in v6; only
-  `.mjs`. The `<script src>`-and-a-global pattern you will find in every older example
-  (including the Medicaid demo, on 4.7.1) does not work. Native `import` is the no-build
+  `.mjs`. The `<script src>`-and-a-global pattern you will find in nearly every older
+  example and in older MapLibre-based code does not work. Native `import` is the no-build
   path now.
 - **There is no default export.** `import maplibregl from …` fails silently at module
   evaluation; it has to be `import * as maplibregl from …`.
@@ -720,8 +755,12 @@ deployed — settle it before the embed ships, not after.
 
 ## Scorecard
 
-Measured on this build, 2026-09-14. Where a comparison is quoted, it is the Google My Map
-this replaces, benchmarked on the same instrument in the same session.
+**Self-measured**, on this build, on 2026-09-14, by the author rather than by an independent
+reviewer — read it as a record of what was tested and how, not as certification. Where a
+comparison is quoted it is the Google My Map currently linked from the ABAWD page,
+benchmarked on the same instrument in the same session; it is a like-for-like measurement of
+two implementations, not a judgement of the service. A ✅ means the need was exercised and
+observed to work on this build, not that it has been audited.
 
 | Need | Result | Evidence |
 |---|---|---|
@@ -756,13 +795,15 @@ Two things follow, and they are the useful part of this row:
    bounding box carries only what this map draws. The swap is already scoped in §Swapping
    a layer, and it is the single change that moves this row to ✅.
 2. **Don't quote "total page weight" as the win.** The honest sentence is: *the application
-   is 83 KB; the rest is the basemap, and the basemap is the layer we are bringing
-   in-house.* For calibration, the existing Medicaid demo — same hosted basemap, same
-   engine — measures 1,725 KB with an LCP of 8.7–9.5 s on this instrument, so the basemap
-   cost is not something this block introduced.
+   is 83 KB; the rest is the basemap, and the basemap is the layer to bring in-house.* For
+   calibration, a separate prototype on the same hosted basemap and the same engine measures
+   1,725 KB with an LCP of 8.7–9.5 s on this instrument, so the basemap cost is a property of
+   the hosted planet build rather than something this block introduced.
 
-Raw runs are in `~/projects/medicaid-map/bench/results/baseline.csv` under the names
-`abawd` and `mymap`, one Lighthouse trace per run.
+Raw Lighthouse traces are kept with the benchmark harness rather than in this repository,
+one trace per run. The runs are reproducible from the description above: Lighthouse mobile
+profile, slow-4G throttling, five round-robin runs per target, median reported, both targets
+served over gzip in the same session.
 
 ---
 
@@ -777,8 +818,10 @@ Honest list of what a production build still needs.
    list.
 3. **Wire the analytics transport.** See §Events — the pushes exist, the tag does not.
 4. **The proxied hostname.** See §Language notes. This is the one hosting constraint.
-5. **A named data owner at HRA** for the SEVSP list, and a scheduled export to replace the
-   hand-exported KML. The pipeline is ready for it; the ownership is not settled.
+5. **A scheduled data feed** to replace the hand export, and an identified owner for it on
+   the agency side. The pipeline is ready for either a CSV drop or a warehouse export; the
+   feed itself does not exist yet, which is why the data in this repository is a snapshot
+   with a date on it rather than anything live.
 6. **A screen-reader pass and MOPD sign-off** on the list-as-text-alternative pattern.
 7. **`window.nycMapKit`** is exposed on purpose as a console handle for this prototype
    (`nycMapKit.select(id)`, `.highlight([...])`, `.raw` for the MapLibre instance). Decide
@@ -786,5 +829,6 @@ Honest list of what a production build still needs.
    global.
 8. **The design system.** Colours are declared once as custom properties at the top of
    `style.css` (and the pin colours, which MapLibre paints on canvas and cannot read from
-   CSS, once at the top of `map-core.js`). Replacing them with NYCDS tokens is a contained
-   change, and the token names should be agreed before a second map copies these.
+   CSS, once at the top of `map-core.js`). Replacing them with the city's design-system
+   tokens is a contained change, and the token names should be agreed before a second map
+   copies these.
