@@ -7,7 +7,7 @@ zero. It is exercised here on 185 SNAP volunteer service sites run by 75 organiz
 across New York City, the dataset behind the
 [ABAWD volunteering page](https://www.nyc.gov/main/services/snap-benefits/abawd).
 
-**Demo: <https://cityofnewyork.github.io/nyc-map-kit/>**
+**Demo: <https://cityofnewyork.github.io/nyc-map-kit/app/demo.html>**
 
 ## Status and provenance
 
