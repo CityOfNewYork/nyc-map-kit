@@ -31,7 +31,7 @@ cd app && python3 -m http.server 8000
 
 - <http://localhost:8000/demo.html> — the block embedded at two sizes
 - <http://localhost:8000/embed.html> — the block on its own
-- add `?lang=es` to either for the basemap in Spanish
+- <http://localhost:8000/embed.html?lang=es> — basemap labels in Spanish
 
 Every URL inside `app/` is relative so the same files work at a domain root and under a
 GitHub Pages subpath. **Keep them relative.** Pages serves this repository from the root of

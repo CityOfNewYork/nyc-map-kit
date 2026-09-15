@@ -55,8 +55,6 @@
   }
   figure.single iframe { height: 320px; min-height: 0; }
 
-  .switch { margin: 0 0 24px; font-size: 0.9375rem; }
-
   /* The demo can be linked directly, so the provenance note travels with it rather than
      living only on the landing page. Same words, fewer of them. */
   .note {
@@ -109,25 +107,15 @@
             src="embed.html?list=off&amp;data=one-site.geojson&amp;title=Henry%20Street%20Settlement"></iframe>
   </figure>
 
-  <p class="switch"><a id="lang-toggle" href="?lang=es">Ver los mapas en español</a></p>
-
 </main>
 
-<script>
-  // Pass ?lang= through to every frame. On nyc.gov the translation proxy sets <html lang>
-  // and the block reads it without being told; this is the local stand-in for that.
-  (function () {
-    var lang = new URLSearchParams(location.search).get("lang");
-    var toggle = document.getElementById("lang-toggle");
-    if (!lang) return;
-    document.documentElement.lang = lang;
-    ["map-all", "map-nolist", "map-one"].forEach(function (id) {
-      var f = document.getElementById(id);
-      f.src = f.getAttribute("src") + "&lang=" + encodeURIComponent(lang);
-    });
-    toggle.href = location.pathname;
-    toggle.textContent = "View the maps in English";
-  }());
-</script>
+<!--
+  The language toggle that used to sit here is removed until the translation approach is
+  settled. It read "Ver los mapas en español" and switched only the basemap's place labels
+  — the block's own copy stayed English — so it promised a translated page and did not
+  deliver one. The capability itself is untouched: embed.html?lang=es still switches the
+  basemap labels, which is the part a DOM translator cannot reach.
+-->
+
 </body>
 </html>
