@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Find volunteer opportunities — nyc-map-kit demo</title>
+
+<!--
+  A FAKE HOST PAGE. This is not nyc.gov; it is a stand-in for the real page so the block
+  can be seen doing its job inside someone else's content. The copy is paraphrased from
+  the volunteering section of
+  https://www.nyc.gov/main/services/snap-benefits/abawd
+  where that page today offers an "Open in Google Maps" link to a Google My Map.
+
+  The only thing a host page has to do is size the iframe. Everything else — layout,
+  language, keyboard behavior, analytics — is inside the block.
+-->
+<style>
+  :root { --ink:#1a1a1a; --muted:#565656; --line:#d4d4d4; --blue:#12437e; }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; color:var(--ink); background:#fff;
+    font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  }
+  .topbar { background:var(--blue); color:#fff; padding:10px 20px; font-size:.8125rem; letter-spacing:.06em; text-transform:uppercase; }
+  /* Text stays at a readable measure; the map breaks out wider, which is also what
+     gives the block more than 768 px and therefore its side-panel layout rather than
+     the phone bottom sheet. The breakpoint is on the BLOCK's width, not the device's. */
+  .wrap { max-width:1000px; margin:0 auto; padding:0 20px 64px; }
+  .breadcrumb, h1, h2, .lede, p, .note { max-width:760px; }
+  .breadcrumb { font-size:.8125rem; color:var(--muted); padding:16px 0 0; }
+  h1 { font-size:2rem; line-height:1.2; margin:.4em 0 .1em; letter-spacing:-.02em; }
+  h2 { font-size:1.25rem; margin:2.2em 0 .4em; }
+  .lede { font-size:1.0625rem; color:var(--muted); margin-top:0; }
+  .frame { margin:20px 0 6px; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .frame iframe { display:block; width:100%; border:0; }
+  .tall iframe { height:640px; }
+  .short iframe { height:340px; }
+  .caption { font-size:.8125rem; color:var(--muted); margin:0 0 28px; }
+  .langbar { margin:18px 0 0; font-size:.875rem; }
+  .langbar a { color:var(--blue); }
+  .note { margin-top:40px; padding:14px 16px; border-left:4px solid var(--line); background:#fafafa; font-size:.875rem; color:var(--muted); }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.875em; background:#f2f2f2; padding:1px 4px; border-radius:3px; }
+  @media (max-width:600px) { h1 { font-size:1.5rem; } .tall iframe { height:560px; } }
+</style>
+</head>
+
+<body>
+<div class="topbar">NYC.gov — demo page, not a live city page</div>
+
+<main class="wrap">
+  <p class="breadcrumb">Services &rsaquo; SNAP benefits &rsaquo; Monthly work rules (ABAWD)</p>
+
+  <h1>Find volunteer opportunities</h1>
+
+  <p class="lede">
+    If you are not exempt from the ABAWD rules, not enrolled in school, and not working
+    enough hours at a job, you can meet the monthly requirement by volunteering. The number of volunteer hours you need depends on your benefit amount; the ABAWD page on
+    NYC.gov explains how it is calculated.
+  </p>
+
+  <p>
+    Community organizations in every borough need volunteers. Find one near you on the
+    map below, then contact them by phone or through their website to arrange your
+    hours. A supervisor at the organization has to sign your monthly participation form,
+    so it helps to call before your first visit.
+  </p>
+
+  <div class="frame tall">
+    <iframe id="map-all" title="Map of SNAP volunteer opportunities in New York City"
+            src="embed.html?list=on" loading="lazy"></iframe>
+  </div>
+  <p class="caption">
+    185 volunteer sites at 75 organizations. Select an organization to see all of its
+    locations.
+  </p>
+
+  <p class="langbar">
+    <a id="lang-toggle" href="?lang=es">Ver esta página en español</a>
+    — switches the basemap labels with the page.
+  </p>
+
+  <h2>One location</h2>
+  <p>
+    The same block with the list turned off and a single point, for a page that is about
+    one place rather than a whole dataset.
+  </p>
+
+  <div class="frame short">
+    <iframe id="map-one" title="Map of one SNAP volunteer site" loading="lazy"
+            src="embed.html?list=off&amp;data=one-site.geojson&amp;title=Henry%20Street%20Settlement"></iframe>
+  </div>
+  <p class="caption">
+    <code>embed.html?list=off&amp;data=one-site.geojson</code>
+  </p>
+
+  <div class="note">
+    <p>
+      <strong>For reviewers:</strong> this page is a mock host, styled loosely like a
+      nyc.gov content page. The two maps above are the same file — <code>embed.html</code> —
+      configured entirely through the query string. Open the browser console to watch the
+      <code>dataLayer</code> events, and the network tab to confirm that the only
+      third-party hosts are the tile server and the CDN serving MapLibre.
+    </p>
+  </div>
+</main>
+
+<script>
+  // Propagate ?lang= from this page into both iframes, the way a real host page would
+  // when the translation proxy serves it under a different language. The proxy also sets
+  // <html lang>, which the block reads on its own — this is belt and braces for the demo.
+  (function () {
+    var lang = new URLSearchParams(location.search).get("lang");
+    var toggle = document.getElementById("lang-toggle");
+    if (lang) {
+      document.documentElement.lang = lang;
+      ["map-all", "map-one"].forEach(function (id) {
+        var f = document.getElementById(id);
+        f.src = f.getAttribute("src") + "&lang=" + encodeURIComponent(lang);
+      });
+      toggle.href = location.pathname;
+      toggle.textContent = "View this page in English";
+    }
+  }());
+</script>
+</body>
+</html>

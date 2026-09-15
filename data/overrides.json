@@ -1,0 +1,14 @@
+{
+  "_README": "Hand fixes for addresses NYC GeoSearch cannot resolve. Keyed by the RAW address string exactly as it appears in the input. Two forms: {\"query\": \"...\"} re-asks GeoSearch with different text, and {\"lon\": ..., \"lat\": ...} places the pin directly. Consulted before the cache, so an override always wins and survives a rebuild or a cache wipe. Keys starting with _ are ignored.",
+
+  "Brooke Ave between East 147th Street and East 148th Street, Bronx, NY 10455": {
+    "lon": -73.91513,
+    "lat": 40.81403,
+    "note": "Hand-placed. Two problems: the input spells it 'Brooke Ave' (the street is Brook Avenue), and it names a block between two cross-streets. GeoSearch is Pelias, which resolves addresses and places but NOT intersections, so no query text fixes this. Coordinate is 510 Brook Avenue, the mid-block addressed point between E 147th and E 148th St, geocoded 2026-09-14. City Relief runs mobile outreach on this block, so a block-level placement is the honest precision."
+  },
+
+  "Salvation Army Harlem Temple, 540 Malcolm X Blvd at West 138th Street, New York, NY 10037": {
+    "query": "540 Malcolm X Blvd, New York, NY 10037",
+    "note": "A venue name plus a cross-street defeat the geocoder; the house number alone resolves."
+  }
+}

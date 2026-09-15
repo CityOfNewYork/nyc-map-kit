@@ -1,0 +1,20 @@
+{
+  "_README": "Per-map configuration. This is the file you edit to point the block at a different dataset — it decides what the card shows and in what order, and nothing else in app/ needs touching. `source` is \"site\" to read the field off the GeoJSON feature's properties, or \"org\" to read it off the matching record in orgs.json. Labels are rendered as their own DOM text nodes, so the city's translation proxy translates them like any other page text; do not build them into sentences in code.",
+
+  "title": "SNAP volunteer opportunities",
+  "directions": true,
+
+  "card": [
+    { "key": "services",          "source": "org",  "label": "Types of service" },
+    { "key": "populations",       "source": "org",  "label": "Who they serve" },
+    { "key": "hours",             "source": "org",  "label": "Hours" },
+    { "key": "description",       "source": "org",  "label": "About the program" },
+    { "key": "activities",        "source": "org",  "label": "What you would do" },
+    { "key": "service_locations", "source": "site", "label": "Service locations" },
+    { "key": "org_type",          "source": "site", "label": "Organization type" },
+    { "key": "phone",             "source": "site", "label": "Phone",   "as": "tel" },
+    { "key": "website",           "source": "site", "label": "Website", "as": "url" }
+  ],
+
+  "_excluded": "The source data also carries Primary Contact Person, Primary Contact Title/Role and Email Address. They name a person, so the pipeline drops them before anything is written to app/ — they are not available to add here. See build/build.py."
+}

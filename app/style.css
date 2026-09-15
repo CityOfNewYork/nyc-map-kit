@@ -1,0 +1,440 @@
+/*
+ * style.css — the block's own styling.
+ *
+ * Two layouts, one breakpoint at 768 px:
+ *   >= 768 px   list panel on the left (320 px), map fills the rest
+ *   <  768 px   map fills the frame, list is a bottom sheet with a drag handle
+ *
+ * The block fills whatever box the host gives the iframe; it never sets its own size.
+ *
+ * Colours are declared once as custom properties. A city-branded build replaces this
+ * block with the design system's tokens and touches nothing else. The pin colours live
+ * in map-core.js instead, because MapLibre paints on a canvas and cannot read CSS.
+ */
+
+:root {
+  --ink:        #1a1a1a;   /* 15.3:1 on white */
+  --ink-muted:  #565656;   /* 7.3:1  on white — still AA at any size */
+  --line:       #d4d4d4;
+  --surface:    #ffffff;
+  --surface-2:  #f5f5f5;
+  --accent:     #1d4ed8;   /* matches PIN.base in map-core.js */
+  --accent-ink: #1a3fb0;   /* 6.4:1 on white — the accent as *text* */
+  --selected:   #b91c1c;   /* matches PIN.selected */
+  --focus:      #0b3d91;
+  --radius:     8px;
+  --tap:        44px;      /* minimum touch target, WCAG 2.2 SC 2.5.8 */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--surface);
+  /* iOS Safari zooms the whole page when a control's text is under 16px; the map does
+     not have form fields, but the sheet drag is smoother without the double-tap zoom. */
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Visible focus everywhere, including for the MapLibre controls. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Screen-reader-only text. Used instead of aria-label wherever the string is meant for
+   a person, because the city's translation proxy rewrites text nodes and cannot see
+   attribute values. See README §Language notes. */
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* The skip link. Off-screen until it takes focus, then a normal visible control — the
+   one piece of UI that only keyboard users ever see. */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 14px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  color: var(--accent-ink);
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: top 0.12s ease;
+}
+.skip-link:focus { top: 8px; }
+
+/* ------------------------------------------------------------------ frame -------- */
+
+#root {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+/* Deliberately block, not a flex row. The counts are not known until the data lands, so
+   a flex row re-wraps when they appear and the map below it jumps — measured as a CLS of
+   0.153, the block's entire layout-shift score. Two fixed lines never move. */
+.block-header {
+  padding: 9px 14px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.block-header h1 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.block-header .counts {
+  margin: 1px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--ink-muted);
+}
+/* Occupies its space before the numbers arrive — see the comment in embed.html. */
+.counts[data-pending] { visibility: hidden; }
+
+.stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: 0;
+}
+.stage[data-list="off"] { grid-template-columns: 1fr; }
+
+/* ------------------------------------------------------------------ list --------- */
+
+.panel {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+.stage[data-list="off"] .panel { display: none; }
+
+.panel-intro {
+  padding: 10px 14px 8px;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line);
+}
+
+.org-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
+}
+.org-list > li { border-bottom: 1px solid var(--line); }
+
+.org-button,
+.site-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 10px 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.org-button:hover,
+.site-button:hover { background: var(--surface-2); }
+
+.org-button .name { flex: 1; font-weight: 550; }
+.org-button .count {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+.org-button .chev {
+  flex: none;
+  width: 12px;
+  color: var(--ink-muted);
+  transition: transform 0.15s ease;
+}
+.org-button[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.org-button[aria-expanded="true"] { background: #eef2ff; }
+
+.site-list {
+  margin: 0;
+  padding: 0 0 4px;
+  list-style: none;
+  background: var(--surface-2);
+}
+.site-button {
+  padding-left: 28px;
+  min-height: var(--tap);
+  font-size: 0.875rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+.site-button .addr { color: var(--ink); }
+.site-button .boro { font-size: 0.75rem; color: var(--ink-muted); }
+.org-button[aria-current="true"],
+.site-button[aria-current="true"] {
+  box-shadow: inset 4px 0 0 var(--selected);
+  background: #fff1f1;
+}
+
+/* ------------------------------------------------------------------ map ---------- */
+
+.map {
+  position: relative;
+  outline: none;   /* it is a skip-link target, not an interactive control of its own */
+  min-height: 0;
+  min-width: 0;
+  background: var(--surface-2);
+}
+.mapcore-live {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px;
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+/* MapLibre's zoom buttons default to 29 px. They are standalone controls, so the WCAG
+   2.2 SC 2.5.8 exception for targets inline in a block of text does not cover them. */
+.maplibregl-ctrl-group button { width: 36px; height: 36px; }
+
+.loading,
+.load-error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--ink-muted);
+  background: var(--surface-2);
+}
+.load-error { color: #8a1010; }
+
+/* ------------------------------------------------------------------ card --------- */
+
+.card {
+  position: absolute;
+  z-index: 3;
+  right: 12px;
+  top: 12px;
+  width: min(360px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
+}
+.card[hidden] { display: none; }
+.card h2 {
+  margin: 0 36px 2px 0;
+  font-size: 1.0625rem;
+  line-height: 1.3;
+}
+.card h2:focus-visible { outline-offset: 4px; }
+.card .dba {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+}
+.card .where {
+  margin: 0 0 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.card .where .addr { display: block; }
+.card .where .boro { display: block; font-size: 0.8125rem; color: var(--ink-muted); }
+
+.card-close {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: var(--tap); height: var(--tap);
+  display: grid;
+  place-content: center;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+.card-close:hover { background: var(--surface-2); color: var(--ink); }
+
+.card dl { margin: 0; }
+.card dt {
+  margin-top: 10px;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.card dd {
+  margin: 2px 0 0;
+  font-size: 0.875rem;
+  white-space: pre-line;   /* the source prose carries its own line breaks */
+  overflow-wrap: anywhere;
+}
+.card a { color: var(--accent-ink); }
+
+.directions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap);
+  margin-top: 14px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.directions:hover { background: var(--accent-ink); }
+
+.card-footer {
+  margin: 14px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+/* The coincident-address chooser: more than one site at the clicked address. */
+.chooser {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.chooser > p {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+.chooser ul { margin: 0; padding: 0; list-style: none; }
+.chooser button {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  color: var(--accent-ink);
+  cursor: pointer;
+}
+.chooser button[aria-current="true"] { color: var(--ink); font-weight: 600; cursor: default; }
+
+/* ------------------------------------------------------------- phone layout ------ */
+
+@media (max-width: 767px) {
+  .stage {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+
+  /* Bottom sheet. Three heights; the handle cycles collapsed -> half -> full. */
+  .panel {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    z-index: 4;
+    height: var(--sheet-h, 48px);
+    border-right: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.14);
+    transition: height 0.18s ease;
+  }
+  .panel.dragging { transition: none; }
+
+  .sheet-handle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 12px 12px 0 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    touch-action: none;
+  }
+  .sheet-handle::before {
+    content: "";
+    position: absolute;
+    top: 6px; left: 50%;
+    width: 36px; height: 4px;
+    margin-left: -18px;
+    border-radius: 2px;
+    background: var(--line);
+  }
+  .sheet-handle .counts { flex: 1; font-size: 0.8125rem; }
+  .sheet-handle .chev { color: var(--ink-muted); }
+
+  .panel-intro { display: none; }
+
+  /* Keep the zoom buttons and the attribution clear of the sheet. */
+  .maplibregl-ctrl-bottom-left,
+  .maplibregl-ctrl-bottom-right { bottom: var(--sheet-h, 48px); }
+
+  /* Full 44 px targets where the pointer is a finger. */
+  .maplibregl-ctrl-group button { width: 44px; height: 44px; }
+
+  .card {
+    right: 8px; left: 8px;
+    top: 8px;
+    width: auto;
+    /* Never let the sheet squeeze the card to nothing: embed.js collapses the sheet when
+       a card opens, but a mid-drag repaint would otherwise compute a negative height. */
+    max-height: max(220px, calc(100% - 16px - var(--sheet-h, 48px)));
+  }
+}
+
+/* The sheet handle only exists on phones. */
+@media (min-width: 768px) {
+  .sheet-handle { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

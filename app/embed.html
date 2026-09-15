@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SNAP volunteer opportunities map</title>
+
+<!--
+  THE BLOCK. This page is meant to be dropped into a host page inside an <iframe>:
+
+    <iframe src="embed.html?list=on" title="Map of SNAP volunteer opportunities"
+            style="width:100%;height:640px;border:0"></iframe>
+
+  It fills whatever box the host gives it and has no size of its own. Parameters are
+  documented in the README (§Embed contract). demo.html is a worked example.
+
+  MapLibre's stylesheet is the one external stylesheet; everything else is local and
+  relative, so this works both at http://localhost:8000/ and under a GitHub Pages
+  subpath. Do not make any of these paths absolute.
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.8.0/dist/maplibre-gl.css">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<div id="root">
+
+  <header class="block-header">
+    <h1 id="block-title">SNAP volunteer opportunities</h1>
+    <!--
+      Rendered but invisible until the counts are known: `hidden` would collapse the line
+      and then push the map down when it appears, which is a layout shift the block gets
+      charged for (measured CLS 0.153 before this).
+
+      Both the singular and the plural noun are in the markup and embed.js shows one.
+      Building "1 site" / "2 sites" by concatenation in code would hand the translation
+      proxy a single text node containing a number, and a language whose plural rules are
+      not English's cannot be served from it. Two complete alternatives, each its own text
+      node, translate correctly on their own.
+    -->
+    <p class="counts" id="header-counts" data-pending>
+      <span id="header-orgs"></span>
+      <span data-plural="header-orgs">organizations</span>
+      <span data-singular="header-orgs" hidden>organization</span>
+      <span aria-hidden="true">·</span>
+      <span id="header-sites"></span>
+      <span data-plural="header-sites">sites</span>
+      <span data-singular="header-sites" hidden>site</span>
+    </p>
+  </header>
+
+  <!--
+    75 organizations is 75 tab stops before a keyboard user reaches the map's own
+    controls. This is the standard escape hatch: invisible until it takes focus, first
+    in the tab order, and it lands on the map container.
+  -->
+  <a class="skip-link" href="#map">Skip the list and go to the map</a>
+
+  <div class="stage" id="stage" data-list="on">
+
+    <!--
+      The list is a TEXT ALTERNATIVE to the map, not a finder: no search, no filters, no
+      sort. It exists so that everything the map shows is reachable without a pointer and
+      without sight. Focus order is title -> list -> map controls -> card, which is why
+      it sits before the map in the DOM.
+    -->
+    <nav class="panel" id="panel" aria-label="Volunteer sites">
+      <button class="sheet-handle" id="sheet-handle" type="button"
+              aria-expanded="false" aria-controls="org-list">
+        <span class="counts">
+          <span id="sheet-orgs"></span>
+          <span data-plural="sheet-orgs">organizations</span>
+          <span data-singular="sheet-orgs" hidden>organization</span>
+          <span aria-hidden="true">·</span>
+          <span id="sheet-sites"></span>
+          <span data-plural="sheet-sites">sites</span>
+          <span data-singular="sheet-sites" hidden>site</span>
+        </span>
+        <span class="chev" aria-hidden="true">▲</span>
+        <span class="visually-hidden">Show the list of organizations</span>
+      </button>
+
+      <p class="panel-intro">
+        <span>Every organization on the map. Select one to see its sites.</span>
+      </p>
+
+      <ul class="org-list" id="org-list"></ul>
+    </nav>
+
+    <div class="map" id="map" tabindex="-1">
+      <p class="loading" id="loading"><span>Loading the map…</span></p>
+    </div>
+
+    <!--
+      The card is the last thing in the DOM so that focus reaches it after the map
+      controls. It is visually positioned over the map by style.css.
+    -->
+    <article class="card" id="card" aria-labelledby="card-title" hidden></article>
+
+  </div>
+</div>
+
+<script type="module" src="embed.js"></script>
+</body>
+</html>

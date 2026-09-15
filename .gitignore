@@ -1,0 +1,13 @@
+.claude/
+__pycache__/
+*.pyc
+.DS_Store
+node_modules/
+data/*.pmtiles
+
+# Raw source exports carry organization contact emails; the sanitized CSV is the committed source
+data/*.kml
+data/*.xlsx
+
+# Internal planning notes — not part of the handoff/shareable repo
+internal/
