@@ -145,9 +145,10 @@ const PIN_IMAGE = { base: "pin-base", dimmed: "pin-dimmed", selected: "pin-selec
 const CLUSTER_MAX_ZOOM = 14;   // with cluster:true, above this points draw individually
 const CLUSTER_RADIUS = 40;
 const NYC_BOUNDS = [[-74.30, 40.47], [-73.65, 40.95]];
-// The zoom a selection eases in to, if the map is further out. z15 is where individual
-// blocks read: ~4.7 m per pixel at NYC's latitude, so a Manhattan block is ~17 × 57 px.
-// A map already closer than this is left at its zoom.
+// The zoom a selection made off the map — from the list, or through the API — eases in
+// to, if the map is further out. z15 is where individual blocks read: ~4.7 m per pixel at
+// NYC's latitude, so a Manhattan block is ~17 × 57 px. A map already closer than this is
+// left at its zoom, and so is a pin the reader clicked on the map (see applySelection).
 const STREET_ZOOM = 15;
 // How far the camera may leave the city: NYC_BOUNDS plus roughly 10 km on each side, so
 // Jersey City, Yonkers and the Nassau line stay in frame as context and Philadelphia does
@@ -489,22 +490,28 @@ export function createMap(container, options = {}) {
     const feature = byId.get(id) || null;
     if (feature) {
       const [lon, lat] = feature.geometry.coordinates;
-      // Every selection brings the pin to the focus point and eases in to street level
-      // if the map is not there yet. From the list, because the pin may be off screen.
-      // From a pin click, because a click at city zoom is a request to look closer, and
-      // centring takes the pin out from under the card. The one exception is stepping
-      // between two records at one location while they are drawn within a pin's reach of
-      // each other: the camera is already there, and a lurch on every step would say the
-      // map had gone somewhere when it had not. Measured in pixels rather than metres
-      // because it is a question about what is on screen, which is the core's business;
-      // what counts as one *place* is the client's, and it decides that in metres.
+      // Every selection brings the pin to the focus point, so the card has somewhere to
+      // open and the pin is not left under it.
+      //
+      // Only a selection made away from the map also eases in to street level: from the
+      // list the pin may be off screen entirely, so the camera has to say where it went.
+      // A pin click is different — the reader already found the pin at the scale they
+      // chose, and zooming under their finger throws away the surroundings they were
+      // using to read it. Centring is enough there.
+      //
+      // The one exception to moving at all is stepping between two records at one
+      // location while they are drawn within a pin's reach of each other: the camera is
+      // already there, and a lurch on every step would say the map had gone somewhere
+      // when it had not. Measured in pixels rather than metres because it is a question
+      // about what is on screen, which is the core's business; what counts as one
+      // *place* is the client's, and it decides that in metres.
       const from = previous ? map.project(previous.geometry.coordinates) : null;
       const to = map.project([lon, lat]);
       const stepping = via !== "map" && from && Math.hypot(to.x - from.x, to.y - from.y) < 60;
       if (!stepping) {
         map.easeTo({
           center: [lon, lat],
-          zoom: Math.max(map.getZoom(), STREET_ZOOM),
+          zoom: via === "map" ? map.getZoom() : Math.max(map.getZoom(), STREET_ZOOM),
           duration: 700,
           offset: focusOffset(),
         });

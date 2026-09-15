@@ -213,7 +213,9 @@ body {
 /* ------------------------------------------------------------------ card --------- */
 
 /* The dock places the stepper and the card over the map as one column. It carries the
-   position and the size limit; the card scrolls inside whatever the stepper leaves. */
+   position and the size limit; the card scrolls inside whatever the stepper leaves.
+   On desktop embed.js positions it beside the selected pin (placeDock) and the corner
+   below is only where it sits before that runs; on a phone the media query below wins. */
 .card-dock {
   position: absolute;
   z-index: 3;

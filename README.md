@@ -614,8 +614,9 @@ is 2027-04-26.
 **The list is the map's text alternative.** A canvas cannot be read, and a screen-reader
 user should not be told to "explore the map." Everything the map draws is reachable from
 the list: **185 rows, one per site**, each showing the organization and then the address,
-each opening the same card its pin opens. It is deliberately *not* a finder — no search,
-no filter, no sort — because a text alternative's job is completeness, not discovery.
+each opening the same card its pin opens, **ordered north to south** so the list runs down
+the city the way the map does. It is deliberately *not* a finder — no search, no filter, no
+sort controls — because a text alternative's job is completeness, not discovery.
 
 It is flat on purpose. The list used to be 75 organizations, the multi-site ones expanding
 to reveal their sites, which made a row mean two different things depending on which

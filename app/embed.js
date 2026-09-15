@@ -180,20 +180,15 @@ async function boot() {
     data,
     onSelect: handleSelect,
     onClusterExpand: () => {},
-    // A selected pin lands at the centre of the whole block, not of the map. On desktop
-    // the list takes the left 320 px, so the map's own centre sits 160 px right of the
-    // frame's and a pin centred there reads as off to one side of the iframe. Measured
-    // rather than hard-coded so the phone layout, where the map is the frame, gets the
-    // same answer for free.
-    focusPoint: () => {
-      const frame = $("root").getBoundingClientRect();
-      const box = $("map").getBoundingClientRect();
-      return [
-        frame.left + frame.width / 2 - box.left,
-        frame.top + frame.height / 2 - box.top,
-      ];
-    },
+    // No focusPoint: a selected pin lands at the centre of the map itself, not of the
+    // whole block. The list beside the map is a separate panel, so centring on the block
+    // pushed every selection into the left half of the map the reader is looking at. The
+    // card then opens beside the pin (placeDock); the pin, not the pair, is centred.
   });
+
+  // The card follows its pin across pans and zooms, like a popup would.
+  map.raw.on("move", placeDock);
+  window.addEventListener("resize", placeDock);
 
   // A deliberate global. It is the debugging surface for this prototype — open the
   // console on any page that embeds the block and you can drive the map by hand:
@@ -358,8 +353,11 @@ function renderCounts() {
  * and Preservation", which is why the address is a second line rather than a tooltip —
  * it is what makes each row its own place.
  *
- * Sorted by organization, then address, so an organization's sites stay together and the
- * order does not depend on how the source file happened to be written.
+ * Sorted north to south, so the list runs down the city the way the map does: scroll the
+ * list and you travel from the Bronx to the South Shore. An alphabetical order put the
+ * rows in an order the map cannot show, which made the two halves of the block feel like
+ * two datasets; geography is the one ordering both can agree on. Ties fall back to
+ * organization and address so the order never depends on how the source file was written.
  */
 function renderList() {
   if (settings.list === "off") return;
@@ -367,6 +365,7 @@ function renderList() {
   list.replaceChildren();
 
   const sites = state.features.slice().sort((a, b) =>
+    b.geometry.coordinates[1] - a.geometry.coordinates[1] ||
     a.properties.org.localeCompare(b.properties.org) ||
     a.properties.address.localeCompare(b.properties.address));
 
@@ -488,6 +487,44 @@ function renderCard(feature) {
   card.append(close);
 
   card.hidden = false;
+  placeDock();
+}
+
+/**
+ * Put the card beside its pin. On desktop the dock sits to the right of the selected
+ * pin, vertically centred on the pin's head, and flips to the left only when the right
+ * side has no room — after the user has panned, since a selection eases the pin to a
+ * spot with room already. Clamped inside the stage either way, so the card is never cut
+ * off. On a phone the card is full-width at the top of the map and CSS places it.
+ */
+// The selected pin is drawn at 1.25× a 26 × 34 px teardrop: ~32 px wide, ~42 px tall,
+// with the head's centre ~26 px above the tip. The gap is two pin widths, so the card
+// reads as beside the place rather than attached to it.
+const CARD_GAP = 64;    // px between the pin and the card
+const PIN_HEAD = 26;    // px from the pin's tip (the coordinate) up to the centre of its head
+const DOCK_INSET = 12;  // px the dock keeps from the edge of the stage
+function placeDock() {
+  const dock = $("card-dock");
+  if (phone()) {
+    dock.style.left = dock.style.top = dock.style.right = "";
+    return;
+  }
+  const feature = state.byId.get(state.selectedId);
+  if (!map || $("card").hidden || !feature) return;
+  const stage = $("stage").getBoundingClientRect();
+  const box = $("map").getBoundingClientRect();
+  const pin = map.raw.project(feature.geometry.coordinates);
+  const x = pin.x + box.left - stage.left;
+  const y = pin.y + box.top - stage.top - PIN_HEAD;
+  const w = dock.offsetWidth;
+  const h = dock.offsetHeight;
+  let left = x + CARD_GAP;
+  if (left + w > stage.width - DOCK_INSET) left = x - CARD_GAP - w;
+  left = Math.max(DOCK_INSET, Math.min(left, stage.width - w - DOCK_INSET));
+  const top = Math.max(DOCK_INSET, Math.min(y - h / 2, stage.height - h - DOCK_INSET));
+  dock.style.left = `${left}px`;
+  dock.style.top = `${top}px`;
+  dock.style.right = "auto";
 }
 
 /**
