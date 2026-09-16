@@ -1,6 +1,6 @@
 # nyc-map-kit
 
-Infrastructure and best practices to create delightful and very useful digital maps for New Yorkers.
+Infrastructure and best practices to create delightful, accessible and very useful digital maps for New Yorkers.
 
 **Demo: <https://cityofnewyork.github.io/nyc-map-kit/app/demo.html>**
 
