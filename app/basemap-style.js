@@ -52,20 +52,29 @@ export async function loadBasemapStyle(styleUrl, lang) {
 }
 
 /**
- * Rewrite label expressions in place. Exported separately so a caller that already has a
- * style object (a self-hosted one, a city-branded one) can language-switch it without a
- * fetch — the PMTiles swap in the README does exactly that.
- *
- * The replacement expression is a coalesce chain:
- *   requested language -> latin transliteration -> whatever the tile calls it locally
- * so a place with no translation still gets a label instead of a blank.
+ * The text-field expression that prints a feature's name in `lang`: the requested
+ * language, then the latin transliteration, then whatever the tile calls it locally.
+ * Exported because the borough labels below are our own features and have to print
+ * their names by the same rule the basemap's own labels follow.
  */
-export function setStyleLanguage(style, lang) {
-  const target = (lang || "en") === "en"
+export function nameExpression(lang) {
+  return (lang || "en") === "en"
     // For English, name:latin is the better first choice than name:en: OpenMapTiles
     // populates it for far more features, and for NYC the two agree.
     ? ["coalesce", ["get", "name:latin"], ["get", "name:en"], ["get", "name"]]
     : ["coalesce", ["get", `name:${lang}`], ["get", "name:latin"], ["get", "name"]];
+}
+
+/**
+ * Rewrite label expressions in place. Exported separately so a caller that already has a
+ * style object (a self-hosted one, a city-branded one) can language-switch it without a
+ * fetch — the PMTiles swap in the README does exactly that.
+ *
+ * Every name label becomes the coalesce chain above, so a place with no translation
+ * still gets a label instead of a blank.
+ */
+export function setStyleLanguage(style, lang) {
+  const target = nameExpression(lang);
 
   let rewritten = 0;
   for (const layer of style.layers || []) {
@@ -115,6 +124,136 @@ export function addLandcoverParks(style) {
   let at = layers.findIndex((l) => l.id === "park");
   if (at < 0) at = layers.findIndex((l) => l.type === "background");
   layers.splice(at + 1, 0, layer);
+  return style;
+}
+
+/* ------------------------------------------------------ place-label balance
+
+ * WHY THIS EXISTS
+ * At the zoom this block opens at — the whole city in frame, around z10.4 — the
+ * vector tiles carry no place names inside the five boroughs at all. OpenMapTiles
+ * holds borough names (class `suburb`) back until z11 and neighbourhood names
+ * until z14, while New Jersey and Nassau towns start at z6 and villages at z9. So
+ * the opening view printed 47 black labels, every one of them outside the city the
+ * map is about, and nothing inside it. That reads as a mistake rather than as a
+ * map, and it pulls the eye away from the pins.
+ *
+ * The fix runs in both directions: hold the surrounding labels back, and fill the
+ * gap they leave in the middle.
+ */
+
+/**
+ * The five boroughs as label points, for the z9–14 band where the tiles have no
+ * name to print inside the city.
+ *
+ * Names are lifted from the tiles' own `place` layer at z11 — the same OpenStreetMap
+ * features positron labels one zoom further in — so these carry the translations the
+ * basemap would have used. `name` is the English label; the `name:xx` fields are the
+ * ones OpenStreetMap has that differ from it, which is why the list is uneven.
+ *
+ * The coordinates are not OpenStreetMap's. They are label anchors, nudged onto open
+ * ground — Central Park, Prospect Park, Bronx Park — because the pins are drawn above
+ * this layer and never move out of a label's way, so OpenStreetMap's own points (Midtown,
+ * central Brooklyn) put the borough's name under a pile of pins. Moving a pin is not an
+ * option; moving the name a mile costs nothing at this zoom.
+ */
+const BOROUGH_LABELS = {
+  type: "FeatureCollection",
+  features: [
+    { type: "Feature", geometry: { type: "Point", coordinates: [-73.9665, 40.7831] },
+      properties: { name: "Manhattan", "name:zh": "曼哈頓", "name:ru": "Манхэттен",
+        "name:bn": "ম্যানহাটন", "name:ko": "맨해튼", "name:ar": "مانهاتن", "name:ur": "مینہیٹن" } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-73.876, 40.862] },
+      properties: { name: "The Bronx", "name:es": "El Bronx", "name:zh": "布朗克斯", "name:ru": "Бронкс",
+        "name:bn": "দ্য ব্রংক্স", "name:ko": "브롱크스", "name:ar": "البرونكس", "name:ur": "برونکس کاؤنٹی",
+        "name:fr": "Bronx", "name:pl": "Bronx" } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-73.7949, 40.7282] },
+      properties: { name: "Queens", "name:zh": "皇后區", "name:ru": "Куинс",
+        "name:bn": "কুইন্স", "name:ko": "퀸스", "name:ar": "كوينز", "name:ur": "کوئینز" } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-73.959, 40.6827] },
+      properties: { name: "Brooklyn", "name:zh": "布魯克林區", "name:ru": "Бруклин",
+        "name:bn": "ব্রুকলিন", "name:ko": "브루클린", "name:ar": "بروكلين", "name:ur": "بروکلن" } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-74.1502, 40.5795] },
+      properties: { name: "Staten Island", "name:zh": "史泰登岛", "name:ru": "Статен-Айленд",
+        "name:bn": "স্ট্যাটেন আইল্যান্ড", "name:ko": "스태튼아일랜드", "name:ar": "جزيرة ستاتن", "name:ur": "سٹیٹن جزیرہ" } },
+  ],
+};
+
+/** Islands whose name repeats a borough's. Positron labels them from the same
+ *  `place` layer, so without this both would print over the same land. */
+const ISLANDS_NAMED_FOR_BOROUGHS = ["Staten Island", "Manhattan Island"];
+
+/**
+ * Rebalance the place labels for a map framed on New York City, in place.
+ *
+ * Four edits, each reversible on its own:
+ *   1. Town labels wait until z11.5 and village labels until z12.5 — far enough in
+ *      that a reader looking at Hoboken or Valley Stream is asking about it. City
+ *      names (Newark, Jersey City, Hackensack) are untouched at every zoom, because
+ *      they are what tells you which way you are facing.
+ *   2. The boroughs are drawn from BOROUGH_LABELS below z14, where the tiles have
+ *      nothing, and stop there because that is where real neighbourhood names take
+ *      over and a borough name becomes noise.
+ *   3. The tiles' own borough labels are dropped, along with the two islands named
+ *      after boroughs, so no name is printed twice.
+ *   4. "New York" is dropped. It is the city the whole map is of; once the labels
+ *      around it thin out it wins its collision and stamps itself across Lower
+ *      Manhattan, which tells the reader nothing.
+ *
+ * Takes `lang` because the borough labels are our own features: they print their
+ * names through nameExpression() exactly as the basemap's labels do.
+ */
+export function balancePlaceLabels(style, lang) {
+  const layers = style.layers || [];
+  const layer = (id) => layers.find((l) => l.id === id);
+  const and = (existing, ...clauses) =>
+    (existing ? ["all", existing, ...clauses] : ["all", ...clauses]);
+
+  const town = layer("label_town");
+  if (town) town.minzoom = 11.5;
+  const village = layer("label_village");
+  if (village) village.minzoom = 12.5;
+
+  const other = layer("label_other");
+  if (other) {
+    other.filter = and(other.filter,
+      ["!=", ["get", "class"], "suburb"],
+      ["!", ["in", ["get", "name"], ["literal", ISLANDS_NAMED_FOR_BOROUGHS]]]);
+  }
+
+  const city = layer("label_city");
+  if (city) city.filter = and(city.filter, ["!=", ["get", "name"], "New York"]);
+
+  if (layer("borough_label")) return style;
+  style.sources = Object.assign({}, style.sources, {
+    boroughs: { type: "geojson", data: BOROUGH_LABELS },
+  });
+  // Appended last, so it is placed before the labels underneath it and an island
+  // never wins the collision against the borough it sits in. The pins are added
+  // after the style loads and sit above this.
+  layers.push({
+    id: "borough_label",
+    type: "symbol",
+    source: "boroughs",
+    maxzoom: 14,
+    layout: {
+      "text-field": nameExpression(lang),
+      "text-font": ["Noto Sans Regular"],
+      "text-size": ["interpolate", ["linear"], ["zoom"], 9, 13, 12, 17],
+      "text-max-width": 8,
+    },
+    // Softer than the near-black the basemap gives Newark and Jersey City: these
+    // name the ground the pins are standing on, and should not compete with them.
+    paint: {
+      "text-color": "#4a4a4a",
+      "text-halo-color": "#ffffff",
+      "text-halo-width": 1.4,
+      "text-halo-blur": 1,
+    },
+  });
+  style.metadata = Object.assign({}, style.metadata, {
+    "nyc-map-kit:place-labels": "balanced",
+  });
   return style;
 }
 

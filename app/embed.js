@@ -23,7 +23,8 @@
  */
 
 import { createMap } from "./map-core.js";
-import { addLandcoverParks, loadBasemapStyle, resolveLang, warmTint } from "./basemap-style.js";
+import { addLandcoverParks, balancePlaceLabels, loadBasemapStyle, resolveLang, warmTint }
+  from "./basemap-style.js";
 
 const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 
@@ -171,7 +172,9 @@ async function boot() {
   setupSheet();
 
   const style = warmTint(
-    addLandcoverParks(await loadBasemapStyle(BASEMAP_STYLE, settings.lang)),
+    balancePlaceLabels(
+      addLandcoverParks(await loadBasemapStyle(BASEMAP_STYLE, settings.lang)),
+      settings.lang),
     BASEMAP_PALETTE);
   $("loading").remove();
 
