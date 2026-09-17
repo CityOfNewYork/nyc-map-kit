@@ -59,6 +59,24 @@ const BASEMAP_PALETTE = {
 const CO_LOCATION_RADIUS_M = 25;
 const DEFAULTS = { data: "sites.geojson", orgs: "orgs.json", list: "on" };
 
+/**
+ * The order the list presents the boroughs in — neither alphabetical nor by site count,
+ * but the order this map is asked to present them in.
+ *
+ * Anything the data does not put in one of these — "Citywide" in the ABAWD snapshot, or a
+ * blank — sorts after all of them rather than being dropped, because a site with an
+ * unexpected borough is still a site somebody can volunteer at. A map with different
+ * borough values than this list sorts them all to the end, alphabetically by whatever it
+ * does say, which is a visible fallback rather than a silent scramble.
+ */
+const BOROUGH_ORDER = ["Bronx", "Manhattan", "Queens", "Brooklyn", "Staten Island"];
+
+/** A site's position in BOROUGH_ORDER, or one past the end for anything not in it. */
+function boroughRank(site) {
+  const at = BOROUGH_ORDER.indexOf(site.properties.borough);
+  return at < 0 ? BOROUGH_ORDER.length : at;
+}
+
 // ---------------------------------------------------------------------------- helpers
 
 /** Build an element. Children are strings (become text nodes) or nodes. */
@@ -367,7 +385,12 @@ function renderList() {
   const list = $("site-list");
   list.replaceChildren();
 
+  // Borough first, then north to south inside it, so the list reads down the map the way
+  // a reader scans it. Org name and address only break ties between sites at the same
+  // latitude, which keeps the order stable between loads.
   const sites = state.features.slice().sort((a, b) =>
+    boroughRank(a) - boroughRank(b) ||
+    (a.properties.borough || "").localeCompare(b.properties.borough || "") ||
     b.geometry.coordinates[1] - a.geometry.coordinates[1] ||
     a.properties.org.localeCompare(b.properties.org) ||
     a.properties.address.localeCompare(b.properties.address));
