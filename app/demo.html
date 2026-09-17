@@ -19,6 +19,11 @@
   The frames run the full width of the page column: the block switches to its side-panel
   layout above 768 px, so a map confined to a text measure would only ever show its phone
   layout.
+
+  The last frame is the exception, and is there on purpose: 390 px wide, which is below
+  that breakpoint, so on a desktop screen it shows the phone layout — the list as a
+  bottom sheet over the map — without anyone having to open the demo on a phone. On a
+  phone it is simply the page width, because the frame around it would be a lie.
 -->
 <style>
   :root {
@@ -55,6 +60,18 @@
   }
   figure.single iframe { height: 320px; min-height: 0; }
 
+  /* The phone frame. 390 x 844 is the iPhone 14/15 viewport, and the width is what
+     matters: the block reads its own frame, not the screen, so at 390 px it lays itself
+     out exactly as it would on a handset. */
+  figure.phone { display: flex; justify-content: center; }
+  figure.phone iframe {
+    width: 390px;
+    max-width: 100%;
+    height: 844px;
+    min-height: 0;
+    border-radius: 18px;
+  }
+
   /* The demo can be linked directly, so the provenance note travels with it rather than
      living only on the landing page. Same words, fewer of them. */
   .note {
@@ -77,6 +94,9 @@
   @media (max-width: 720px) {
     body { padding: 16px 16px 40px; }
     figure iframe { height: 78vh; min-height: 460px; }
+    /* Already a phone: the frame drops its phone-shaped constraints and behaves like
+       every other frame on the page. */
+    figure.phone iframe { width: 100%; height: 78vh; border-radius: 6px; }
   }
 </style>
 </head>
@@ -105,6 +125,11 @@
   <figure class="single">
     <iframe id="map-one" title="Map of one SNAP volunteer site"
             src="embed.html?list=off&amp;data=one-site.geojson&amp;title=Henry%20Street%20Settlement"></iframe>
+  </figure>
+
+  <figure class="phone">
+    <iframe id="map-phone" title="Map of SNAP volunteer opportunities in New York City, at phone width"
+            src="embed.html?list=on"></iframe>
   </figure>
 
 </main>
