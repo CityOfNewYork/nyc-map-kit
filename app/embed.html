@@ -66,8 +66,8 @@
     <!--
       The list is a TEXT ALTERNATIVE to the map, not a finder: no search, no filters, no
       sort. It exists so that everything the map shows is reachable without a pointer and
-      without sight. Focus order is title -> list -> map controls -> card, which is why
-      it sits before the map in the DOM.
+      without sight. Focus order is title -> list -> map controls, which is why it sits
+      before the map in the DOM. The card is a modal and takes focus when it opens.
     -->
     <nav class="panel" id="panel" aria-label="Volunteer sites">
       <button class="sheet-handle" id="sheet-handle" type="button"
@@ -96,20 +96,29 @@
       <p class="loading" id="loading"><span>Loading the map…</span></p>
     </div>
 
-    <!--
-      The dock is the last thing in the DOM so that focus reaches it after the map
-      controls. It is visually positioned over the map by style.css and holds two
-      separate things: the stepper, which is chrome for moving between records that
-      share a location, and the card, which is always exactly one record. They are
-      siblings, not parent and child, so the card's content is never mixed with the
-      controls around it.
-    -->
-    <div class="card-dock" id="card-dock">
-      <div class="stepper" id="stepper" role="group" hidden></div>
-      <article class="card" id="card" aria-labelledby="card-title" hidden></article>
-    </div>
-
   </div>
+
+  <!--
+    One site's card, as a modal: the same behaviour at every width. It opens centred
+    over a blurred map on a desktop and fills the frame on a phone, so there is one
+    layout to build and test, and nothing on the map moves to make room for it.
+
+    A native <dialog> opened with showModal() makes everything behind it inert, keeps
+    Tab inside it, and turns Escape into a `cancel` event — the modal contract, from the
+    browser rather than from code. It holds a small map of the place, the stepper (chrome
+    for moving between records that share a location) and the card (always exactly one
+    record). The stepper and the card are siblings, so the card's content is never mixed
+    with the controls around it. Close is last in the DOM so Tab walks the card first.
+  -->
+  <dialog class="site-dialog" id="site-dialog" aria-labelledby="card-title">
+    <div class="mini-map" id="mini-map"></div>
+    <div class="stepper" id="stepper" role="group" hidden></div>
+    <article class="card" id="card" aria-labelledby="card-title" hidden></article>
+    <button class="card-close" id="card-close" type="button">
+      <span aria-hidden="true">×</span>
+      <span class="visually-hidden">Close this site</span>
+    </button>
+  </dialog>
 </div>
 
 <script type="module" src="embed.js"></script>

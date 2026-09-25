@@ -46,17 +46,23 @@ const BASEMAP_PALETTE = {
  * There is no answer to this in the data: the pair distances in the ABAWD file run
  * continuously from 0 to 160 m with no gap anywhere — the largest jump between two
  * consecutive pair distances in that range is 8 m. So the number comes from what the
- * stepper's label promises, "at this location", and 25 m is the widest radius where that
- * stays true. It catches the same building or the one next door: 415 and 417 E 151st
- * Street (7.9 m), 265 and 269 Henry Street (15.6 m, two doors of one campus), 701 and 705
- * Crotona Park North (17.2 m), plus the two pairs that geocode to a single point. At 50 m
- * it starts joining addresses on different streets, and the label stops being honest.
+ * stepper's label promises, "at this location", and 35 m is the widest radius where that
+ * stays true. It catches the same building or a few doors down the same street: 415 and
+ * 417 E 151st Street (7.9 m), 265 and 269 Henry Street (15.6 m, two doors of one campus),
+ * 701 and 705 Crotona Park North (17.2 m), 282 and 290 E 3rd Street (25.1 m), 117 and
+ * 125 Church Avenue (31.6 m), 301 and 309 Henry Street (32.9 m), plus the two pairs that
+ * geocode to a single point. Every pair inside 35 m is one organization on one street.
+ * The next pair out, at 39.4 m, is on two different streets (W 145th and W 146th), and
+ * past there the label stops being honest.
+ *
+ * It was 25 m, which missed 282 and 290 E 3rd Street by 10 cm — a margin that says more
+ * about geocoding precision than about the places.
  *
  * Note that this is NOT "what the user cannot separate by zooming" — that would be 0 m,
  * since at z18 even a 15 m gap is about 35 px. It is a claim about the places, not about
  * the pixels, which is why it is a fixed ground distance and not a function of zoom.
  */
-const CO_LOCATION_RADIUS_M = 25;
+const CO_LOCATION_RADIUS_M = 35;
 const DEFAULTS = { data: "sites.geojson", orgs: "orgs.json", list: "on" };
 
 /**
@@ -133,6 +139,7 @@ const settings = {
   lang: resolveLang(params.get("lang")),
   list: params.get("list") === "off" ? "off" : DEFAULTS.list,
   title: params.get("title"),
+  site: params.get("site"),
 };
 
 // The proxy reads <html lang> to decide what it is translating from, and
@@ -156,9 +163,17 @@ const state = {
   selectedId: null,
   /** The control that caused the current selection, so Escape can return focus to it. */
   returnFocusTo: null,
+  /** True while the open card has a history entry of its own, so closing it is Back. */
+  pushed: false,
+  /** Set when the URL, not the reader, chose the site: the address already says so. */
+  urlDriven: false,
 };
 
 let map = null;
+/** The small map at the top of the card. Made the first time a card opens. */
+let miniMap = null;
+/** What the mini map is built from: the same basemap and points as the main one. */
+let mapInputs = null;
 
 // ------------------------------------------------------------------------------- boot
 
@@ -195,21 +210,14 @@ async function boot() {
       settings.lang),
     BASEMAP_PALETTE);
   $("loading").remove();
+  mapInputs = { style, data };
 
   map = createMap($("map"), {
-    style,
+    style: structuredClone(style),
     data,
     onSelect: handleSelect,
     onClusterExpand: () => {},
-    // No focusPoint: a selected pin lands at the centre of the map itself, not of the
-    // whole block. The list beside the map is a separate panel, so centring on the block
-    // pushed every selection into the left half of the map the reader is looking at. The
-    // card then opens beside the pin (placeDock); the pin, not the pair, is centred.
   });
-
-  // The card follows its pin across pans and zooms, like a popup would.
-  map.raw.on("move", placeDock);
-  window.addEventListener("resize", placeDock);
 
   // A deliberate global. It is the debugging surface for this prototype — open the
   // console on any page that embeds the block and you can drive the map by hand:
@@ -224,9 +232,13 @@ async function boot() {
     lang: settings.lang,
   }));
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !$("card").hidden) closeCard();
-  });
+  setupDialog();
+
+  // A link with ?site= opens on that site's card.
+  if (settings.site && state.byId.has(settings.site)) {
+    state.urlDriven = true;
+    map.select(settings.site);
+  }
 }
 
 async function fetchJson(url, fallback) {
@@ -294,7 +306,7 @@ function groupByOrgProperty(features) {
   return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Metres between two [lon, lat] pairs. Flat-earth, which is exact enough at 25 m. */
+/** Metres between two [lon, lat] pairs. Flat-earth, which is exact enough at 35 m. */
 function metresBetween(a, b) {
   const x = (b[0] - a[0]) * Math.cos((a[1] * Math.PI) / 180) * 111320;
   const y = (b[1] - a[1]) * 110540;
@@ -431,6 +443,7 @@ function handleSelect(feature, info) {
   }
   state.selectedId = feature.properties.id;
   markCurrent(state.selectedId);
+  recordInUrl(state.selectedId);
   renderCard(feature);
   announce([span("Selected"), ": ", span(feature.properties.org), ", ",
             span(feature.properties.address)]);
@@ -443,10 +456,6 @@ function handleSelect(feature, info) {
       via: "map",
     });
   }
-  // On a phone the sheet and the card compete for the same screen. Choosing a site means
-  // "show me this place", so the sheet gets out of the way — and comes back at the height
-  // it was when the card closes, so the user does not lose their place in the list.
-  collapseSheetForCard();
   // Focus the card's heading so a keyboard or screen-reader user lands on the content
   // they just asked for instead of being left behind in the list. The exception is a
   // stepper click: the card is rebuilt under the user's finger, so focus goes back to the
@@ -501,56 +510,8 @@ function renderCard(feature) {
     card.append(footer);
   }
 
-  // Last in the DOM, pinned to the top-right corner by CSS. Last so that Tab from the
-  // heading walks the card's content and arrives at Close, instead of leaving Close
-  // reachable only with Shift+Tab. (Escape closes the card as well.)
-  const glyph = span("×");
-  glyph.setAttribute("aria-hidden", "true");
-  const close = el("button", glyph, hidden("Close this site"));
-  close.type = "button";
-  close.className = "card-close";
-  close.addEventListener("click", closeCard);
-  card.append(close);
-
   card.hidden = false;
-  placeDock();
-}
-
-/**
- * Put the card beside its pin. On desktop the dock sits to the right of the selected
- * pin, vertically centred on the pin's head, and flips to the left only when the right
- * side has no room — after the user has panned, since a selection eases the pin to a
- * spot with room already. Clamped inside the stage either way, so the card is never cut
- * off. On a phone the card is full-width at the top of the map and CSS places it.
- */
-// The selected pin is drawn at 1.25× a 26 × 34 px teardrop: ~32 px wide, ~42 px tall,
-// with the head's centre ~26 px above the tip. The gap is two pin widths, so the card
-// reads as beside the place rather than attached to it.
-const CARD_GAP = 64;    // px between the pin and the card
-const PIN_HEAD = 26;    // px from the pin's tip (the coordinate) up to the centre of its head
-const DOCK_INSET = 12;  // px the dock keeps from the edge of the stage
-function placeDock() {
-  const dock = $("card-dock");
-  if (phone()) {
-    dock.style.left = dock.style.top = dock.style.right = "";
-    return;
-  }
-  const feature = state.byId.get(state.selectedId);
-  if (!map || $("card").hidden || !feature) return;
-  const stage = $("stage").getBoundingClientRect();
-  const box = $("map").getBoundingClientRect();
-  const pin = map.raw.project(feature.geometry.coordinates);
-  const x = pin.x + box.left - stage.left;
-  const y = pin.y + box.top - stage.top - PIN_HEAD;
-  const w = dock.offsetWidth;
-  const h = dock.offsetHeight;
-  let left = x + CARD_GAP;
-  if (left + w > stage.width - DOCK_INSET) left = x - CARD_GAP - w;
-  left = Math.max(DOCK_INSET, Math.min(left, stage.width - w - DOCK_INSET));
-  const top = Math.max(DOCK_INSET, Math.min(y - h / 2, stage.height - h - DOCK_INSET));
-  dock.style.left = `${left}px`;
-  dock.style.top = `${top}px`;
-  dock.style.right = "auto";
+  openDialog(feature);
 }
 
 /**
@@ -823,7 +784,127 @@ function arrowButton(dir, glyph, label, onClick) {
   return button;
 }
 
+// ------------------------------------------------------------------------ the modal
+
+/**
+ * The card's modal and its link. Opening a card from the map or the list adds a history
+ * entry with ?site=<id>, so the card has an address that can be shared, and the browser's
+ * Back button — the one a phone user reaches for — closes the card instead of leaving the
+ * page. Every way of closing it (the × button, Escape, a click on the blurred map) goes
+ * back through that same entry, so the history never collects a trail of closed cards.
+ *
+ * Moving between cards while one is open (the stepper, or a pin on the small map)
+ * replaces the entry instead of adding one: Back closes the card, whichever site it has
+ * reached, rather than stepping back through each one.
+ *
+ * Inside an iframe the address that changes is the frame's, not the host page's, so the
+ * link is embed.html?site=<id>. Back still works, because the browser keeps one history
+ * for the page and its frames.
+ */
+function setupDialog() {
+  const dialog = $("site-dialog");
+  $("card-close").addEventListener("click", closeCard);
+  // Escape arrives as `cancel`. Taken over so it closes through history like the rest.
+  dialog.addEventListener("cancel", (e) => {
+    e.preventDefault();
+    closeCard();
+  });
+  // The dialog's children fill it, so a click that lands on the dialog element itself is
+  // a click on the backdrop around it.
+  dialog.addEventListener("click", (e) => {
+    if (e.target === dialog) closeCard();
+  });
+  window.addEventListener("popstate", () => {
+    const id = new URLSearchParams(window.location.search).get("site");
+    if (id && state.byId.has(id)) {
+      state.urlDriven = true;
+      map.select(id);
+      state.pushed = Boolean(history.state && history.state.mapkitSite);
+    } else if (dialog.open) {
+      hideCard();
+    }
+  });
+}
+
+function siteUrl(id) {
+  const url = new URL(window.location.href);
+  if (id) url.searchParams.set("site", id);
+  else url.searchParams.delete("site");
+  return url;
+}
+
+/** Put the selected site in the address bar: a new entry when a card opens, else in place. */
+function recordInUrl(id) {
+  if (state.urlDriven) {
+    state.urlDriven = false;
+    return;
+  }
+  if ($("site-dialog").open) {
+    history.replaceState(history.state, "", siteUrl(id));
+  } else {
+    history.pushState({ mapkitSite: id }, "", siteUrl(id));
+    state.pushed = true;
+  }
+}
+
+function openDialog(feature) {
+  const dialog = $("site-dialog");
+  if (!dialog.open) dialog.showModal();
+  showOnMiniMap(feature);
+}
+
+/**
+ * The small map at the top of the card: where this place is, at street level, with the
+ * sites around it. It is the same map-core as the main map, so its pins look and behave
+ * the same — tapping another pin here opens that site's card in place. Scroll-to-zoom is
+ * off because the wheel belongs to the card's text; the zoom buttons and dragging stay.
+ */
+function showOnMiniMap(feature) {
+  const id = feature.properties.id;
+  if (!miniMap) {
+    miniMap = createMap($("mini-map"), {
+      style: structuredClone(mapInputs.style),
+      data: mapInputs.data,
+      onSelect: (picked, info) => {
+        if (info.via === "map" && picked && picked.properties.id !== state.selectedId) {
+          map.select(picked.properties.id);
+          track("map_pin_open", {
+            org_id: picked.properties.org_id, site_id: picked.properties.id, via: "mini_map",
+          });
+        }
+      },
+    });
+    miniMap.raw.scrollZoom.disable();
+    // MapLibre opens the compact attribution expanded until the first drag; on a map this
+    // small it would cover the bottom third. Collapsed, it is the (i) button.
+    miniMap.ready(() => miniMap.raw.getContainer()
+      .querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show"));
+  }
+  // The dialog was display:none until a moment ago; the canvas has to measure again.
+  miniMap.raw.resize();
+  miniMap.ready(() => {
+    miniMap.raw.jumpTo({ center: feature.geometry.coordinates, zoom: MINI_MAP_ZOOM });
+    miniMap.select(id);
+  });
+}
+// Street level, a little closer than the main map's: the card's map answers "where is
+// this" for one place, not "what is near me".
+const MINI_MAP_ZOOM = 15.5;
+
+/** Close the card. If it has its own history entry, close it by going back. */
 function closeCard() {
+  if (state.pushed) {
+    history.back();          // popstate finds no ?site= and calls hideCard
+    return;
+  }
+  hideCard();
+  history.replaceState(history.state, "", siteUrl(null));
+}
+
+function hideCard() {
+  state.pushed = false;
+  const dialog = $("site-dialog");
+  if (dialog.open) dialog.close();
   const card = $("card");
   card.hidden = true;
   card.replaceChildren();
@@ -833,7 +914,6 @@ function closeCard() {
   state.selectedId = null;
   markCurrent(null);
   if (map) map.select(null);
-  restoreSheetAfterCard();
   const back = state.returnFocusTo;
   state.returnFocusTo = null;
   if (back && document.contains(back)) back.focus();
@@ -850,9 +930,7 @@ function announce(nodes) {
 // ----------------------------------------------------------------------- bottom sheet
 
 const SHEET_HEIGHTS = { collapsed: "48px", half: "45dvh", full: "85dvh" };
-const phone = () => window.matchMedia("(max-width: 767px)").matches;
 let sheetStep = "collapsed";
-let sheetStepBeforeCard = null;
 
 function setSheet(step) {
   sheetStep = step;
@@ -860,18 +938,6 @@ function setSheet(step) {
   const handle = $("sheet-handle");
   handle.setAttribute("aria-expanded", step === "collapsed" ? "false" : "true");
   handle.querySelector(".chev").textContent = step === "full" ? "▼" : "▲";
-}
-
-function collapseSheetForCard() {
-  if (!phone() || sheetStep === "collapsed") return;
-  sheetStepBeforeCard = sheetStep;
-  setSheet("collapsed");
-}
-
-function restoreSheetAfterCard() {
-  if (!sheetStepBeforeCard) return;
-  if (phone()) setSheet(sheetStepBeforeCard);
-  sheetStepBeforeCard = null;
 }
 
 function setupSheet() {
