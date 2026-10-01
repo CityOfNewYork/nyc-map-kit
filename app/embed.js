@@ -219,6 +219,16 @@ async function boot() {
     onClusterExpand: () => {},
   });
 
+  // On a desktop the list floats over the map's left edge (see .panel in style.css), so
+  // the camera's centre moves right by the list's width plus its 10 px inset either side.
+  // Set before the style loads, so the first framing already accounts for it.
+  if (settings.list !== "off") {
+    const desktop = matchMedia("(min-width: 768px)");
+    const padForList = () => map.raw.setPadding({ left: desktop.matches ? 340 : 0 });
+    padForList();
+    desktop.addEventListener("change", padForList);
+  }
+
   // A deliberate global. It is the debugging surface for this prototype — open the
   // console on any page that embeds the block and you can drive the map by hand:
   //   nycMapKit.select("henry-street-settlement-1")

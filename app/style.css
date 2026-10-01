@@ -115,19 +115,29 @@ body {
 .stage {
   position: relative;
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 1fr;
   min-height: 0;
 }
-.stage[data-list="off"] { grid-template-columns: 1fr; }
 
 /* ------------------------------------------------------------------ list --------- */
 
+/* On a desktop the list floats over the map, inset from the frame by the same 10 px
+   MapLibre gives its zoom buttons, with the same corner radius and shadow — so the two
+   read as one set of controls on one map, rather than a sidebar beside it. The map runs
+   underneath the full width; embed.js pads the camera so pins never land under the list. */
 .panel {
   position: relative;
+  z-index: 3;
+  grid-area: 1 / 1;
+  justify-self: start;
+  width: 320px;
+  margin: 10px;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
   background: var(--surface);
 }
 .stage[data-list="off"] .panel { display: none; }
@@ -181,6 +191,7 @@ body {
 
 .map {
   position: relative;
+  grid-area: 1 / 1;
   outline: none;   /* it is a skip-link target, not an interactive control of its own */
   min-height: 0;
   min-width: 0;
@@ -458,11 +469,12 @@ body {
     position: absolute;
     left: 0; right: 0; bottom: 0;
     z-index: 4;
+    width: auto;
+    margin: 0;
     height: var(--sheet-h, 48px);
-    border-right: 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.14);
     border-top: 1px solid var(--line);
     border-radius: 12px 12px 0 0;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.14);
     transition: height 0.18s ease;
   }
   .panel.dragging { transition: none; }
