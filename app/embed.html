@@ -14,15 +14,14 @@
   It fills whatever box the host gives it and has no size of its own. Parameters are
   documented in the README (§Embed contract). demo.html embeds it twice as a worked example.
 
-  MapLibre's stylesheet is the one external stylesheet; everything else is local and
-  relative, so this works both at http://localhost:8000/ and under a GitHub Pages
-  subpath. Do not make any of these paths absolute.
+  This is the source page; `npm run build` turns it into dist/app/embed.html. Every
+  stylesheet and script is bundled and every built path is relative (vite.config.js sets
+  `base: "./"`), so the build works at localhost and under a GitHub Pages subpath alike.
+  `/fonts/…` below names a file in app/public/, and the build rewrites it to a relative path.
 -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.8.0/dist/maplibre-gl.css">
 <!-- Fetched alongside the stylesheet rather than after it, so the text is set in Noto
      Sans before the list first paints instead of swapping in under the reader. -->
-<link rel="preload" href="fonts/noto-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="style.css">
+<link rel="preload" href="/fonts/noto-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 </head>
 
 <body>
@@ -124,6 +123,6 @@
   </dialog>
 </div>
 
-<script type="module" src="embed.js"></script>
+<script type="module" src="/src/embed.js"></script>
 </body>
 </html>

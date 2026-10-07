@@ -22,9 +22,11 @@
  *    closing the card puts focus back where it came from.
  */
 
-import { createMap } from "./map-core.js";
+import { createMap } from "./core/map-core.js";
 import { addLandcoverParks, balancePlaceLabels, loadBasemapStyle, resolveLang, warmTint }
-  from "./basemap-style.js";
+  from "./core/basemap-style.js";
+// After map-core, which brings MapLibre's stylesheet, so these rules win where they overlap.
+import "./style.css";
 
 const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 
