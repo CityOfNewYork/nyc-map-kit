@@ -11,3 +11,6 @@ data/*.xlsx
 
 # Internal planning notes — not part of the handoff/shareable repo
 internal/
+
+# Build output
+dist/

@@ -4,7 +4,7 @@
  * This is the half of the block that has no opinions about the dataset. It knows about
  * points, clusters, selection, and highlight. It does NOT know what an organization is,
  * what a card looks like, what a list is, or that URL parameters exist — all of that is
- * the client's job. `embed.js` is the first client and the worked example.
+ * the client's job. The React UI in src/ui/ is the first client and the worked example.
  *
  * WHY THE SPLIT. The next thing built on this block is a finder: search box, filters, a
  * results list whose hover state drives the map. A finder's list and map share too much
@@ -59,15 +59,23 @@
  *
  * TRUE co-location — two records on one coordinate, which no zoom will ever separate —
  * is a property of the DATA, not of the render. So this core says nothing about it and
- * the client computes it from the feature collection it already has. `embed.js` does,
+ * the client computes it from the feature collection it already has. The UI does,
  * and offers a counted stepper. There are two such pairs in the ABAWD data.
  *
- * MapLibre is loaded as an ES module from a CDN. v6 ships no UMD build, so there is no
- * `<script src>`+global form of this any more; native `import` is the no-build path.
- * See README §Swapping a layer for self-hosting it.
+ * MapLibre comes from npm, pinned in package.json, and is bundled with the app, so the
+ * block serves its own copy instead of depending on a CDN at runtime. Under a bundler,
+ * MapLibre v6 cannot find its web worker on its own, so the worker is imported through
+ * Vite's `?worker&url` and handed over with `setWorkerUrl` once, before any map exists.
+ * (Plain `?url` emits the worker without the shared chunk it imports, and vector tiles
+ * then silently fail to load.) Its stylesheet is imported here too, so any page that
+ * imports this file gets working zoom buttons and attribution without a separate link.
  */
 
-import * as maplibregl from "https://cdn.jsdelivr.net/npm/maplibre-gl@6.8.0/dist/maplibre-gl.mjs";
+import * as maplibregl from "maplibre-gl";
+import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
+import "maplibre-gl/dist/maplibre-gl.css";
+
+maplibregl.setWorkerUrl(workerUrl);
 
 // --------------------------------------------------------------------------- appearance
 // Marks, not text, so the bar is WCAG 2.2 SC 1.4.11 non-text contrast (3:1) against the
@@ -572,7 +580,7 @@ export function createMap(container, options = {}) {
 
     destroy() {
       destroyed = true;
-      try { map.remove(); } catch (_) { /* already gone */ }
+      try { map.remove(); } catch { /* already gone */ }
       liveRegion.remove();
     },
   };

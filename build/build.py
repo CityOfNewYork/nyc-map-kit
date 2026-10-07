@@ -7,9 +7,9 @@ nyc-map-kit — data pipeline for the ABAWD / SEVSP volunteer-site map.
 Reads whichever input is present (KML preferred, CSV otherwise), geocodes every site
 address against NYC GeoSearch, and writes the three files the app loads:
 
-    app/sites.geojson     one Point feature per site
-    app/orgs.json         one record per organization, with its sites
-    app/one-site.geojson  a single feature, for the one-pin demo iframe
+    app/public/sites.geojson     one Point feature per site
+    app/public/orgs.json         one record per organization, with its sites
+    app/public/one-site.geojson  a single feature, for the one-pin demo iframe
 
 It also writes `data/sevsp-2026-09.csv` when reading the KML. That CSV is the committed
 source of truth: it is the KML minus the three personal-contact columns, and a clean
@@ -43,7 +43,7 @@ from datetime import date
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
-APP = os.path.join(ROOT, "app")
+APP = os.path.join(ROOT, "app", "public")
 
 KML_IN = os.path.join(DATA, "source-2026-09.kml")
 CSV_IO = os.path.join(DATA, "sevsp-2026-09.csv")
@@ -52,14 +52,14 @@ OVERRIDES = os.path.join(DATA, "overrides.json")
 
 KML_NS = {"k": "http://www.opengis.net/kml/2.2"}
 GEOSEARCH = "https://geosearch.planninglabs.nyc/v2/search"
-USER_AGENT = "nyc-map-kit build.py (NYC OTI; https://github.com/htownley/nyc-map-kit)"
+USER_AGENT = "nyc-map-kit build.py (NYC OTI; https://github.com/CityOfNewYork/nyc-map-kit)"
 SLEEP_S = 0.12          # be a good citizen; GeoSearch is free and unmetered
 MIN_RESOLVED = 0.95     # the gate: fail the build below this share of sites geocoded
 
 # The 16 ExtendedData fields, in KML order. The three marked PRIVATE are dropped on the
 # way out: they name a person. They are on the public Google My Map today, but a
 # published dataset is a different surface from a map someone has to click into, and the
-# card never shows them (see app/config.json), so they are not carried in the pipeline.
+# card never shows them (see app/public/config.json), so they are not carried in the pipeline.
 FIELDS = [
     ("DBA or Program Name (if Applicable)", "dba"),
     ("Organization Address", "org_address"),
@@ -258,7 +258,7 @@ def main():
         # prose fields (services, populations, hours, description, activities) live in
         # orgs.json instead, once per org rather than once per site. Acacia has 60 sites
         # carrying identical prose; duplicating it here tripled sites.geojson (272 KB ->
-        # 88 KB) for no new information. embed.js joins the two on org_id.
+        # 88 KB) for no new information. The app joins the two on org_id.
         props = {
             "id": site_id,
             "org": r["org"],
@@ -276,7 +276,7 @@ def main():
         # data/overrides.json. Carried only for the few addresses Google's geocoder
         # reads differently from GeoSearch's — a block described by its cross-streets,
         # a suite number, a venue name glued to the front — so it costs the payload
-        # nothing for the sites that need no help. embed.js prefers it over the query
+        # nothing for the sites that need no help. The app prefers it over the query
         # it would otherwise compose from the name and address.
         maps_query = (overrides.get(r["address"]) or {}).get("maps_query", "")
         if maps_query:
@@ -349,8 +349,8 @@ def main():
     print("  geocoded     %d" % stats["geocoded"])
     print("  overrides    %d" % stats["override"])
     print("  generated    %s" % stamp)
-    print("\n  app/sites.geojson    %6.1f KB" % kb(os.path.join(APP, "sites.geojson")))
-    print("  app/orgs.json        %6.1f KB" % kb(os.path.join(APP, "orgs.json")))
+    print("\n  app/public/sites.geojson    %6.1f KB" % kb(os.path.join(APP, "sites.geojson")))
+    print("  app/public/orgs.json        %6.1f KB" % kb(os.path.join(APP, "orgs.json")))
 
 
 if __name__ == "__main__":

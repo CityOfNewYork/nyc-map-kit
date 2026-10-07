@@ -11,119 +11,22 @@
     <iframe src="embed.html?list=on" title="Map of SNAP volunteer opportunities"
             style="width:100%;height:640px;border:0"></iframe>
 
-  It fills whatever box the host gives it and has no size of its own. Parameters are
-  documented in the README (§Embed contract). demo.html embeds it twice as a worked example.
+  It fills whatever box the host gives it and has no size of its own. demo.html embeds it
+  several times as a worked example. Everything inside <body> is rendered by React from
+  src/main.jsx; the components in src/ui/ hold the markup and the reasons for it.
 
-  MapLibre's stylesheet is the one external stylesheet; everything else is local and
-  relative, so this works both at http://localhost:8000/ and under a GitHub Pages
-  subpath. Do not make any of these paths absolute.
+  This is the source page; `npm run build` turns it into dist/app/embed.html. Every
+  stylesheet and script is bundled and every built path is relative (vite.config.js sets
+  `base: "./"`), so the build works at localhost and under a GitHub Pages subpath alike.
+  `/fonts/…` below names a file in app/public/, and the build rewrites it to a relative path.
 -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@6.8.0/dist/maplibre-gl.css">
 <!-- Fetched alongside the stylesheet rather than after it, so the text is set in Noto
      Sans before the list first paints instead of swapping in under the reader. -->
-<link rel="preload" href="fonts/noto-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="style.css">
+<link rel="preload" href="/fonts/noto-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 </head>
 
 <body>
-<div id="root">
-
-  <header class="block-header">
-    <!--
-      The heading is in the markup but not on the screen. The block is an iframe inside a
-      nyc.gov page that already has its own <h1> naming what the page is about, so drawing
-      the name a second time at the top of the map spent a line of vertical space telling
-      the resident something they had just read.
-
-      It stays in the DOM, visually hidden, because it is doing three jobs that have
-      nothing to do with being seen: it is the block's only <h1>, so removing it would
-      leave an iframe whose document has no heading outline at all; it is what a screen
-      reader announces on entering the frame, which is the only way a non-sighted user
-      learns what the frame contains; and it is the landmark the list and map sit under.
-      embed.js still writes `title` from the config or the ?title= parameter into it, and
-      still mirrors it to document.title.
-    -->
-    <h1 id="block-title" class="visually-hidden">SNAP volunteer opportunities</h1>
-    <!--
-      Rendered but invisible until the counts are known: `hidden` would collapse the line
-      and then push the map down when it appears, which is a layout shift the block gets
-      charged for (measured CLS 0.153 before this).
-
-      Both the singular and the plural noun are in the markup and embed.js shows one.
-      Building "1 site" / "2 sites" by concatenation in code would hand the translation
-      proxy a single text node containing a number, and a language whose plural rules are
-      not English's cannot be served from it. Two complete alternatives, each its own text
-      node, translate correctly on their own.
-    -->
-  </header>
-
-  <!--
-    185 sites is 185 tab stops before a keyboard user reaches the map's own controls.
-    This is the standard escape hatch: invisible until it takes focus, first in the tab
-    order, and it lands on the map container.
-  -->
-  <a class="skip-link" href="#map">Skip the list and go to the map</a>
-
-  <div class="stage" id="stage" data-list="on">
-
-    <!--
-      The list is a TEXT ALTERNATIVE to the map, not a finder: no search, no filters, no
-      sort. It exists so that everything the map shows is reachable without a pointer and
-      without sight. Focus order is title -> list -> map controls, which is why it sits
-      before the map in the DOM. The card is a modal and takes focus when it opens.
-    -->
-    <nav class="panel" id="panel" aria-label="Volunteer sites">
-      <button class="sheet-handle" id="sheet-handle" type="button"
-              aria-expanded="false" aria-controls="site-list">
-        <span class="counts">
-          <span id="sheet-orgs"></span>
-          <span data-plural="sheet-orgs">organizations</span>
-          <span data-singular="sheet-orgs" hidden>organization</span>
-          <span aria-hidden="true">·</span>
-          <span id="sheet-sites"></span>
-          <span data-plural="sheet-sites">sites</span>
-          <span data-singular="sheet-sites" hidden>site</span>
-        </span>
-        <span class="chev" aria-hidden="true">▲</span>
-        <span class="visually-hidden">Show the list of sites</span>
-      </button>
-
-      <p class="panel-intro">
-        <span>Every site on the map. Select one to see the details.</span>
-      </p>
-
-      <ul class="site-list" id="site-list"></ul>
-    </nav>
-
-    <div class="map" id="map" tabindex="-1">
-      <p class="loading" id="loading"><span>Loading the map…</span></p>
-    </div>
-
-  </div>
-
-  <!--
-    One site's card, as a modal: the same behaviour at every width. It opens centred
-    over a blurred map on a desktop and fills the frame on a phone, so there is one
-    layout to build and test, and nothing on the map moves to make room for it.
-
-    A native <dialog> opened with showModal() makes everything behind it inert, keeps
-    Tab inside it, and turns Escape into a `cancel` event — the modal contract, from the
-    browser rather than from code. It holds a small map of the place, the stepper (chrome
-    for moving between records that share a location) and the card (always exactly one
-    record). The stepper and the card are siblings, so the card's content is never mixed
-    with the controls around it. Close is last in the DOM so Tab walks the card first.
-  -->
-  <dialog class="site-dialog" id="site-dialog" aria-labelledby="card-title">
-    <div class="mini-map" id="mini-map"></div>
-    <div class="stepper" id="stepper" role="group" hidden></div>
-    <article class="card" id="card" aria-labelledby="card-title" hidden></article>
-    <button class="card-close" id="card-close" type="button">
-      <span aria-hidden="true">×</span>
-      <span class="visually-hidden">Close this site</span>
-    </button>
-  </dialog>
-</div>
-
-<script type="module" src="embed.js"></script>
+<div id="root"></div>
+<script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
