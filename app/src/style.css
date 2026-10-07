@@ -169,7 +169,7 @@ body {
 /* On a desktop the list floats over the map, inset from the frame by the same 10 px
    MapLibre gives its zoom buttons, with the same corner radius and shadow — so the two
    read as one set of controls on one map, rather than a sidebar beside it. The map runs
-   underneath the full width; embed.js pads the camera so pins never land under the list. */
+   underneath the full width; App.jsx pads the camera so pins never land under the list. */
 .panel {
   position: relative;
   z-index: 3;
@@ -383,7 +383,7 @@ body {
   max-width: 60ch;
   overflow-wrap: anywhere;
 }
-/* Structure built by structure() in embed.js — real paragraphs and real lists, so the
+/* Structure from parseStructure() in logic/card.js — real paragraphs and real lists, so the
    spacing between items is spacing rather than a newline character. */
 .card dd p { margin: 0 0 10px; }
 .card dd p:last-child { margin-bottom: 0; }

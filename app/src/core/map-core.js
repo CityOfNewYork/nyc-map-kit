@@ -4,7 +4,7 @@
  * This is the half of the block that has no opinions about the dataset. It knows about
  * points, clusters, selection, and highlight. It does NOT know what an organization is,
  * what a card looks like, what a list is, or that URL parameters exist — all of that is
- * the client's job. `embed.js` is the first client and the worked example.
+ * the client's job. The React UI in src/ui/ is the first client and the worked example.
  *
  * WHY THE SPLIT. The next thing built on this block is a finder: search box, filters, a
  * results list whose hover state drives the map. A finder's list and map share too much
@@ -59,7 +59,7 @@
  *
  * TRUE co-location — two records on one coordinate, which no zoom will ever separate —
  * is a property of the DATA, not of the render. So this core says nothing about it and
- * the client computes it from the feature collection it already has. `embed.js` does,
+ * the client computes it from the feature collection it already has. The UI does,
  * and offers a counted stepper. There are two such pairs in the ABAWD data.
  *
  * MapLibre comes from npm, pinned in package.json, and is bundled with the app, so the
@@ -580,7 +580,7 @@ export function createMap(container, options = {}) {
 
     destroy() {
       destroyed = true;
-      try { map.remove(); } catch (_) { /* already gone */ }
+      try { map.remove(); } catch { /* already gone */ }
       liveRegion.remove();
     },
   };

@@ -258,7 +258,7 @@ def main():
         # prose fields (services, populations, hours, description, activities) live in
         # orgs.json instead, once per org rather than once per site. Acacia has 60 sites
         # carrying identical prose; duplicating it here tripled sites.geojson (272 KB ->
-        # 88 KB) for no new information. embed.js joins the two on org_id.
+        # 88 KB) for no new information. The app joins the two on org_id.
         props = {
             "id": site_id,
             "org": r["org"],
@@ -276,7 +276,7 @@ def main():
         # data/overrides.json. Carried only for the few addresses Google's geocoder
         # reads differently from GeoSearch's — a block described by its cross-streets,
         # a suite number, a venue name glued to the front — so it costs the payload
-        # nothing for the sites that need no help. embed.js prefers it over the query
+        # nothing for the sites that need no help. The app prefers it over the query
         # it would otherwise compose from the name and address.
         maps_query = (overrides.get(r["address"]) or {}).get("maps_query", "")
         if maps_query:

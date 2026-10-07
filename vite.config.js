@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 // The app lives in app/ and builds to dist/app/, so the published address keeps its shape:
@@ -12,15 +13,16 @@ import { defineConfig } from "vite";
 // files and the fonts. They are copied as-is, unhashed, so `?data=one-site.geojson` and a
 // swapped-in config.json keep working without touching the build.
 export default defineConfig({
+  plugins: [react()],
   root: "app",
   base: "./",
   build: {
     outDir: "../dist/app",
     emptyOutDir: true,
-    // MapLibre alone is ~1 MB minified (~270 KB gzipped) and is the bulk of the bundle;
-    // the warning's default 500 KB threshold would fire on every build without saying
-    // anything new.
-    chunkSizeWarningLimit: 1200,
+    // MapLibre (~1 MB minified) and React (~0.2 MB) are most of the one bundle, ~345 KB
+    // gzipped. The warning's default 500 KB threshold would fire on every build without
+    // saying anything new; this one fires if the app's own code grows a lot.
+    chunkSizeWarningLimit: 1400,
     rolldownOptions: {
       input: {
         demo: resolve(import.meta.dirname, "app/demo.html"),
