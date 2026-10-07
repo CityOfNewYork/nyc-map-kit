@@ -25,6 +25,11 @@
 import { createMap } from "./core/map-core.js";
 import { addLandcoverParks, balancePlaceLabels, loadBasemapStyle, resolveLang, warmTint }
   from "./core/basemap-style.js";
+import { track } from "./logic/analytics.js";
+import { cardActions, cardFields, displayUrl, formatDate, hrefFor, mapsLink, parseStructure, telHref }
+  from "./logic/card.js";
+import { coincidentWith, compareSites, prepareData } from "./logic/data.js";
+import { readSettings } from "./logic/params.js";
 // After map-core, which brings MapLibre's stylesheet, so these rules win where they overlap.
 import "./style.css";
 
@@ -41,49 +46,6 @@ const BASEMAP_PALETTE = {
   water: "hsl(202, 42%, 80%)",
   park:  "hsl(96, 30%, 84%)",
 };
-
-/**
- * How close two records have to be to count as one location, in metres.
- *
- * There is no answer to this in the data: the pair distances in the ABAWD file run
- * continuously from 0 to 160 m with no gap anywhere — the largest jump between two
- * consecutive pair distances in that range is 8 m. So the number comes from what the
- * stepper's label promises, "at this location", and 35 m is the widest radius where that
- * stays true. It catches the same building or a few doors down the same street: 415 and
- * 417 E 151st Street (7.9 m), 265 and 269 Henry Street (15.6 m, two doors of one campus),
- * 701 and 705 Crotona Park North (17.2 m), 282 and 290 E 3rd Street (25.1 m), 117 and
- * 125 Church Avenue (31.6 m), 301 and 309 Henry Street (32.9 m), plus the two pairs that
- * geocode to a single point. Every pair inside 35 m is one organization on one street.
- * The next pair out, at 39.4 m, is on two different streets (W 145th and W 146th), and
- * past there the label stops being honest.
- *
- * It was 25 m, which missed 282 and 290 E 3rd Street by 10 cm — a margin that says more
- * about geocoding precision than about the places.
- *
- * Note that this is NOT "what the user cannot separate by zooming" — that would be 0 m,
- * since at z18 even a 15 m gap is about 35 px. It is a claim about the places, not about
- * the pixels, which is why it is a fixed ground distance and not a function of zoom.
- */
-const CO_LOCATION_RADIUS_M = 35;
-const DEFAULTS = { data: "sites.geojson", orgs: "orgs.json", list: "on" };
-
-/**
- * The order the list presents the boroughs in — neither alphabetical nor by site count,
- * but the order this map is asked to present them in.
- *
- * Anything the data does not put in one of these — "Citywide" in the ABAWD snapshot, or a
- * blank — sorts after all of them rather than being dropped, because a site with an
- * unexpected borough is still a site somebody can volunteer at. A map with different
- * borough values than this list sorts them all to the end, alphabetically by whatever it
- * does say, which is a visible fallback rather than a silent scramble.
- */
-const BOROUGH_ORDER = ["Bronx", "Manhattan", "Queens", "Brooklyn", "Staten Island"];
-
-/** A site's position in BOROUGH_ORDER, or one past the end for anything not in it. */
-function boroughRank(site) {
-  const at = BOROUGH_ORDER.indexOf(site.properties.borough);
-  return at < 0 ? BOROUGH_ORDER.length : at;
-}
 
 // ---------------------------------------------------------------------------- helpers
 
@@ -106,43 +68,10 @@ const hidden = (text) => span(text, "visually-hidden");
 
 const $ = (id) => document.getElementById(id);
 
-/** Push an analytics event. The host page's tag reads window.dataLayer. */
-function track(event, payload) {
-  window.dataLayer = window.dataLayer || [];
-  const row = Object.assign({ event }, payload);
-  window.dataLayer.push(row);
-  console.log("[dataLayer]", row);
-}
-
-/**
- * Resolve a `data=` / `orgs=` parameter to a URL we are willing to fetch.
- *
- * These parameters are attacker-controllable — anyone can iframe this page with any
- * query string — so they are restricted to the block's own origin. Without this, the
- * embed is a content proxy: a third party could point it at their own GeoJSON and have
- * a city page render their text. Same-origin keeps "swap the data file" working (the
- * point of the parameter) without opening that door.
- */
-function sameOriginUrl(value, fallback) {
-  const url = new URL(value || fallback, document.baseURI);
-  if (url.origin !== window.location.origin) {
-    console.warn(`[embed] ignoring cross-origin data URL ${url.href}; using ${fallback}`);
-    return new URL(fallback, document.baseURI);
-  }
-  return url;
-}
-
 // ------------------------------------------------------------------------- parameters
 
-const params = new URLSearchParams(window.location.search);
-const settings = {
-  data: sameOriginUrl(params.get("data"), DEFAULTS.data),
-  orgs: sameOriginUrl(params.get("orgs"), DEFAULTS.orgs),
-  lang: resolveLang(params.get("lang")),
-  list: params.get("list") === "off" ? "off" : DEFAULTS.list,
-  title: params.get("title"),
-  site: params.get("site"),
-};
+const settings = readSettings(window.location.search, document.baseURI, window.location.origin);
+settings.lang = resolveLang(settings.lang);
 
 // The proxy reads <html lang> to decide what it is translating from, and
 // basemap-style.js reads it to pick the basemap's label language.
@@ -192,14 +121,7 @@ async function boot() {
   }
 
   state.config = config || {};
-  state.features = data.features;
-  state.generated = data.generated || (orgsDoc && orgsDoc.generated) || "";
-  for (const f of state.features) state.byId.set(f.properties.id, f);
-  state.atCoord = indexByLocation(state.features);
-
-  state.orgs = orgsDoc ? normalizeOrgs(orgsDoc) : groupByOrgProperty(state.features);
-  state.orgs = restrictToLoadedSites(state.orgs, state.byId);
-  for (const org of state.orgs) state.orgById.set(org.org_id, org);
+  Object.assign(state, prepareData(state.config, data, orgsDoc));
 
   applyTitle();
   renderCounts();
@@ -273,92 +195,6 @@ function showFatal(err) {
   box.replaceChildren(el("p", span("The map could not load its data.")));
 }
 
-// ----------------------------------------------------------------------- data shaping
-
-function normalizeOrgs(doc) {
-  const list = Array.isArray(doc) ? doc : (doc.orgs || []);
-  return list.map((o) => Object.assign({}, o, { sites: o.sites || [] }));
-}
-
-/**
- * orgs.json describes the whole dataset, but `data=` can point at a subset — the one-site
- * demo iframe is exactly that case. Keep only the organizations and sites that are
- * actually on this map, so the counts and the list describe what the reader can see.
- */
-function restrictToLoadedSites(orgs, byId) {
-  const out = [];
-  for (const org of orgs) {
-    const sites = org.sites.filter((s) => byId.has(s.id));
-    if (sites.length) out.push(Object.assign({}, org, { sites }));
-  }
-  return out;
-}
-
-/**
- * Fallback when there is no orgs.json: build the org list from the features themselves.
- * The card then shows only what the features carry — the long org prose lives in
- * orgs.json, so it is simply absent. Documented in the README §Embed contract.
- */
-function groupByOrgProperty(features) {
-  const out = new Map();
-  for (const f of features) {
-    const p = f.properties;
-    const key = p.org_id || p.org;
-    let org = out.get(key);
-    if (!org) {
-      org = { org_id: key, name: p.org, dba: p.dba, website: p.website, phone: p.phone,
-              org_type: p.org_type, sites: [] };
-      out.set(key, org);
-    }
-    org.sites.push({
-      id: p.id, address: p.address, borough: p.borough,
-      lon: f.geometry.coordinates[0], lat: f.geometry.coordinates[1],
-    });
-  }
-  return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
-}
-
-/** Metres between two [lon, lat] pairs. Flat-earth, which is exact enough at 35 m. */
-function metresBetween(a, b) {
-  const x = (b[0] - a[0]) * Math.cos((a[1] * Math.PI) / 180) * 111320;
-  const y = (b[1] - a[1]) * 110540;
-  return Math.hypot(x, y);
-}
-
-/**
- * Group the features into locations: sets of records within CO_LOCATION_RADIUS_M of one
- * another. Computed once, from the data, because co-location is a fact about the places —
- * the map only knows about pixels, and a pixel at city zoom is 116 m.
- *
- * A record joins a group only if it is within the radius of EVERY member already in it,
- * not just the nearest one. Single-link grouping would chain — A near B, B near C, and a
- * group containing two records 50 m apart, which is exactly what the label must not
- * claim. Data order decides the seed, so the grouping is deterministic.
- *
- * Five groups in the ABAWD data, covering ten sites, none deeper than two. Two of them
- * geocode to a single point and the rest are a building apart. See the radius note above.
- */
-function indexByLocation(features) {
-  const groups = [];
-  for (const f of features) {
-    const here = f.geometry.coordinates;
-    const group = groups.find((g) => g.every(
-      (other) => metresBetween(here, other.geometry.coordinates) <= CO_LOCATION_RADIUS_M));
-    if (group) group.push(f);
-    else groups.push([f]);
-  }
-  const at = new Map();
-  for (const group of groups) {
-    for (const f of group) at.set(f.properties.id, group);
-  }
-  return at;
-}
-
-/** Every record at this feature's location, in data order, including itself. */
-function coincidentWith(feature) {
-  return state.atCoord.get(feature.properties.id) || [feature];
-}
-
 // ------------------------------------------------------------------------------ chrome
 
 function applyTitle() {
@@ -398,26 +234,14 @@ function renderCounts() {
  * and Preservation", which is why the address is a second line rather than a tooltip —
  * it is what makes each row its own place.
  *
- * Sorted north to south, so the list runs down the city the way the map does: scroll the
- * list and you travel from the Bronx to the South Shore. An alphabetical order put the
- * rows in an order the map cannot show, which made the two halves of the block feel like
- * two datasets; geography is the one ordering both can agree on. Ties fall back to
- * organization and address so the order never depends on how the source file was written.
+ * Sorted north to south, borough by borough — see `compareSites` in logic/data.js.
  */
 function renderList() {
   if (settings.list === "off") return;
   const list = $("site-list");
   list.replaceChildren();
 
-  // Borough first, then north to south inside it, so the list reads down the map the way
-  // a reader scans it. Org name and address only break ties between sites at the same
-  // latitude, which keeps the order stable between loads.
-  const sites = state.features.slice().sort((a, b) =>
-    boroughRank(a) - boroughRank(b) ||
-    (a.properties.borough || "").localeCompare(b.properties.borough || "") ||
-    b.geometry.coordinates[1] - a.geometry.coordinates[1] ||
-    a.properties.org.localeCompare(b.properties.org) ||
-    a.properties.address.localeCompare(b.properties.address));
+  const sites = state.features.slice().sort(compareSites);
 
   for (const feature of sites) {
     const p = feature.properties;
@@ -487,7 +311,7 @@ function renderCard(feature) {
 
   // The stepper is a sibling of the card, not part of it: chrome for reaching the other
   // record at this location, kept out of the record itself.
-  renderStepper(coincidentWith(feature), p.id);
+  renderStepper(coincidentWith(state.atCoord, feature), p.id);
 
   const title = el("h2", p.org);
   title.id = "card-title";
@@ -504,15 +328,9 @@ function renderCard(feature) {
   if (actions) card.append(actions);
 
   const dl = el("dl");
-  for (const field of state.config.card || []) {
-    const value = (field.source === "org" ? org[field.key] : p[field.key]) || "";
-    if (!value) continue;
-    // The source's "DBA or Program Name" column is a mix of trading names, acronyms and
-    // programme names, so it is shown as a labelled field rather than as a subtitle. 22
-    // of the 185 records repeat the organization name in it; that is not a second name.
-    if (field.key === "dba" && value.trim() === p.org.trim()) continue;
+  for (const field of cardFields(state.config, p, org)) {
     dl.append(el("dt", span(field.label)));
-    dl.append(el("dd", renderValue(field, value)));
+    dl.append(el("dd", renderValue(field, field.value)));
   }
   if (dl.children.length) card.append(dl);
 
@@ -538,7 +356,7 @@ function renderCard(feature) {
  * Which fields appear is config, not code — `actions` in config.json, in the order the
  * card should show them — so a different dataset moves its own fields up here without
  * touching this file. The Google Maps link is appended last and is the one composed
- * rather than read from a single field — see `mapsQuery`.
+ * rather than read from a single field — see `mapsLink` in logic/card.js.
  *
  * Each button carries a label and a detail line: the label is the verb, the detail is the
  * information. That keeps the phone number and the domain visible and copyable on a
@@ -550,46 +368,26 @@ function actionRow(feature, org) {
   const box = el("div");
   box.className = "actions";
 
-  for (const action of state.config.actions || []) {
-    const value = (action.source === "org" ? org[action.key] : p[action.key]) || "";
-    if (!value) continue;
-    const link = el("a", span(action.label, "action-label"));
+  for (const action of cardActions(state.config, p, org)) {
+    const link = el("a", span(action.label, "action-label"), span(action.detail, "action-detail"));
     link.className = "action";
-
-    if (action.as === "tel") {
-      link.href = telHref(value);
-      link.append(span(value, "action-detail"));
-    } else {
-      const href = /^https?:\/\//i.test(value) ? value : `https://${value}`;
-      link.href = href;
+    link.href = action.href;
+    if (action.external) {
       link.target = "_blank";
       link.rel = "noopener";
-      link.append(span(String(value).replace(/^https?:\/\//i, "").replace(/\/$/, ""),
-                       "action-detail"));
     }
-
     link.addEventListener("click", () => track("map_action_click", {
       org_id: p.org_id, site_id: p.id, action: action.key,
     }));
     box.append(link);
   }
 
-  if (state.config.openInMaps !== false) {
-    const query = mapsQuery(feature, org);
-    const [lon, lat] = feature.geometry.coordinates;
+  const maps = mapsLink(state.config, feature, org);
+  if (maps) {
     const link = el("a", span("Open in Google Maps", "action-label"),
                        span("see this location on a full map", "action-detail"));
     link.className = "action";
-    // Google's documented Search URL. It used to be the Directions URL, which opens a
-    // routing form already asking where you are coming from — a question the resident
-    // has not been asked yet and may not want to answer. Showing them the place is the
-    // smaller, more likely request; routing is one tap further on, inside the app that
-    // is better at it than this block would be.
-    //
-    // A deep link either way, not an SDK: no key, no billing account, no third-party
-    // script on the page.
-    link.href = "https://www.google.com/maps/search/?api=1&query="
-              + encodeURIComponent(query || `${lat},${lon}`);
+    link.href = maps;
     link.target = "_blank";
     link.rel = "noopener";
     link.addEventListener("click", () => track("map_open_in_maps_click", {
@@ -601,134 +399,31 @@ function actionRow(feature, org) {
   return box.children.length ? box : null;
 }
 
-/**
- * The text to hand Google for this site, or null to fall back to its coordinate.
- *
- * It is the ADDRESS, and deliberately nothing else. There are three things this link
- * could carry, and they are not on a single scale of better:
- *
- *   coordinate     an unlabelled pin. Google has nothing to look up, so there is no
- *                  title, no hours, no Street View, no photo — a dot the resident has
- *                  to take on trust, which the map they are already looking at does
- *                  better than Google does.
- *   address        Google's card for that address: the pin, Street View, a Directions
- *                  button, and the businesses it knows are at that address. This is
- *                  the jump from nothing to something.
- *   name + address the organization's own Google profile — hours, photos, reviews —
- *                  WHEN the name matches something Google has at that address.
- *
- * The third was tried and removed. The name in this data is typed into a spreadsheet by
- * 75 different organizations and is never checked against Google's index, so prepending
- * it does not look up a place, it biases a text search. When it misses the usual result
- * is harmless — Google falls back to the address and you get the second row anyway — but
- * when it misses by matching a DIFFERENT BRANCH of the same organization, the resident is
- * sent to the wrong building with no sign anything went wrong. The risk is concentrated
- * rather than hypothetical: 20 of the addresses carry no ZIP, every one of them belongs to
- * an organization running several sites, and most belong to one organization whose 14 sites
- * share a single well-indexed listing — exactly the conditions where a name-biased search
- * lands confidently on the wrong branch. The extra hours-and-photos panel is not worth a
- * silent wrong address.
- *
- * The remaining cost is that Google re-geocodes the text with its own engine, so its pin
- * can disagree with ours, which came from NYC GeoSearch — the city's own address database,
- * and the more authoritative of the two for a NYC house number. Addresses Google reads
- * differently are corrected by hand in data/overrides.json, which writes a `maps_query`
- * onto just those features; it is absent everywhere else and so costs the payload nothing
- * for the 180 sites that do not need it.
- *
- * Which fields compose the query is config, like the rest of the card: `openInMaps.query`
- * is a list of field references, joined with commas — a dataset that keeps street, city and
- * state in separate columns lists all three. Setting `openInMaps` to `true` instead of an
- * object keeps the coordinate, which is the right choice for a dataset whose addresses are
- * too rough to hand to a global geocoder.
- */
-function mapsQuery(feature, org) {
-  const parts = (state.config.openInMaps || {}).query;
-  if (!Array.isArray(parts)) return null;              // `true` => use the coordinate
-  const p = feature.properties;
-  if (p.maps_query) return p.maps_query;               // hand fix from overrides.json
-
-  const out = [];
-  for (const part of parts) {
-    const src = part.source === "org" ? (org || {}) : p;
-    const value = String(src[part.key] || "").trim();
-    if (value && !out.includes(value)) out.push(value);
-  }
-  return out.join(", ") || null;
-}
-
 function stamp(iso) {
   const time = el("time");
   time.dateTime = iso;
-  const d = new Date(`${iso}T12:00:00`);
-  time.textContent = Number.isNaN(d.valueOf())
-    ? iso
-    : d.toLocaleDateString(settings.lang, { year: "numeric", month: "long", day: "numeric" });
+  time.textContent = formatDate(iso, settings.lang);
   return time;
 }
 
-/**
- * Turn one field's value into readable structure.
- *
- * The source strings carry their own shape and the card used to throw it away — a
- * semicolon-separated list and a five-line block of prose both arrived as one run-on
- * paragraph held together by `white-space: pre-line`. Both are hard to read for the same
- * reason: nothing tells the eye where one item ends and the next begins.
- *
- *   "a; b; c"                 -> a list, one item per line
- *   "intro:\nx\ny\nz"          -> a sentence, then a list
- *   "para one\npara two"       -> separate paragraphs
- *
- * No colour and no new type sizes involved — the readability comes from the line breaks
- * being real elements instead of characters inside one string.
- */
+/** A field value's structure (see `parseStructure` in logic/card.js) as elements. */
 function structure(value) {
-  const lines = String(value).split("\n").map((l) => l.trim()).filter(Boolean);
-
-  if (lines.length > 1) {
-    const out = [];
-    // A line ending in a colon is introducing what follows, so the rest is a list.
-    if (lines[0].endsWith(":") && lines.length > 2) {
-      out.push(el("p", span(lines[0])));
-      const ul = el("ul");
-      for (const line of lines.slice(1)) ul.append(el("li", span(line)));
-      out.push(ul);
-      return out;
-    }
-    for (const line of lines) out.push(el("p", span(line)));
-    return out;
-  }
-
-  const parts = lines[0].split(";").map((x) => x.trim()).filter(Boolean);
-  if (parts.length > 1) {
+  const s = parseStructure(value);
+  const list = (items) => {
     const ul = el("ul");
-    for (const part of parts) ul.append(el("li", span(part)));
-    return [ul];
-  }
-
-  return [span(lines[0] || "")];
-}
-
-/**
- * A dial string from a number written for a human to read.
- *
- * 21 of the 185 sites carry an extension — "(212)766-9200 x2224". Stripping every
- * non-digit turns that into 21276692002224, which is not a phone number, and a phone
- * handed it will try to dial it anyway. RFC 3966 keeps the extension in its own field:
- * tel:2127669200;ext=2224.
- */
-function telHref(value) {
-  const [main, ext] = String(value).split(/\s*(?:x|ext\.?|extension)\s*/i);
-  const digits = String(main).replace(/[^\d+]/g, "");
-  const extension = (ext || "").replace(/\D/g, "");
-  return `tel:${digits}${extension ? `;ext=${extension}` : ""}`;
+    for (const item of items) ul.append(el("li", span(item)));
+    return ul;
+  };
+  if (s.kind === "intro-list") return [el("p", span(s.intro)), list(s.items)];
+  if (s.kind === "paragraphs") return s.items.map((line) => el("p", span(line)));
+  if (s.kind === "list") return [list(s.items)];
+  return [span(s.text)];
 }
 
 function renderValue(field, value) {
   if (field.as === "url") {
-    const href = /^https?:\/\//i.test(value) ? value : `https://${value}`;
-    const a = el("a", span(value.replace(/^https?:\/\//i, "").replace(/\/$/, "")));
-    a.href = href;
+    const a = el("a", span(displayUrl(value)));
+    a.href = hrefFor(value);
     a.target = "_blank";
     a.rel = "noopener";
     return a;
