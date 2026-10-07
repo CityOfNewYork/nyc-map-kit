@@ -444,7 +444,7 @@ body {
   color: var(--ink-muted);
 }
 
-/* The stepper: more than one record at this location.
+/* The stepper: more than one record in the selected site's group.
    Its own small box, floating over the top of the card's map between the zoom buttons
    and Close — in the same white with the same border, so it reads as a control that
    belongs with the card without being part of it. It sits on the map because it is

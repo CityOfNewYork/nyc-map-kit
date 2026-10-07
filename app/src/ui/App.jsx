@@ -245,7 +245,7 @@ export default function App({ settings }) {
     });
   }
 
-  /** Step to the previous (-1) or next (+1) record at this location, wrapping round. */
+  /** Step to the previous (-1) or next (+1) record in this group, wrapping round. */
   function step(delta, dir) {
     const group = coincidentWith(model.atCoord, selection.feature);
     const index = group.findIndex((f) => f.properties.id === selection.feature.properties.id);

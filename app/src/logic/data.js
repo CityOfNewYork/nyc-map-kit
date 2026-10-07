@@ -6,28 +6,11 @@
  */
 
 /**
- * How close two records have to be to count as one location, in metres. A map overrides
- * it with `coLocationRadiusM` in config.json, because the honest number depends on how
- * that dataset's addresses sit on the ground.
+ * How close two records have to be, in metres, for the card to offer a stepper between
+ * them. A map sets its own with `coLocationRadiusM` in config.json.
  *
- * There is no answer to this in the data: the pair distances in the ABAWD file run
- * continuously from 0 to 160 m with no gap anywhere — the largest jump between two
- * consecutive pair distances in that range is 8 m. So the number comes from what the
- * stepper's label promises, "at this location", and 35 m is the widest radius where that
- * stays true. It catches the same building or a few doors down the same street: 415 and
- * 417 E 151st Street (7.9 m), 265 and 269 Henry Street (15.6 m, two doors of one campus),
- * 701 and 705 Crotona Park North (17.2 m), 282 and 290 E 3rd Street (25.1 m), 117 and
- * 125 Church Avenue (31.6 m), 301 and 309 Henry Street (32.9 m), plus the two pairs that
- * geocode to a single point. Every pair inside 35 m is one organization on one street.
- * The next pair out, at 39.4 m, is on two different streets (W 145th and W 146th), and
- * past there the label stops being honest.
- *
- * It was 25 m, which missed 282 and 290 E 3rd Street by 10 cm — a margin that says more
- * about geocoding precision than about the places.
- *
- * Note that this is NOT "what the user cannot separate by zooming" — that would be 0 m,
- * since at z18 even a 15 m gap is about 35 px. It is a claim about the places, not about
- * the pixels, which is why it is a fixed ground distance and not a function of zoom.
+ * It is a fixed ground distance rather than a function of zoom, so which records are
+ * grouped does not change as the reader zooms in or out.
  */
 export const CO_LOCATION_RADIUS_M = 35;
 
@@ -112,7 +95,7 @@ export function groupByOrgProperty(features) {
   return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Metres between two [lon, lat] pairs. Flat-earth, which is exact enough at 35 m. */
+/** Metres between two [lon, lat] pairs. Flat-earth, which is exact enough at tens of metres. */
 export function metresBetween(a, b) {
   const x = (b[0] - a[0]) * Math.cos((a[1] * Math.PI) / 180) * 111320;
   const y = (b[1] - a[1]) * 110540;
@@ -120,16 +103,16 @@ export function metresBetween(a, b) {
 }
 
 /**
- * Group the features into locations: sets of records within `radius` metres of one
- * another. Computed once, from the data, because co-location is a fact about the places —
- * the map only knows about pixels, and a pixel at city zoom is 116 m.
+ * Group the features: sets of records within `radius` metres of one another. Computed
+ * once, from the coordinates, rather than from what overlaps on screen — at city zoom a
+ * pixel is 116 m.
  *
  * A record joins a group only if it is within the radius of EVERY member already in it,
- * not just the nearest one. Single-link grouping would chain — A near B, B near C, and a
- * group containing two records 50 m apart, which is exactly what the label must not
- * claim. Data order decides the seed, so the grouping is deterministic.
+ * not just the nearest one. Single-link grouping would chain — A near B, B near C — into
+ * a group whose ends are further apart than the radius. Data order decides the seed, so
+ * the grouping is deterministic.
  *
- * Returns a map from each site id to every feature at its location, itself included.
+ * Returns a map from each site id to every feature in its group, itself included.
  */
 export function indexByLocation(features, radius = CO_LOCATION_RADIUS_M) {
   const groups = [];
@@ -147,7 +130,7 @@ export function indexByLocation(features, radius = CO_LOCATION_RADIUS_M) {
   return at;
 }
 
-/** Every record at this feature's location, in data order, including itself. */
+/** Every record in this feature's group, in data order, including itself. */
 export function coincidentWith(atCoord, feature) {
   return atCoord.get(feature.properties.id) || [feature];
 }
@@ -155,7 +138,7 @@ export function coincidentWith(atCoord, feature) {
 /**
  * Everything the block derives from the three loaded files, in one object: the
  * features and their index, the organizations restricted to what is on this map, the
- * co-location groups, and the data's date.
+ * groups of nearby records, and the data's date.
  */
 export function prepareData(config, data, orgsDoc) {
   const features = data.features;

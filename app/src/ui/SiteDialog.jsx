@@ -45,7 +45,7 @@ export function SiteDialog({ ref, miniMapRef, feature, group, model, lang, onSte
 }
 
 /**
- * More than one record at this location: step between them, one card at a time.
+ * More than one record in this site's group: step between them, one card at a time.
  *
  * A stepper rather than a list, because a card has to stay atomic. The list this replaced
  * put N organizations' names inside one organization's card — unbounded height, and at

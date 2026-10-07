@@ -11,7 +11,7 @@ const sites = read("sites.geojson");
 const orgs = read("orgs.json");
 const oneSite = read("one-site.geojson");
 
-/** The co-location groups with more than one record, as sorted id lists. */
+/** The groups with more than one record, as sorted id lists. */
 function multiGroups(atCoord) {
   const seen = new Set();
   const out = [];
@@ -24,7 +24,7 @@ function multiGroups(atCoord) {
 }
 
 describe("co-location", () => {
-  test("at 35 m the snapshot has 8 multi-record locations covering 16 sites", () => {
+  test("at 35 m the snapshot has 8 groups covering 16 sites", () => {
     const groups = multiGroups(indexByLocation(sites.features, 35));
     expect(groups).toHaveLength(8);
     expect(groups.flat()).toHaveLength(16);
