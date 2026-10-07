@@ -52,7 +52,7 @@ OVERRIDES = os.path.join(DATA, "overrides.json")
 
 KML_NS = {"k": "http://www.opengis.net/kml/2.2"}
 GEOSEARCH = "https://geosearch.planninglabs.nyc/v2/search"
-USER_AGENT = "nyc-map-kit build.py (NYC OTI; https://github.com/htownley/nyc-map-kit)"
+USER_AGENT = "nyc-map-kit build.py (NYC OTI; https://github.com/CityOfNewYork/nyc-map-kit)"
 SLEEP_S = 0.12          # be a good citizen; GeoSearch is free and unmetered
 MIN_RESOLVED = 0.95     # the gate: fail the build below this share of sites geocoded
 
