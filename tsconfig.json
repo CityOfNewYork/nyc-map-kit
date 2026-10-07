@@ -1,0 +1,39 @@
+// Type checking for the app, its tests and vite.config.ts.
+//
+// Vite strips the types without checking them, so `npm run build` runs `tsc` first: a type
+// error fails the build, locally and in CI. Editors read this file too and show the same
+// errors as you type.
+//
+// The options follow Vite's react-ts template, plus `strict` written out (TypeScript's default
+// since 6.0, but not something a reader should have to know). The template splits the code
+// that runs in the browser from the code that runs in Node into separate configs; here
+// the only Node code is vite.config.ts and the tests' file reads, so one config covers
+// both, and the cost is that Node's globals type-check in browser code too.
+//
+// `erasableSyntaxOnly` keeps every file JavaScript plus annotations: no enums or other
+// TypeScript-only constructs that generate code.
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "types": ["vite/client", "node"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Checks */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["app/src", "vite.config.ts"]
+}

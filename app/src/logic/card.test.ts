@@ -2,7 +2,8 @@ import { describe, expect, test } from "vitest";
 import {
   cardActions, cardFields, displayUrl, formatDate, hrefFor, mapsLink, mapsQuery,
   parseStructure, telHref,
-} from "./card.js";
+} from "./card.ts";
+import type { Config, FieldRef, Site, SiteProperties } from "./types.ts";
 
 describe("telHref", () => {
   test("keeps an extension in its own RFC 3966 field", () => {
@@ -24,15 +25,17 @@ describe("links", () => {
   });
 });
 
-const p = {
+const p: SiteProperties = {
   id: "s1", org: "Example Org", org_id: "o1", address: "1 Centre St, New York, NY",
   phone: "(212)766-9200 x2224", website: "example.org", dba: "Example Org",
 };
 const org = { org_id: "o1", hours: "Mon–Fri", description: "" };
-const feature = { properties: p, geometry: { coordinates: [-74.0, 40.7] } };
+const feature: Site = {
+  type: "Feature", properties: p, geometry: { type: "Point", coordinates: [-74.0, 40.7] },
+};
 
 describe("mapsQuery and mapsLink", () => {
-  const byAddress = { query: [{ key: "address", source: "site" }] };
+  const byAddress: { query: FieldRef[] } = { query: [{ key: "address", source: "site" }] };
   test("searches the address by default", () => {
     expect(mapsQuery(byAddress, p, org)).toBe("1 Centre St, New York, NY");
   });
@@ -45,7 +48,8 @@ describe("mapsQuery and mapsLink", () => {
       .toBe("https://www.google.com/maps/search/?api=1&query=40.7%2C-74");
   });
   test("repeated values are joined once", () => {
-    const q = { query: [{ key: "address", source: "site" }, { key: "address", source: "site" }] };
+    const q: { query: FieldRef[] } =
+      { query: [{ key: "address", source: "site" }, { key: "address", source: "site" }] };
     expect(mapsQuery(q, p, org)).toBe("1 Centre St, New York, NY");
   });
   test("`false` turns the link off", () => {
@@ -54,7 +58,7 @@ describe("mapsQuery and mapsLink", () => {
 });
 
 describe("card contents", () => {
-  const config = {
+  const config: Config = {
     actions: [
       { key: "phone", source: "site", label: "Call", as: "tel" },
       { key: "website", source: "site", label: "Website", as: "url" },

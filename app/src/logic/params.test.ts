@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { readSettings, sameOriginUrl } from "./params.js";
+import { readSettings, sameOriginUrl } from "./params.ts";
 
 const BASE = "https://cityofnewyork.github.io/nyc-map-kit/app/embed.html";
 const ORIGIN = "https://cityofnewyork.github.io";

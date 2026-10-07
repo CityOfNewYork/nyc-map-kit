@@ -1,11 +1,26 @@
 /**
- * params.js — the block's URL parameters, read into settings.
+ * params.ts — the block's URL parameters, read into settings.
  *
  * Pure: the page's address, base URI and origin are passed in rather than read from
  * `window`, so this runs (and is tested) without a browser.
  */
 
-export const DEFAULTS = { data: "sites.geojson", orgs: "orgs.json", list: "on" };
+export const DEFAULTS = { data: "sites.geojson", orgs: "orgs.json", list: "on" } as const;
+
+/** What the block reads from its URL. */
+export interface Settings {
+  /** The point data and orgs.json, resolved against the page and same-origin only. */
+  data: URL;
+  orgs: URL;
+  /** The label language: a bare subtag such as "es". See basemap-style.ts's resolveLang. */
+  lang: string;
+  /** "off" hides the list and leaves the map alone in the frame. */
+  list: "on" | "off";
+  /** A heading that overrides config.json's `title`. */
+  title: string | null;
+  /** The site whose card opens on load. */
+  site: string | null;
+}
 
 /**
  * Resolve a `data=` / `orgs=` parameter to a URL we are willing to fetch.
@@ -16,7 +31,9 @@ export const DEFAULTS = { data: "sites.geojson", orgs: "orgs.json", list: "on" }
  * a city page render their text. Same-origin keeps "swap the data file" working (the
  * point of the parameter) without opening that door.
  */
-export function sameOriginUrl(value, fallback, baseURI, origin) {
+export function sameOriginUrl(
+  value: string | null, fallback: string, baseURI: string, origin: string,
+): URL {
   const url = new URL(value || fallback, baseURI);
   if (url.origin !== origin) {
     console.warn(`[embed] ignoring cross-origin data URL ${url.href}; using ${fallback}`);
@@ -27,9 +44,11 @@ export function sameOriginUrl(value, fallback, baseURI, origin) {
 
 /**
  * Every parameter the block reads. `lang` is returned as given: resolving it against
- * `<html lang>` is basemap-style.js's `resolveLang`, which needs the document.
+ * `<html lang>` is basemap-style.ts's `resolveLang`, which needs the document.
  */
-export function readSettings(search, baseURI, origin) {
+export function readSettings(
+  search: string, baseURI: string, origin: string,
+): Omit<Settings, "lang"> & { lang: string | null } {
   const params = new URLSearchParams(search);
   return {
     data: sameOriginUrl(params.get("data"), DEFAULTS.data, baseURI, origin),

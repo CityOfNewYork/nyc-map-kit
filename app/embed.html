@@ -13,10 +13,10 @@
 
   It fills whatever box the host gives it and has no size of its own. demo.html embeds it
   several times as a worked example. Everything inside <body> is rendered by React from
-  src/main.jsx; the components in src/ui/ hold the markup and the reasons for it.
+  src/main.tsx; the components in src/ui/ hold the markup and the reasons for it.
 
   This is the source page; `npm run build` turns it into dist/app/embed.html. Every
-  stylesheet and script is bundled and every built path is relative (vite.config.js sets
+  stylesheet and script is bundled and every built path is relative (vite.config.ts sets
   `base: "./"`), so the build works at localhost and under a GitHub Pages subpath alike.
   `/fonts/…` below names a file in app/public/, and the build rewrites it to a relative path.
 -->
@@ -27,6 +27,6 @@
 
 <body>
 <div id="root"></div>
-<script type="module" src="/src/main.jsx"></script>
+<script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

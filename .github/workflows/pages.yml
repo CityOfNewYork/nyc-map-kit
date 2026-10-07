@@ -1,5 +1,5 @@
-# Builds the app and publishes it to GitHub Pages. Every pull request is linted, tested
-# and built; only main is ever published.
+# Builds the app and publishes it to GitHub Pages. Every pull request is linted, tested,
+# type-checked and built (`npm run build` runs tsc first); only main is ever published.
 #
 # The published site is dist/ — the build output, not the source — so the demo stays at
 # <site>/app/demo.html. Repository settings → Pages → Source must be "GitHub Actions".

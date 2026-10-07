@@ -1,23 +1,60 @@
 /**
- * card.js — what a site's card says, as data.
+ * card.ts — what a site's card says, as data.
  *
  * Which fields and buttons a card shows, the links they carry, and how a long field
  * value breaks into paragraphs and lists. The UI renders these; nothing here touches the
  * DOM, so every rule is testable on its own.
  */
+import type { Config, FieldRef, Org, Site, SiteProperties } from "./types.ts";
+
+/** A record's fields read by the key config.json gives. The ones a card shows are text. */
+type Fields = Record<string, string | undefined>;
+
+/** A button in the row under the address. See cardActions. */
+export interface CardAction {
+  key: string;
+  label: string;
+  as?: "tel" | "url";
+  value: string;
+  href: string;
+  detail: string;
+  external: boolean;
+}
+
+/** A labelled field below the buttons. See cardFields. */
+export interface CardField {
+  key: string;
+  label: string;
+  as?: "tel" | "url";
+  value: string;
+}
+
+/** A field's value broken into readable structure. See parseStructure. */
+export type Structure =
+  | { kind: "intro-list"; intro: string; items: string[] }
+  | { kind: "paragraphs"; items: string[] }
+  | { kind: "list"; items: string[] }
+  | { kind: "text"; text: string };
+
+/**
+ * The site's organization from orgs.json, or `{}` when it has none. Either way the card
+ * reads org fields off it without checking first.
+ */
+type OrgFields = Partial<Org> | undefined;
 
 /** A field's value for this site: from the site's own properties, or from its org. */
-function read(ref, p, org) {
-  return (ref.source === "org" ? (org || {})[ref.key] : p[ref.key]) || "";
+function read(ref: FieldRef, p: SiteProperties, org: OrgFields): string {
+  const record = ref.source === "org" ? org || {} : p;
+  return (record as Fields)[ref.key] || "";
 }
 
 /** A link for a website value that may or may not carry its scheme. */
-export function hrefFor(value) {
+export function hrefFor(value: string): string {
   return /^https?:\/\//i.test(value) ? value : `https://${value}`;
 }
 
 /** A website value as a reader sees it: no scheme, no trailing slash. */
-export function displayUrl(value) {
+export function displayUrl(value: string): string {
   return String(value).replace(/^https?:\/\//i, "").replace(/\/$/, "");
 }
 
@@ -29,7 +66,7 @@ export function displayUrl(value) {
  * handed it will try to dial it anyway. RFC 3966 keeps the extension in its own field:
  * tel:2127669200;ext=2224.
  */
-export function telHref(value) {
+export function telHref(value: string): string {
   const [main, ext] = String(value).split(/\s*(?:x|ext\.?|extension)\s*/i);
   const digits = String(main).replace(/[^\d+]/g, "");
   const extension = (ext || "").replace(/\D/g, "");
@@ -38,12 +75,11 @@ export function telHref(value) {
 
 /**
  * The buttons in the row under the address, from `actions` in config.json, in order.
- * A field with no value for this site is left out. Each is
- * `{ key, label, as, value, href, detail, external }`: the label is the verb, the
- * detail is the information (the number, or the domain).
+ * A field with no value for this site is left out. In each CardAction the label is the
+ * verb and the detail is the information (the number, or the domain).
  */
-export function cardActions(config, p, org) {
-  const out = [];
+export function cardActions(config: Config, p: SiteProperties, org: OrgFields): CardAction[] {
+  const out: CardAction[] = [];
   for (const action of config.actions || []) {
     const value = read(action, p, org);
     if (!value) continue;
@@ -99,12 +135,14 @@ export function cardActions(config, p, org) {
  * object keeps the coordinate, which is the right choice for a dataset whose addresses are
  * too rough to hand to a global geocoder.
  */
-export function mapsQuery(openInMaps, p, org) {
-  const parts = (openInMaps || {}).query;
+export function mapsQuery(
+  openInMaps: Config["openInMaps"], p: SiteProperties, org: OrgFields,
+): string | null {
+  const parts = ((openInMaps || {}) as { query?: FieldRef[] }).query;
   if (!Array.isArray(parts)) return null;              // `true` => use the coordinate
   if (p.maps_query) return p.maps_query;               // hand fix from overrides.json
 
-  const out = [];
+  const out: string[] = [];
   for (const part of parts) {
     const value = String(read(part, p, org)).trim();
     if (value && !out.includes(value)) out.push(value);
@@ -124,7 +162,7 @@ export function mapsQuery(openInMaps, p, org) {
  * A deep link either way, not an SDK: no key, no billing account, no third-party
  * script on the page.
  */
-export function mapsLink(config, feature, org) {
+export function mapsLink(config: Config, feature: Site, org: OrgFields): string | null {
   if (config.openInMaps === false) return null;
   const query = mapsQuery(config.openInMaps, feature.properties, org);
   const [lon, lat] = feature.geometry.coordinates;
@@ -133,15 +171,15 @@ export function mapsLink(config, feature, org) {
 }
 
 /**
- * The labelled fields below the buttons, from `card` in config.json, in order, as
- * `{ key, label, as, value }`. Empty fields are left out.
+ * The labelled fields below the buttons, from `card` in config.json, in order. Empty
+ * fields are left out.
  *
  * The source's "DBA or Program Name" column is a mix of trading names, acronyms and
  * programme names, so it is shown as a labelled field rather than as a subtitle. 22
  * of the 185 records repeat the organization name in it; that is not a second name.
  */
-export function cardFields(config, p, org) {
-  const out = [];
+export function cardFields(config: Config, p: SiteProperties, org: OrgFields): CardField[] {
+  const out: CardField[] = [];
   for (const field of config.card || []) {
     const value = read(field, p, org);
     if (!value) continue;
@@ -165,14 +203,8 @@ export function cardFields(config, p, org) {
  *
  * No colour and no new type sizes involved — the readability comes from the line breaks
  * being real elements instead of characters inside one string.
- *
- * Returns one of:
- *   { kind: "intro-list", intro, items }   a sentence, then a list
- *   { kind: "paragraphs", items }
- *   { kind: "list", items }
- *   { kind: "text", text }
  */
-export function parseStructure(value) {
+export function parseStructure(value: string): Structure {
   const lines = String(value).split("\n").map((l) => l.trim()).filter(Boolean);
 
   if (lines.length > 1) {
@@ -190,7 +222,7 @@ export function parseStructure(value) {
 }
 
 /** A data date ("2026-09-15") as the reader's language writes it. Unparseable: as given. */
-export function formatDate(iso, lang) {
+export function formatDate(iso: string, lang: string): string {
   const d = new Date(`${iso}T12:00:00`);
   return Number.isNaN(d.valueOf())
     ? iso

@@ -1,5 +1,5 @@
 /**
- * basemap-style.js — fetch a vector basemap style and set the language of its labels.
+ * basemap-style.ts — fetch a vector basemap style and set the language of its labels.
  *
  * WHY THIS FILE EXISTS
  * Basemap labels are drawn by the GPU onto a canvas, not laid out as HTML. The city's
@@ -15,6 +15,10 @@
  *
  * SWAPPING THE BASEMAP is confined to this file. See README §Swapping a layer.
  */
+import type { FeatureCollection, Point } from "geojson";
+import type {
+  ExpressionSpecification, FilterSpecification, LayerSpecification, StyleSpecification,
+} from "maplibre-gl";
 
 /** The label fields a text-field expression may read. If an expression mentions any of
  *  these, it is a name label and we rewrite it. `ref` (highway shields) is not one. */
@@ -29,13 +33,13 @@ const NAME_FIELDS = ["name", "name:latin", "name:nonlatin", "name_en", "name_int
  * Returns a bare subtag ("es", not "es-419") because that is how OpenMapTiles keys its
  * name fields.
  */
-export function resolveLang(explicit) {
+export function resolveLang(explicit?: string | null): string {
   const raw = explicit || document.documentElement.getAttribute("lang") || "en";
   return String(raw).trim().toLowerCase().split(/[-_]/)[0] || "en";
 }
 
 /** True if this text-field expression is a name label rather than, say, a road shield. */
-function readsAName(expr) {
+function readsAName(expr: unknown): boolean {
   return JSON.stringify(expr ?? "").includes('"name');
 }
 
@@ -44,7 +48,9 @@ function readsAName(expr) {
  * Returns a plain object, which is handed to MapLibre as `style:` — MapLibre never sees
  * the URL, so it never re-fetches and undoes the rewrite.
  */
-export async function loadBasemapStyle(styleUrl, lang) {
+export async function loadBasemapStyle(
+  styleUrl: string, lang: string,
+): Promise<StyleSpecification> {
   const resp = await fetch(styleUrl);
   if (!resp.ok) throw new Error(`basemap style ${styleUrl} returned ${resp.status}`);
   const style = await resp.json();
@@ -57,7 +63,7 @@ export async function loadBasemapStyle(styleUrl, lang) {
  * Exported because the borough labels below are our own features and have to print
  * their names by the same rule the basemap's own labels follow.
  */
-export function nameExpression(lang) {
+export function nameExpression(lang: string): ExpressionSpecification {
   return (lang || "en") === "en"
     // For English, name:latin is the better first choice than name:en: OpenMapTiles
     // populates it for far more features, and for NYC the two agree.
@@ -73,7 +79,7 @@ export function nameExpression(lang) {
  * Every name label becomes the coalesce chain above, so a place with no translation
  * still gets a label instead of a blank.
  */
-export function setStyleLanguage(style, lang) {
+export function setStyleLanguage(style: StyleSpecification, lang: string): StyleSpecification {
   const target = nameExpression(lang);
 
   let rewritten = 0;
@@ -81,7 +87,7 @@ export function setStyleLanguage(style, lang) {
     if (layer.type !== "symbol") continue;
     const field = layer.layout && layer.layout["text-field"];
     if (!readsAName(field)) continue;          // leaves highway shields (["get","ref"]) alone
-    layer.layout["text-field"] = target;
+    layer.layout!["text-field"] = target;
     rewritten++;
   }
   style.metadata = Object.assign({}, style.metadata, {
@@ -105,13 +111,13 @@ export function setStyleLanguage(style, lang) {
  * directly after positron's own `park` layer (below water and roads); a style with no
  * `park` layer gets it directly above the background.
  */
-export function addLandcoverParks(style) {
+export function addLandcoverParks(style: StyleSpecification): StyleSpecification {
   const layers = style.layers || [];
   if (layers.some((l) => l.id === "landcover_park")) return style;
   const source = Object.keys(style.sources || {})
     .find((k) => style.sources[k] && style.sources[k].type === "vector");
   if (!source) return style;
-  const layer = {
+  const layer: LayerSpecification = {
     id: "landcover_park",
     type: "fill",
     source,
@@ -157,7 +163,7 @@ export function addLandcoverParks(style) {
  * central Brooklyn) put the borough's name under a pile of pins. Moving a pin is not an
  * option; moving the name a mile costs nothing at this zoom.
  */
-const BOROUGH_LABELS = {
+const BOROUGH_LABELS: FeatureCollection<Point> = {
   type: "FeatureCollection",
   features: [
     { type: "Feature", geometry: { type: "Point", coordinates: [-73.9665, 40.7831] },
@@ -203,11 +209,16 @@ const ISLANDS_NAMED_FOR_BOROUGHS = ["Staten Island", "Manhattan Island"];
  * Takes `lang` because the borough labels are our own features: they print their
  * names through nameExpression() exactly as the basemap's labels do.
  */
-export function balancePlaceLabels(style, lang) {
+export function balancePlaceLabels(
+  style: StyleSpecification, lang: string,
+): StyleSpecification {
   const layers = style.layers || [];
-  const layer = (id) => layers.find((l) => l.id === id);
-  const and = (existing, ...clauses) =>
-    (existing ? ["all", existing, ...clauses] : ["all", ...clauses]);
+  // Only label layers are looked up, so the result is typed as a layer that can carry a
+  // filter: every kind but background.
+  const layer = (id: string) => layers.find((l) => l.id === id) as
+    Exclude<LayerSpecification, { type: "background" }> | undefined;
+  const and = (existing: FilterSpecification | undefined, ...clauses: FilterSpecification[]) =>
+    (existing ? ["all", existing, ...clauses] : ["all", ...clauses]) as FilterSpecification;
 
   const town = layer("label_town");
   if (town) town.minzoom = 11.5;
@@ -226,7 +237,7 @@ export function balancePlaceLabels(style, lang) {
 
   if (layer("borough_label")) return style;
   style.sources = Object.assign({}, style.sources, {
-    boroughs: { type: "geojson", data: BOROUGH_LABELS },
+    boroughs: { type: "geojson" as const, data: BOROUGH_LABELS },
   });
   // Appended last, so it is placed before the labels underneath it and an island
   // never wins the collision against the borough it sits in. The pins are added
@@ -307,10 +318,18 @@ const TINTABLE_L = [0.02, 0.99];
 /** A colour at or below this saturation counts as "neutral" and gets tinted. */
 const NEUTRAL_MAX_SAT = 0.12;
 
+/** A colour as hue (degrees), saturation, lightness and alpha, each but hue from 0 to 1. */
+interface Hsla {
+  h: number;
+  s: number;
+  l: number;
+  a: number;
+}
+
 /** rgb/rgba/hsl/hsla/#rgb/#rrggbb -> {h,s,l,a}, or null if it is not a colour
  *  literal we recognise. Named CSS colours ("white") return null and are left
  *  untouched; positron uses none, but a future style might. */
-function parseColor(value) {
+function parseColor(value: unknown): Hsla | null {
   const str = String(value).trim().toLowerCase();
 
   let m = str.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/);
@@ -338,7 +357,7 @@ function parseColor(value) {
   return null;
 }
 
-function rgbToHsl(r, g, b, a) {
+function rgbToHsl(r: number, g: number, b: number, a: number): Hsla {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const l = (max + min) / 2;
@@ -356,7 +375,7 @@ function rgbToHsl(r, g, b, a) {
 
 /** Round-trip a colour through the warm hue, keeping lightness and alpha.
  *  Returns null for anything that should be left exactly as it was. */
-function warmed({ s, l, a }) {
+function warmed({ s, l, a }: Hsla): string | null {
   if (s > NEUTRAL_MAX_SAT) return null;                 // already has real colour
   if (l < TINTABLE_L[0] || l > TINTABLE_L[1]) return null;
   // How much saturation this lightness needs to land on WARM_CHROMA.
@@ -372,7 +391,7 @@ function warmed({ s, l, a }) {
 /** Walk a paint value — a colour string, or an expression array with colour
  *  literals buried in it — and tint every colour leaf. Non-colour strings in an
  *  expression ("interpolate", "linear", "zoom") fail to parse and pass through. */
-function tintValue(value, counter) {
+function tintValue(value: unknown, counter: { n: number }): unknown {
   if (Array.isArray(value)) return value.map((v) => tintValue(v, counter));
   if (typeof value !== "string") return value;
   const parsed = parseColor(value);
@@ -390,15 +409,20 @@ function tintValue(value, counter) {
  * — a self-hosted one, the PMTiles swap in the README — can warm it without a
  * fetch, and so it can be skipped entirely by passing `warm: false`.
  */
-export function warmTint(style, options = {}) {
+export function warmTint(
+  style: StyleSpecification, options: { water?: string; park?: string } = {},
+): StyleSpecification {
   const { water, park } = options;
   const counter = { n: 0 };
   // Rule 2: the two feature classes that carry hue on a map people navigate by. A caller
   // that has its own opinion about them passes a colour; otherwise they pass through.
-  const setColor = (layer, color) => {
+  //
+  // This and the loop below walk paint properties by name, whatever the layer type, so
+  // they write to a layer's paint as a plain record rather than through its type.
+  const setColor = (layer: LayerSpecification, color?: string) => {
     if (!color || !layer.paint) return;
     for (const prop of Object.keys(layer.paint)) {
-      if (prop.includes("color")) layer.paint[prop] = color;
+      if (prop.includes("color")) (layer.paint as Record<string, unknown>)[prop] = color;
     }
   };
   for (const layer of style.layers || []) {
@@ -408,7 +432,7 @@ export function warmTint(style, options = {}) {
     if (layer.type === "background" && layer.paint == null) continue;
     for (const [prop, value] of Object.entries(layer.paint || {})) {
       if (!prop.includes("color")) continue;                      // rule 3
-      layer.paint[prop] = tintValue(value, counter);
+      (layer.paint as Record<string, unknown>)[prop] = tintValue(value, counter);
     }
   }
   style.metadata = Object.assign({}, style.metadata, {

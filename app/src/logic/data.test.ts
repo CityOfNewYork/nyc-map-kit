@@ -3,18 +3,19 @@ import { describe, expect, test } from "vitest";
 import {
   BOROUGH_ORDER, boroughRank, compareSites, groupByOrgProperty, indexByLocation,
   metresBetween, prepareData,
-} from "./data.js";
+} from "./data.ts";
+import type { OrgsDoc, Site, SiteCollection } from "./types.ts";
 
-const read = (name) =>
+const read = <T>(name: string): T =>
   JSON.parse(readFileSync(new URL(`../../public/${name}`, import.meta.url), "utf8"));
-const sites = read("sites.geojson");
-const orgs = read("orgs.json");
-const oneSite = read("one-site.geojson");
+const sites = read<SiteCollection>("sites.geojson");
+const orgs = read<OrgsDoc>("orgs.json");
+const oneSite = read<SiteCollection>("one-site.geojson");
 
 /** The groups with more than one record, as sorted id lists. */
-function multiGroups(atCoord) {
-  const seen = new Set();
-  const out = [];
+function multiGroups(atCoord: Map<string, Site[]>) {
+  const seen = new Set<Site[]>();
+  const out: string[][] = [];
   for (const group of atCoord.values()) {
     if (group.length < 2 || seen.has(group)) continue;
     seen.add(group);
@@ -34,19 +35,21 @@ describe("co-location", () => {
   });
 
   test("the 39.4 m pair on W 145th and W 146th Streets is apart at 35 m and together at 40 m", () => {
-    const pair = (radius) => multiGroups(indexByLocation(sites.features, radius))
-      .some((g) => g.some((id) => sites.features.find((f) => f.properties.id === id)
+    const pair = (radius: number) => multiGroups(indexByLocation(sites.features, radius))
+      .some((g) => g.some((id) => sites.features.find((f) => f.properties.id === id)!
         .properties.address.startsWith("454 West 146th")));
     expect(pair(35)).toBe(false);
     expect(pair(40)).toBe(true);
   });
 
   test("grouping is complete-link: a record must be within the radius of every member", () => {
-    const at = (lon) => ({ properties: { id: String(lon) }, geometry: { coordinates: [lon, 40.7] } });
+    // Only an id and a coordinate: all the grouping reads.
+    const at = (lon: number) =>
+      ({ properties: { id: String(lon) }, geometry: { coordinates: [lon, 40.7] } }) as Site;
     // 0 m, ~25 m, ~50 m along one line: the first two group; the third is near only the second.
     const a = at(-74.0), b = at(-74.0 + 25 / 84300), c = at(-74.0 + 50 / 84300);
     const index = indexByLocation([a, b, c], 35);
-    expect(index.get("-74").map((f) => f.properties.id)).toEqual(["-74", b.properties.id]);
+    expect(index.get("-74")!.map((f) => f.properties.id)).toEqual(["-74", b.properties.id]);
     expect(index.get(c.properties.id)).toEqual([c]);
   });
 

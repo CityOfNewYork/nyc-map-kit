@@ -1,9 +1,11 @@
 /**
- * data.js — shaping the loaded files into what the list, the card and the map need.
+ * data.ts — shaping the loaded files into what the list, the card and the map need.
  *
  * Pure functions over the GeoJSON and orgs.json. No DOM, no map: everything here is a
  * fact about the records, computed once when they load.
  */
+import type { Position } from "geojson";
+import type { Config, Org, OrgsDoc, PreparedData, Site, SiteCollection } from "./types.ts";
 
 /**
  * How close two records have to be, in metres, for the card to offer a stepper between
@@ -27,8 +29,8 @@ export const CO_LOCATION_RADIUS_M = 35;
 export const BOROUGH_ORDER = ["Bronx", "Manhattan", "Queens", "Brooklyn", "Staten Island"];
 
 /** A site's position in BOROUGH_ORDER, or one past the end for anything not in it. */
-export function boroughRank(site) {
-  const at = BOROUGH_ORDER.indexOf(site.properties.borough);
+export function boroughRank(site: Site): number {
+  const at = BOROUGH_ORDER.indexOf(site.properties.borough as string);
   return at < 0 ? BOROUGH_ORDER.length : at;
 }
 
@@ -44,7 +46,7 @@ export function boroughRank(site) {
  * a reader scans it. Org name and address only break ties between sites at the same
  * latitude, which keeps the order stable between loads.
  */
-export function compareSites(a, b) {
+export function compareSites(a: Site, b: Site): number {
   return boroughRank(a) - boroughRank(b) ||
     (a.properties.borough || "").localeCompare(b.properties.borough || "") ||
     b.geometry.coordinates[1] - a.geometry.coordinates[1] ||
@@ -52,7 +54,7 @@ export function compareSites(a, b) {
     a.properties.address.localeCompare(b.properties.address);
 }
 
-export function normalizeOrgs(doc) {
+export function normalizeOrgs(doc: OrgsDoc): Org[] {
   const list = Array.isArray(doc) ? doc : (doc.orgs || []);
   return list.map((o) => Object.assign({}, o, { sites: o.sites || [] }));
 }
@@ -62,8 +64,8 @@ export function normalizeOrgs(doc) {
  * demo iframe is exactly that case. Keep only the organizations and sites that are
  * actually on this map, so the counts and the list describe what the reader can see.
  */
-export function restrictToLoadedSites(orgs, byId) {
-  const out = [];
+export function restrictToLoadedSites(orgs: Org[], byId: Map<string, Site>): Org[] {
+  const out: Org[] = [];
   for (const org of orgs) {
     const sites = org.sites.filter((s) => byId.has(s.id));
     if (sites.length) out.push(Object.assign({}, org, { sites }));
@@ -76,8 +78,8 @@ export function restrictToLoadedSites(orgs, byId) {
  * The card then shows only what the features carry — the long org prose lives in
  * orgs.json, so it is simply absent. Documented in the README §Embed contract.
  */
-export function groupByOrgProperty(features) {
-  const out = new Map();
+export function groupByOrgProperty(features: Site[]): Org[] {
+  const out = new Map<string, Org>();
   for (const f of features) {
     const p = f.properties;
     const key = p.org_id || p.org;
@@ -96,7 +98,7 @@ export function groupByOrgProperty(features) {
 }
 
 /** Metres between two [lon, lat] pairs. Flat-earth, which is exact enough at tens of metres. */
-export function metresBetween(a, b) {
+export function metresBetween(a: Position, b: Position): number {
   const x = (b[0] - a[0]) * Math.cos((a[1] * Math.PI) / 180) * 111320;
   const y = (b[1] - a[1]) * 110540;
   return Math.hypot(x, y);
@@ -114,8 +116,10 @@ export function metresBetween(a, b) {
  *
  * Returns a map from each site id to every feature in its group, itself included.
  */
-export function indexByLocation(features, radius = CO_LOCATION_RADIUS_M) {
-  const groups = [];
+export function indexByLocation(
+  features: Site[], radius = CO_LOCATION_RADIUS_M,
+): Map<string, Site[]> {
+  const groups: Site[][] = [];
   for (const f of features) {
     const here = f.geometry.coordinates;
     const group = groups.find((g) => g.every(
@@ -123,7 +127,7 @@ export function indexByLocation(features, radius = CO_LOCATION_RADIUS_M) {
     if (group) group.push(f);
     else groups.push([f]);
   }
-  const at = new Map();
+  const at = new Map<string, Site[]>();
   for (const group of groups) {
     for (const f of group) at.set(f.properties.id, group);
   }
@@ -131,7 +135,7 @@ export function indexByLocation(features, radius = CO_LOCATION_RADIUS_M) {
 }
 
 /** Every record in this feature's group, in data order, including itself. */
-export function coincidentWith(atCoord, feature) {
+export function coincidentWith(atCoord: Map<string, Site[]>, feature: Site): Site[] {
   return atCoord.get(feature.properties.id) || [feature];
 }
 
@@ -140,15 +144,17 @@ export function coincidentWith(atCoord, feature) {
  * features and their index, the organizations restricted to what is on this map, the
  * groups of nearby records, and the data's date.
  */
-export function prepareData(config, data, orgsDoc) {
+export function prepareData(
+  config: Config, data: SiteCollection, orgsDoc: OrgsDoc | null,
+): PreparedData {
   const features = data.features;
-  const byId = new Map();
+  const byId = new Map<string, Site>();
   for (const f of features) byId.set(f.properties.id, f);
   const radius = Number(config.coLocationRadiusM) > 0
     ? Number(config.coLocationRadiusM) : CO_LOCATION_RADIUS_M;
   const orgs = restrictToLoadedSites(
     orgsDoc ? normalizeOrgs(orgsDoc) : groupByOrgProperty(features), byId);
-  const orgById = new Map();
+  const orgById = new Map<string, Org>();
   for (const org of orgs) orgById.set(org.org_id, org);
   return {
     features,
@@ -156,6 +162,7 @@ export function prepareData(config, data, orgsDoc) {
     orgs,
     orgById,
     atCoord: indexByLocation(features, radius),
-    generated: data.generated || (orgsDoc && orgsDoc.generated) || "",
+    generated:
+      data.generated || (orgsDoc && (orgsDoc as { generated?: string }).generated) || "",
   };
 }

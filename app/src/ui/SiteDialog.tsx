@@ -1,4 +1,21 @@
-import { Card } from "./Card.jsx";
+import type { MouseEvent, Ref, SyntheticEvent } from "react";
+import type { Model, Site } from "../logic/types.ts";
+import { Card } from "./Card.tsx";
+
+/** Which stepper arrow was pressed: towards the previous record in the group, or the next. */
+export type StepDirection = "prev" | "next";
+
+interface SiteDialogProps {
+  ref: Ref<HTMLDialogElement>;
+  /** The div the card's small map is drawn into. */
+  miniMapRef: Ref<HTMLDivElement>;
+  feature: Site | null;
+  group: Site[];
+  model: Model | null;
+  lang: string;
+  onStep: (delta: number, dir: StepDirection) => void;
+  onClose: () => void;
+}
 
 /**
  * One site's card, as a modal: the same behaviour at every width. It opens centred
@@ -12,19 +29,21 @@ import { Card } from "./Card.jsx";
  * record). The stepper and the card are siblings, so the card's content is never mixed
  * with the controls around it. Close is last in the DOM so Tab walks the card first.
  *
- * App.jsx opens and closes it (showModal / close) and owns what is selected; this file is
+ * App.tsx opens and closes it (showModal / close) and owns what is selected; this file is
  * only its markup. `group` is every record at the selected one's location.
  */
-export function SiteDialog({ ref, miniMapRef, feature, group, model, lang, onStep, onClose }) {
+export function SiteDialog(
+  { ref, miniMapRef, feature, group, model, lang, onStep, onClose }: SiteDialogProps,
+) {
   // Escape arrives as `cancel`. Taken over so it closes through history like every other
   // way of closing the card.
-  const onCancel = (e) => {
+  const onCancel = (e: SyntheticEvent<HTMLDialogElement>) => {
     e.preventDefault();
     onClose();
   };
   // The dialog's children fill it, so a click that lands on the dialog element itself is
   // a click on the backdrop around it.
-  const onBackdropClick = (e) => {
+  const onBackdropClick = (e: MouseEvent<HTMLDialogElement>) => {
     if (e.target === e.currentTarget) onClose();
   };
 
@@ -34,7 +53,7 @@ export function SiteDialog({ ref, miniMapRef, feature, group, model, lang, onSte
       <div className="mini-map" id="mini-map" ref={miniMapRef} />
       <Stepper group={group} currentId={feature && feature.properties.id} onStep={onStep} />
       <article className="card" id="card" aria-labelledby="card-title" hidden={!feature}>
-        {feature && <Card feature={feature} model={model} lang={lang} />}
+        {feature && <Card feature={feature} model={model!} lang={lang} />}
       </article>
       <button className="card-close" id="card-close" type="button" onClick={onClose}>
         <span aria-hidden="true">×</span>{" "}
@@ -59,7 +78,13 @@ export function SiteDialog({ ref, miniMapRef, feature, group, model, lang, onSte
  * It wraps rather than disabling at the ends. With a stack of two, disabling would leave
  * one of the two arrows permanently dead; the count already says where you are.
  */
-function Stepper({ group, currentId, onStep }) {
+interface StepperProps {
+  group: Site[];
+  currentId: string | null;
+  onStep: SiteDialogProps["onStep"];
+}
+
+function Stepper({ group, currentId, onStep }: StepperProps) {
   const show = group.length > 1;
   const index = group.findIndex((f) => f.properties.id === currentId);
   return (
@@ -83,7 +108,14 @@ function Stepper({ group, currentId, onStep }) {
 }
 
 /** One stepper arrow. The glyph is decoration; the label is what is announced. */
-function ArrowButton({ dir, glyph, label, onClick }) {
+interface ArrowButtonProps {
+  dir: StepDirection;
+  glyph: string;
+  label: string;
+  onClick: () => void;
+}
+
+function ArrowButton({ dir, glyph, label, onClick }: ArrowButtonProps) {
   return (
     <button type="button" className={`step step-${dir}`} onClick={onClick}>
       <span aria-hidden="true">{glyph}</span>

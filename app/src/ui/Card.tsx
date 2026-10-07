@@ -1,15 +1,23 @@
-import { track } from "../logic/analytics.js";
+import { track } from "../logic/analytics.ts";
 import {
   cardActions, cardFields, displayUrl, formatDate, hrefFor, mapsLink, parseStructure, telHref,
-} from "../logic/card.js";
+} from "../logic/card.ts";
+import type { CardField } from "../logic/card.ts";
+import type { Config, Model, Org, Site } from "../logic/types.ts";
+
+interface CardProps {
+  feature: Site;
+  model: Model;
+  lang: string;
+}
 
 /**
- * One site's card: always exactly one record. What it shows is decided in logic/card.js
+ * One site's card: always exactly one record. What it shows is decided in logic/card.ts
  * from config.json; this file only turns that into markup.
  *
- * Every visible string is its own element — see the language rule at the top of App.jsx.
+ * Every visible string is its own element — see the language rule at the top of App.tsx.
  */
-export function Card({ feature, model, lang }) {
+export function Card({ feature, model, lang }: CardProps) {
   const p = feature.properties;
   const org = model.orgById.get(p.org_id) || {};
   const fields = cardFields(model.config, p, org);
@@ -52,14 +60,21 @@ export function Card({ feature, model, lang }) {
  * Which fields appear is config, not code — `actions` in config.json, in the order the
  * card should show them — so a different dataset moves its own fields up here without
  * touching this file. The Google Maps link is appended last and is the one composed
- * rather than read from a single field — see `mapsLink` in logic/card.js.
+ * rather than read from a single field — see `mapsLink` in logic/card.ts.
  *
  * Each button carries a label and a detail line: the label is the verb, the detail is the
  * information. That keeps the phone number and the domain visible and copyable on a
  * desktop, where `tel:` does nothing, without the row turning into an icon puzzle. Both
  * are separate text nodes, so the proxy translates the verb and leaves the number alone.
  */
-function ActionRow({ feature, org, config }) {
+interface ActionRowProps {
+  feature: Site;
+  /** The site's organization, or `{}` when orgs.json has none for it. */
+  org: Partial<Org>;
+  config: Config;
+}
+
+function ActionRow({ feature, org, config }: ActionRowProps) {
   const p = feature.properties;
   const actions = cardActions(config, p, org);
   const maps = mapsLink(config, feature, org);
@@ -90,7 +105,7 @@ function ActionRow({ feature, org, config }) {
 }
 
 /** One labelled field's value: a link, or text broken into paragraphs and lists. */
-function FieldValue({ field }) {
+function FieldValue({ field }: { field: CardField }) {
   const { as, value } = field;
   if (as === "url") {
     return (
@@ -100,7 +115,7 @@ function FieldValue({ field }) {
   if (as === "tel") return <a href={telHref(value)}><span>{value}</span></a>;
 
   const s = parseStructure(value);
-  const list = (items) => (
+  const list = (items: string[]) => (
     <ul>{items.map((item, i) => <li key={i}><span>{item}</span></li>)}</ul>
   );
   if (s.kind === "intro-list") return <><p><span>{s.intro}</span></p>{list(s.items)}</>;

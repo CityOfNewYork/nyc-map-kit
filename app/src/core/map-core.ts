@@ -1,5 +1,5 @@
 /**
- * map-core.js — the reusable map.
+ * map-core.ts — the reusable map.
  *
  * This is the half of the block that has no opinions about the dataset. It knows about
  * points, clusters, selection, and highlight. It does NOT know what an organization is,
@@ -13,10 +13,10 @@
  * That is only possible if the map never reaches outside its own container, which is the
  * rule this file keeps.
  *
- *   import { createMap } from "./map-core.js";
+ *   import { createMap } from "./map-core.ts";
  *
  *   const map = createMap(document.getElementById("map"), {
- *     style,                         // style URL or style object (see basemap-style.js)
+ *     style,                         // style URL or style object (see basemap-style.ts)
  *     data,                          // GeoJSON FeatureCollection of Points
  *     onSelect(feature, info),       // info = {via}
  *     onClusterExpand(count),
@@ -29,6 +29,8 @@
  *   map.highlight(ids);              // e.g. every site of one org; [] clears
  *   map.fitTo(ids);                  // fit the viewport to a subset
  *   map.destroy();
+ *
+ * MapCoreOptions and MapCore, below, are the exact contract.
  *
  * `id` throughout is the `id` PROPERTY of a feature (a stable string from the data
  * pipeline), not MapLibre's internal numeric feature id.
@@ -71,11 +73,51 @@
  * imports this file gets working zoom buttons and attribution without a separate link.
  */
 
+import type { Feature, FeatureCollection, Point } from "geojson";
 import * as maplibregl from "maplibre-gl";
+import type { ExpressionSpecification, GeoJSONSource, StyleSpecification } from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 maplibregl.setWorkerUrl(workerUrl);
+
+// -------------------------------------------------------------------------------- types
+
+/** What the core needs on a feature: an `id` property. The rest belongs to the client. */
+export interface PointProperties {
+  id: string;
+}
+
+/** How a selection was made: a click on a pin, or a call to `select()`. */
+export interface SelectInfo {
+  via: "map" | "api";
+}
+
+/** createMap's options. `P` is the client's feature properties. */
+export interface MapCoreOptions<P extends PointProperties> {
+  style?: StyleSpecification | string;
+  data?: FeatureCollection<Point, P>;
+  cluster?: boolean;
+  onSelect?: (feature: Feature<Point, P> | null, info: SelectInfo) => void;
+  onClusterExpand?: (count: number) => void;
+  focusPoint?: (() => [number, number] | null) | null;
+}
+
+/** The map createMap returns. Each method is described where it is written, in `api`. */
+export interface MapCore<P extends PointProperties> {
+  readonly raw: maplibregl.Map;
+  setData(geojson: FeatureCollection<Point, P> | null): MapCore<P>;
+  select(id: string | null): MapCore<P>;
+  highlight(ids: string[]): MapCore<P>;
+  fitTo(ids: string[]): MapCore<P>;
+  readonly selectedId: string | null;
+  announce(content: string | Node | null): void;
+  ready(fn: () => void): MapCore<P>;
+  destroy(): void;
+}
+
+/** A coordinate as MapLibre takes it. GeoJSON types the same pair as number[]. */
+type LngLat = [number, number];
 
 // --------------------------------------------------------------------------- appearance
 // Marks, not text, so the bar is WCAG 2.2 SC 1.4.11 non-text contrast (3:1) against the
@@ -103,12 +145,12 @@ const PIN_DPR = 2;
 /** One pin as ImageData, in `fill`, optionally ringed in `halo`. The ring is drawn inside
  *  the same canvas — the pin shrinks to make room — so every state shares one geometry and
  *  the tip still lands on the coordinate. */
-function pinImage(fill, halo) {
+function pinImage(fill: string, halo: string | null): ImageData {
   const { width: w, height: h, stroke, hole, halo: haloWidth } = PIN_SHAPE;
   const canvas = document.createElement("canvas");
   canvas.width = Math.ceil(w * PIN_DPR);
   canvas.height = Math.ceil(h * PIN_DPR);
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext("2d")!;
   ctx.scale(PIN_DPR, PIN_DPR);
 
   const inset = halo ? haloWidth : 0;
@@ -152,7 +194,7 @@ const PIN_IMAGE = { base: "pin-base", dimmed: "pin-dimmed", selected: "pin-selec
 // the set countable. The option stays for the scale where even the shape stops reading.
 const CLUSTER_MAX_ZOOM = 14;   // with cluster:true, above this points draw individually
 const CLUSTER_RADIUS = 40;
-const NYC_BOUNDS = [[-74.30, 40.47], [-73.65, 40.95]];
+const NYC_BOUNDS: [LngLat, LngLat] = [[-74.30, 40.47], [-73.65, 40.95]];
 // The zoom a selection made off the map — from the list, or through the API — eases in
 // to, if the map is further out. z15 is where individual blocks read: ~4.7 m per pixel at
 // NYC's latitude, so a Manhattan block is ~17 × 57 px. A map already closer than this is
@@ -163,13 +205,13 @@ const STREET_ZOOM = 15;
 // not. MapLibre's maxBounds does two things at once: it stops the pan at the edge, and it
 // stops zooming out at the point where the bounds fill the container — so the zoom-out
 // limit follows the frame's size instead of being a number that is right for one width.
-const MAX_BOUNDS = [[-74.42, 40.39], [-73.53, 41.03]];
+const MAX_BOUNDS: [LngLat, LngLat] = [[-74.42, 40.39], [-73.53, 41.03]];
 
 // A value no real site id can equal, so "nothing is selected" is expressible inside a
 // MapLibre expression (which has no notion of null).
 const NO_SELECTION = "∅";
 
-const EMPTY = { type: "FeatureCollection", features: [] };
+const EMPTY: FeatureCollection<Point, never> = { type: "FeatureCollection", features: [] };
 
 // The three layers that draw individual sites (as opposed to cluster bubbles). A click
 // anywhere in this set is a click on a site; MapLibre hands back the topmost one, which
@@ -177,7 +219,7 @@ const EMPTY = { type: "FeatureCollection", features: [] };
 const POINT_LAYERS = ["focus-site", "overlay-sites", "sites"];
 
 /** Push a map-side analytics event. The host page's tag reads window.dataLayer. */
-function track(event, payload) {
+function track(event: string, payload: Record<string, unknown>): void {
   window.dataLayer = window.dataLayer || [];
   const row = Object.assign({ event }, payload);
   window.dataLayer.push(row);
@@ -185,7 +227,9 @@ function track(event, payload) {
   console.log("[dataLayer]", row);
 }
 
-export function createMap(container, options = {}) {
+export function createMap<P extends PointProperties>(
+  container: HTMLElement, options: MapCoreOptions<P> = {},
+): MapCore<P> {
   const {
     style,
     data = EMPTY,
@@ -224,20 +268,20 @@ export function createMap(container, options = {}) {
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
   let currentData = data;
-  let selectedId = null;
-  let highlighted = [];
+  let selectedId: string | null = null;
+  let highlighted: string[] = [];
   let ready = false;
   let destroyed = false;
-  const pending = [];        // work queued before the style finishes loading
+  const pending: (() => void)[] = [];   // work queued before the style finishes loading
 
-  const byId = new Map();
-  function indexData(fc) {
+  const byId = new Map<string, Feature<Point, P>>();
+  function indexData(fc: FeatureCollection<Point, P>): void {
     byId.clear();
     for (const f of (fc && fc.features) || []) byId.set(f.properties.id, f);
   }
   indexData(currentData);
 
-  function whenReady(fn) {
+  function whenReady(fn: () => void): void {
     if (ready) fn();
     else pending.push(fn);
   }
@@ -246,7 +290,7 @@ export function createMap(container, options = {}) {
    *  so the client can keep each visible string in its own element (see the language
    *  rule in the README). Re-setting identical content does not re-announce in some
    *  screen readers, so the region is cleared first. */
-  function announce(content) {
+  function announce(content: string | Node | null): void {
     liveRegion.replaceChildren();
     window.setTimeout(() => {
       if (destroyed) return;
@@ -264,12 +308,13 @@ export function createMap(container, options = {}) {
   // the source is clustered, and feature-state on a clustered GeoJSON source is keyed to
   // ids that change as clusters re-form, so state set at one zoom is lost at the next.
   // At 185 points an expression over a literal id list costs nothing and always holds.)
-  const isSelected = () => ["==", ["get", "id"], selectedId ?? NO_SELECTION];
+  const isSelected = (): ExpressionSpecification =>
+    ["==", ["get", "id"], selectedId ?? NO_SELECTION];
 
   // State is carried by which pin image is drawn and how big, rather than by a fill
   // colour: an icon's colour is baked into its image, so the three states are three
   // registered images and the expression picks between them.
-  function sitesIcon() {
+  function sitesIcon(): ExpressionSpecification | string {
     if (!highlighted.length) {
       return ["case", isSelected(), PIN_IMAGE.selected, PIN_IMAGE.base];
     }
@@ -289,19 +334,20 @@ export function createMap(container, options = {}) {
    * at the top level of a layout property, so the per-state multiplier goes inside each
    * stop rather than wrapping the whole thing.
    */
-  function sitesSize() {
-    const state = highlighted.length ? 0.72 : ["case", isSelected(), 1.25, 1];
-    const at = (k) => ["*", k, state];
+  function sitesSize(): ExpressionSpecification {
+    const state: number | ExpressionSpecification =
+      highlighted.length ? 0.72 : ["case", isSelected(), 1.25, 1];
+    const at = (k: number): ExpressionSpecification => ["*", k, state];
     return ["interpolate", ["linear"], ["zoom"],
       9, at(0.55), 12, at(0.75), 15, at(1), 18, at(1.15)];
   }
 
   /** The same curve for the layers that are always drawn at one state. */
-  function fixedSize(factor) {
+  function fixedSize(factor: number): ExpressionSpecification {
     return ["interpolate", ["linear"], ["zoom"],
       9, 0.55 * factor, 12, 0.75 * factor, 15, 1 * factor, 18, 1.15 * factor];
   }
-  function sitesOpacity() {
+  function sitesOpacity(): number {
     return highlighted.length ? 0.55 : 1;
   }
 
@@ -318,8 +364,8 @@ export function createMap(container, options = {}) {
    * The selected site gets the same treatment for the same reason: a selection made from
    * a list must be visible even if that point is inside a cluster.
    */
-  function subset(ids) {
-    const features = ids.map((id) => byId.get(id)).filter(Boolean);
+  function subset(ids: string[]): FeatureCollection<Point, P> {
+    const features = ids.map((id) => byId.get(id)).filter(Boolean) as Feature<Point, P>[];
     return { type: "FeatureCollection", features };
   }
 
@@ -332,14 +378,14 @@ export function createMap(container, options = {}) {
       map.setPaintProperty("clusters", "circle-opacity", highlighted.length ? 0.35 : 0.9);
       map.setPaintProperty("cluster-count", "text-opacity", highlighted.length ? 0.5 : 1);
     }
-    map.getSource("overlay").setData(subset(highlighted));
-    map.getSource("focus").setData(subset(selectedId ? [selectedId] : []));
+    map.getSource<GeoJSONSource>("overlay")!.setData(subset(highlighted));
+    map.getSource<GeoJSONSource>("focus")!.setData(subset(selectedId ? [selectedId] : []));
   }
 
   // ------------------------------------------------------------------ layers
   map.on("load", () => {
     if (destroyed) return;
-    for (const [state, id] of Object.entries(PIN_IMAGE)) {
+    for (const [state, id] of Object.entries(PIN_IMAGE) as [keyof typeof PIN_IMAGE, string][]) {
       if (!map.hasImage(id)) {
         const halo = state === "selected" ? PIN.halo : null;
         map.addImage(id, pinImage(PIN[state], halo), { pixelRatio: PIN_DPR });
@@ -441,9 +487,11 @@ export function createMap(container, options = {}) {
       const feature = e.features && e.features[0];
       if (!feature) return;
       const count = feature.properties.point_count;
-      const source = map.getSource("sites");
+      const source = map.getSource<GeoJSONSource>("sites")!;
       Promise.resolve(source.getClusterExpansionZoom(feature.properties.cluster_id))
-        .then((zoom) => map.easeTo({ center: feature.geometry.coordinates, zoom }))
+        .then((zoom) => map.easeTo({
+          center: (feature.geometry as Point).coordinates as LngLat, zoom,
+        }))
         .catch(() => {});
       track("map_cluster_expand", { count });
       onClusterExpand(count);
@@ -464,19 +512,21 @@ export function createMap(container, options = {}) {
     // difference between a legible location and a speck in the middle of the region.
     // Instant, so there is no camera animation on first paint.
     fitToIds([], 0);
-    while (pending.length) pending.shift()();
+    while (pending.length) pending.shift()!();
   });
 
-  function fitToIds(ids, duration) {
+  function fitToIds(ids: string[], duration: number): void {
     const list = (ids && ids.length ? ids.map((i) => byId.get(i)) : [...byId.values()])
-      .filter(Boolean);
+      .filter(Boolean) as Feature<Point, P>[];
     if (!list.length) return;
     if (list.length === 1) {
-      map.easeTo({ center: list[0].geometry.coordinates, zoom: STREET_ZOOM, duration });
+      map.easeTo({
+        center: list[0].geometry.coordinates as LngLat, zoom: STREET_ZOOM, duration,
+      });
       return;
     }
     const b = new maplibregl.LngLatBounds();
-    for (const f of list) b.extend(f.geometry.coordinates);
+    for (const f of list) b.extend(f.geometry.coordinates as LngLat);
     map.fitBounds(b, { padding: 60, maxZoom: STREET_ZOOM, duration });
   }
 
@@ -484,15 +534,15 @@ export function createMap(container, options = {}) {
   // centre. The core does not know what surrounds its container — a list beside it, a
   // card over it — so the client says where the pin should land and the core only does
   // the arithmetic. No `focusPoint` means the container's own centre.
-  function focusOffset() {
+  function focusOffset(): [number, number] {
     const point = focusPoint ? focusPoint() : null;
     if (!point) return [0, 0];
     const box = map.getContainer().getBoundingClientRect();
     return [point[0] - box.width / 2, point[1] - box.height / 2];
   }
 
-  function applySelection(id, via) {
-    const previous = byId.get(selectedId) || null;
+  function applySelection(id: string, via: SelectInfo["via"]): void {
+    const previous = byId.get(selectedId as string) || null;
     selectedId = id;
     repaint();
     const feature = byId.get(id) || null;
@@ -513,7 +563,7 @@ export function createMap(container, options = {}) {
       // when it had not. Measured in pixels rather than metres because it is a question
       // about what is on screen, which is the core's business; what counts as one
       // *place* is the client's, and it decides that in metres.
-      const from = previous ? map.project(previous.geometry.coordinates) : null;
+      const from = previous ? map.project(previous.geometry.coordinates as LngLat) : null;
       const to = map.project([lon, lat]);
       const stepping = via !== "map" && from && Math.hypot(to.x - from.x, to.y - from.y) < 60;
       if (!stepping) {
@@ -529,7 +579,7 @@ export function createMap(container, options = {}) {
   }
 
   // ------------------------------------------------------------------ public API
-  const api = {
+  const api: MapCore<P> = {
     /** The underlying MapLibre instance. Escape hatch — prefer the methods below. */
     get raw() { return map; },
 
@@ -537,7 +587,7 @@ export function createMap(container, options = {}) {
       currentData = geojson || EMPTY;
       indexData(currentData);
       whenReady(() => {
-        map.getSource("sites").setData(currentData);
+        map.getSource<GeoJSONSource>("sites")!.setData(currentData);
         if (selectedId && !byId.has(selectedId)) selectedId = null;
         repaint();
       });

@@ -1,9 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { compareSites } from "../logic/data.js";
+import type { PointerEvent } from "react";
+import { compareSites } from "../logic/data.ts";
+import type { Settings } from "../logic/params.ts";
+import type { Model, Site } from "../logic/types.ts";
 
 /** The bottom sheet's three heights on a phone; the handle cycles through them in order. */
 const SHEET_HEIGHTS = { collapsed: "48px", half: "45dvh", full: "85dvh" };
-const NEXT_STEP = { collapsed: "half", half: "full", full: "collapsed" };
+type SheetStep = keyof typeof SHEET_HEIGHTS;
+const NEXT_STEP: Record<SheetStep, SheetStep> =
+  { collapsed: "half", half: "full", full: "collapsed" };
+
+interface PanelProps {
+  model: Model | null;
+  list: Settings["list"];
+  selectedId: string | null;
+  /** A row was chosen: the button that was pressed, and its site. */
+  onOpen: (button: HTMLElement, feature: Site) => void;
+}
 
 /**
  * The list of sites: a panel floating over the map on a desktop, a bottom sheet on a phone.
@@ -16,11 +29,11 @@ const NEXT_STEP = { collapsed: "half", half: "full", full: "collapsed" };
  * `model` is null until the data has loaded; until then the panel shows its frame and
  * nothing in it responds.
  */
-export function Panel({ model, list, selectedId, onOpen }) {
-  const [step, setStep] = useState("collapsed");
+export function Panel({ model, list, selectedId, onOpen }: PanelProps) {
+  const [step, setStep] = useState<SheetStep>("collapsed");
   const [dragging, setDragging] = useState(false);
-  const panelRef = useRef(null);
-  const drag = useRef(null);
+  const panelRef = useRef<HTMLElement>(null);
+  const drag = useRef<{ y: number; h: number } | null>(null);
 
   // The sheet's height is a CSS variable on <html>, because the map's own controls read
   // it too, to stay clear of the sheet (see the phone layout in style.css).
@@ -35,25 +48,25 @@ export function Panel({ model, list, selectedId, onOpen }) {
   // Drag, in addition to tap. Pointer events cover mouse, touch and pen with one path.
   // While dragging, the height is set directly on the element rather than through state,
   // so the sheet follows the finger without a render per pointer move.
-  function onPointerDown(e) {
+  function onPointerDown(e: PointerEvent<HTMLButtonElement>) {
     if (!model) return;
-    drag.current = { y: e.clientY, h: panelRef.current.getBoundingClientRect().height };
+    drag.current = { y: e.clientY, h: panelRef.current!.getBoundingClientRect().height };
     e.currentTarget.setPointerCapture(e.pointerId);
     setDragging(true);
   }
-  function onPointerMove(e) {
+  function onPointerMove(e: PointerEvent<HTMLButtonElement>) {
     if (!drag.current) return;
     const h = Math.min(window.innerHeight * 0.9,
                        Math.max(48, drag.current.h + (drag.current.y - e.clientY)));
-    panelRef.current.style.height = `${h}px`;
+    panelRef.current!.style.height = `${h}px`;
   }
-  function onPointerUp(e) {
+  function onPointerUp(e: PointerEvent<HTMLButtonElement>) {
     if (!drag.current) return;
     const moved = Math.abs(e.clientY - drag.current.y);
-    const h = panelRef.current.getBoundingClientRect().height;
+    const h = panelRef.current!.getBoundingClientRect().height;
     drag.current = null;
     setDragging(false);
-    panelRef.current.style.height = "";
+    panelRef.current!.style.height = "";
     if (moved < 8) return;                       // a tap; the click handler owns it
     const frac = h / window.innerHeight;
     setStep(frac < 0.2 ? "collapsed" : frac < 0.65 ? "half" : "full");
@@ -108,7 +121,7 @@ export function Panel({ model, list, selectedId, onOpen }) {
         tooltip — it is what makes each row its own place. The borough is already inside
         the address string, so a row is two lines, not three.
 
-        Sorted north to south, borough by borough — see `compareSites` in logic/data.js.
+        Sorted north to south, borough by borough — see `compareSites` in logic/data.ts.
       */}
       <ul className="site-list" id="site-list">
         {sites.map((feature) => {

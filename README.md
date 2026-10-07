@@ -13,15 +13,20 @@ npm ci          # install
 npm run dev     # local server that reloads on save: http://localhost:5173/demo.html
 npm test        # unit tests for the data logic
 npm run lint
-npm run build   # the static site, in dist/
+npm run build   # type-check, then build the static site, in dist/
 ```
+
+The code is TypeScript. Vite strips the types without checking them, so `npm run build`
+runs the type checker (`tsc`) first, and a type error fails the build here and in CI;
+editors show the same errors as you type. The types for the files the app loads
+(`config.json`, the point data, `orgs.json`) are in `app/src/logic/types.ts`.
 
 Pushing to `main` publishes the build to GitHub Pages (`.github/workflows/pages.yml`).
 
 The code in `app/src/` is in three layers:
 
-- `core/`: the map (MapLibre, the basemap, pins, camera). Plain JavaScript with no
-  framework, so any page can use it.
+- `core/`: the map (MapLibre, the basemap, pins, camera). No framework, so any page can
+  use it.
 - `logic/`: the data rules (grouping, sorting, what a card shows). Plain functions,
   unit-tested.
 - `ui/`: the interface (list, card, bottom sheet). React.
