@@ -31,7 +31,7 @@
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
 import {
-  addLandcoverParks, balancePlaceLabels, loadBasemapStyle, warmTint,
+  addLandcoverParks, balancePlaceLabels, lightenSideStreets, loadBasemapStyle, warmTint,
 } from "../core/basemap-style.ts";
 import type { MapCore, SelectInfo } from "../core/map-core.ts";
 import { track } from "../logic/analytics.ts";
@@ -434,7 +434,8 @@ async function loadData(settings: Settings): Promise<Model> {
 /** The basemap style, with its labels in the reader's language. See basemap-style.ts. */
 async function loadBasemap(lang: string): Promise<StyleSpecification> {
   const style = await loadBasemapStyle(BASEMAP_STYLE, lang);
-  return warmTint(balancePlaceLabels(addLandcoverParks(style), lang), BASEMAP_PALETTE);
+  return warmTint(balancePlaceLabels(lightenSideStreets(addLandcoverParks(style)), lang),
+    BASEMAP_PALETTE);
 }
 
 // ------------------------------------------------------------------------ live region

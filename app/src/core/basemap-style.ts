@@ -133,6 +133,26 @@ export function addLandcoverParks(style: StyleSpecification): StyleSpecification
   return style;
 }
 
+/**
+ * Draw side streets white from z14, as positron already draws the major roads, in place.
+ *
+ * Positron gives its two road classes opposite contrasts: major roads are white, lighter
+ * than the blocks, and side streets (`minor`, `service`, `track`) are grey lines, darker
+ * than them. At city zoom the grey keeps the street grid a quiet texture, so it stays.
+ * From z14, where a reader is looking for one street, side streets fade to white over
+ * one zoom level, so every street is lighter than the blocks either side of it and
+ * width alone tells an avenue from a side street. Full opacity, as the major roads are.
+ */
+export function lightenSideStreets(style: StyleSpecification): StyleSpecification {
+  const minor = (style.layers || []).find((l) => l.id === "highway_minor");
+  // Only a plain colour is ramped: a zoom expression cannot nest inside another.
+  if (minor?.type !== "line" || typeof minor.paint?.["line-color"] !== "string") return style;
+  minor.paint["line-color"] =
+    ["interpolate", ["linear"], ["zoom"], 13, minor.paint["line-color"], 14, "#fff"];
+  minor.paint["line-opacity"] = 1;
+  return style;
+}
+
 /* ------------------------------------------------------ place-label balance
 
  * WHY THIS EXISTS
