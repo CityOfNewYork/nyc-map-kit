@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 
 // The app lives in app/ and builds to dist/app/, so the published address keeps its shape:
 // <site>/app/demo.html and <site>/app/embed.html, the same as when GitHub Pages served the
-// source directly.
+// source directly. <site>/app/compare.html shows two basemaps side by side.
 //
 // `base: "./"` makes every built URL relative. The block has to work at localhost, under
 // the GitHub Pages subpath, and wherever a city host puts it, without a rebuild per host.
@@ -27,6 +27,7 @@ export default defineConfig({
       input: {
         demo: resolve(import.meta.dirname, "app/demo.html"),
         embed: resolve(import.meta.dirname, "app/embed.html"),
+        compare: resolve(import.meta.dirname, "app/compare.html"),
       },
     },
   },

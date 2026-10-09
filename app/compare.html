@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Basemap comparison</title>
+
+<!--
+  Two copies of the block side by side, each on a different basemap, with the camera kept
+  in step: pan, zoom or rotate either one and the other follows. It is for judging
+  basemap changes, and is published alongside the demo.
+
+    compare.html                              current basemap | OTI's, in our palette
+    compare.html?right=nyc-original           current basemap | OTI's, in its own colours
+    compare.html?lang=es                      any other parameter goes to both frames
+
+  The sync reaches into each frame's `nycMapKit` global (see App.tsx), which works because
+  the frames are same-origin. Only the camera is mirrored: a card opened on one side stays
+  on that side.
+-->
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex;
+    background: #fff;
+    color: #1a1a1a;
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  section { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  section + section { border-left: 1px solid #d9d9d9; }
+  label { padding: 6px 12px; border-bottom: 1px solid #d9d9d9; }
+  select { font: inherit; }
+  iframe { flex: 1; width: 100%; border: 0; }
+  @media (max-width: 700px) {
+    body { flex-direction: column; }
+    section + section { border-left: 0; border-top: 1px solid #d9d9d9; }
+  }
+</style>
+</head>
+
+<body>
+<section><label>Left <select></select></label><iframe title="Left map"></iframe></section>
+<section><label>Right <select></select></label><iframe title="Right map"></iframe></section>
+
+<script type="module">
+const BASEMAPS = {
+  positron: "Current (OpenFreeMap)",
+  nyc: "OTI NYC Basemap, our palette",
+  "nyc-original": "OTI NYC Basemap, its own colours",
+};
+const SIDES = ["left", "right"];
+const DEFAULT = { left: "positron", right: "nyc" };
+
+const page = new URLSearchParams(location.search);
+const frames = [...document.querySelectorAll("iframe")];
+const selects = [...document.querySelectorAll("select")];
+const live = [null, null];   // each side's MapLibre map, once it has framed itself
+const loads = [0, 0];        // bumped on each reload, so a stale wait gives up
+let mirroring = false;
+
+function embedUrl(basemap) {
+  const params = new URLSearchParams(page);
+  for (const side of SIDES) params.delete(side);
+  if (!params.has("list")) params.set("list", "off");
+  params.set("basemap", basemap);
+  return `embed.html?${params}`;
+}
+
+function mirror(from, to) {
+  if (mirroring || !to) return;
+  mirroring = true;   // to.jumpTo fires `move` on `to`, which must not echo back
+  const c = from.getCenter();
+  to.jumpTo({ center: [c.lng, c.lat], zoom: from.getZoom(),
+    bearing: from.getBearing(), pitch: from.getPitch() });
+  mirroring = false;
+}
+
+// Wait for the frame's map, then for its own first framing (map-core's `ready` runs
+// after it), so a frame that loads late takes the other side's view instead of
+// snapping both back to the default.
+function attach(i, n) {
+  const poll = setInterval(() => {
+    if (loads[i] !== n) return clearInterval(poll);
+    const kit = frames[i].contentWindow?.nycMapKit;
+    if (!kit) return;
+    clearInterval(poll);
+    kit.ready(() => {
+      if (loads[i] !== n) return;
+      const map = kit.raw;
+      if (live[1 - i]) mirror(live[1 - i], map);
+      map.on("move", () => mirror(map, live[1 - i]));
+      live[i] = map;
+    });
+  }, 50);
+}
+
+SIDES.forEach((side, i) => {
+  const chosen = BASEMAPS[page.get(side)] ? page.get(side) : DEFAULT[side];
+  for (const [value, name] of Object.entries(BASEMAPS)) {
+    selects[i].add(new Option(name, value, false, value === chosen));
+  }
+  selects[i].addEventListener("change", () => {
+    page.set(side, selects[i].value);
+    history.replaceState(null, "", `?${page}`);
+    load(i);
+  });
+  load(i);
+});
+
+function load(i) {
+  live[i] = null;
+  const n = ++loads[i];
+  frames[i].addEventListener("load", () => attach(i, n), { once: true });
+  frames[i].src = embedUrl(selects[i].value);
+}
+</script>
+</body>
+</html>
