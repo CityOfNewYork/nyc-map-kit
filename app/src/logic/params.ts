@@ -20,6 +20,9 @@ export interface Settings {
   title: string | null;
   /** The site whose card opens on load. */
   site: string | null;
+  /** Which basemap to draw: OpenFreeMap's positron, or OTI's NYC basemap in this block's
+   *  palette ("nyc") or in its own ("nyc-original"). */
+  basemap: "positron" | "nyc" | "nyc-original";
 }
 
 /**
@@ -57,5 +60,6 @@ export function readSettings(
     list: params.get("list") === "off" ? "off" : DEFAULTS.list,
     title: params.get("title"),
     site: params.get("site"),
+    basemap: ((b) => b === "nyc" || b === "nyc-original" ? b : "positron")(params.get("basemap")),
   };
 }

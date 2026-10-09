@@ -153,6 +153,48 @@ export function lightenSideStreets(style: StyleSpecification): StyleSpecificatio
   return style;
 }
 
+/** Park names, on both basemaps: a dark shade of the park fill's green. */
+const PARK_NAME_COLOR = "hsl(96, 25%, 30%)";
+
+/**
+ * Name the parks, in place, as the NYC basemap does and positron does not.
+ *
+ * The tiles carry a point for each park in the `poi` source-layer, class `park`, which
+ * also covers plazas, playgrounds and community gardens. They carry them from z14, under
+ * the names OpenStreetMap gives them: Squibb Park, Fruit Street Sitting Area, Cadman
+ * Plaza. Positron prints no `poi` names at all. This prints the parks' in `lang`, in
+ * the italic green the NYC basemap uses, below every other label, so where two collide
+ * the street or place keeps its name.
+ */
+export function addParkNames(style: StyleSpecification, lang: string): StyleSpecification {
+  const layers = style.layers || [];
+  if (layers.some((l) => l.id === "park_name")) return style;
+  const source = Object.keys(style.sources || {})
+    .find((k) => style.sources[k] && style.sources[k].type === "vector");
+  if (!source) return style;
+  const layer: LayerSpecification = {
+    id: "park_name",
+    type: "symbol",
+    source,
+    "source-layer": "poi",
+    filter: ["==", ["get", "class"], "park"],
+    layout: {
+      "text-field": nameExpression(lang),
+      "text-font": ["Noto Sans Italic"],
+      "text-size": 12,
+      "text-max-width": 7,
+    },
+    paint: {
+      "text-color": PARK_NAME_COLOR,
+      "text-halo-color": "rgba(255, 255, 255, 0.8)",
+      "text-halo-width": 1,
+    },
+  };
+  const at = layers.findIndex((l) => l.type === "symbol");
+  layers.splice(at < 0 ? layers.length : at, 0, layer);
+  return style;
+}
+
 /* ------------------------------------------------------ place-label balance
 
  * WHY THIS EXISTS
@@ -209,6 +251,13 @@ const BOROUGH_LABELS: FeatureCollection<Point> = {
  *  `place` layer, so without this both would print over the same land. */
 const ISLANDS_NAMED_FOR_BOROUGHS = ["Staten Island", "Manhattan Island"];
 
+/** A layer filter that keeps what `existing` keeps and also meets every clause. The
+ *  clauses must be written in the same syntax as `existing`, expression or legacy:
+ *  MapLibre rejects a filter that mixes the two. */
+function and(existing: FilterSpecification | undefined, ...clauses: FilterSpecification[]) {
+  return (existing ? ["all", existing, ...clauses] : ["all", ...clauses]) as FilterSpecification;
+}
+
 /**
  * Rebalance the place labels for a map framed on New York City, in place.
  *
@@ -237,9 +286,6 @@ export function balancePlaceLabels(
   // filter: every kind but background.
   const layer = (id: string) => layers.find((l) => l.id === id) as
     Exclude<LayerSpecification, { type: "background" }> | undefined;
-  const and = (existing: FilterSpecification | undefined, ...clauses: FilterSpecification[]) =>
-    (existing ? ["all", existing, ...clauses] : ["all", ...clauses]) as FilterSpecification;
-
   const town = layer("label_town");
   if (town) town.minzoom = 11.5;
   const village = layer("label_village");
@@ -255,7 +301,23 @@ export function balancePlaceLabels(
   const city = layer("label_city");
   if (city) city.filter = and(city.filter, ["!=", ["get", "name"], "New York"]);
 
-  if (layer("borough_label")) return style;
+  addBoroughLabels(style, lang, 14);
+  style.metadata = Object.assign({}, style.metadata, {
+    "nyc-map-kit:place-labels": "balanced",
+  });
+  return style;
+}
+
+/**
+ * Add the five borough names from BOROUGH_LABELS as the top label layer, in place, up
+ * to `maxzoom`: the zoom at which the basemap's neighbourhood names take over and a
+ * borough name becomes noise.
+ */
+export function addBoroughLabels(
+  style: StyleSpecification, lang: string, maxzoom: number,
+): StyleSpecification {
+  const layers = style.layers || [];
+  if (layers.some((l) => l.id === "borough_label")) return style;
   style.sources = Object.assign({}, style.sources, {
     boroughs: { type: "geojson" as const, data: BOROUGH_LABELS },
   });
@@ -266,7 +328,7 @@ export function balancePlaceLabels(
     id: "borough_label",
     type: "symbol",
     source: "boroughs",
-    maxzoom: 14,
+    maxzoom,
     layout: {
       "text-field": nameExpression(lang),
       "text-font": ["Noto Sans Regular"],
@@ -281,9 +343,6 @@ export function balancePlaceLabels(
       "text-halo-width": 1.4,
       "text-halo-blur": 1,
     },
-  });
-  style.metadata = Object.assign({}, style.metadata, {
-    "nyc-map-kit:place-labels": "balanced",
   });
   return style;
 }
@@ -408,11 +467,15 @@ function warmed({ s, l, a }: Hsla): string | null {
     : `hsla(${WARM_HUE}, ${satPct}%, ${light}%, ${a})`;
 }
 
-/** Walk a paint value — a colour string, or an expression array with colour
- *  literals buried in it — and tint every colour leaf. Non-colour strings in an
+/** Walk a paint value — a colour string, an expression array with colour literals
+ *  buried in it, or a legacy zoom function (`{"stops": [[12, "#f0ece9"], …]}`, which
+ *  Esri's styles use) — and tint every colour leaf. Non-colour strings in an
  *  expression ("interpolate", "linear", "zoom") fail to parse and pass through. */
 function tintValue(value: unknown, counter: { n: number }): unknown {
   if (Array.isArray(value)) return value.map((v) => tintValue(v, counter));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, tintValue(v, counter)]));
+  }
   if (typeof value !== "string") return value;
   const parsed = parseColor(value);
   if (!parsed) return value;
@@ -461,6 +524,366 @@ export function warmTint(
     "nyc-map-kit:water": water || "unchanged",
     "nyc-map-kit:park": park || "unchanged",
   });
+  return style;
+}
+
+/* ---------------------------------------------------------- OTI's NYC basemap
+
+ * OTI publishes its own vector basemap of the city, NYC_Basemap_v3, as an Esri vector
+ * tile service on ArcGIS Online, with styles that sit on it as ArcGIS items. Esri's
+ * styles are Mapbox GL style documents, and MapLibre draws them as they are. Their
+ * labels are English only: every label layer prints a single `_name` field, so
+ * setStyleLanguage has nothing to switch to and is not applied.
+ */
+
+/** The "NYC Basemap" style, the default look of the tiles. */
+export const NYC_BASEMAP_STYLE =
+  "https://www.arcgis.com/sharing/rest/content/items/df7862bfd7984baab51ff9df8e214278/resources/styles/root.json";
+
+/**
+ * Fetch an Esri vector tile style. Each vector source names its tiles twice: `tiles`
+ * (absolute tile URLs) and `url`, the tile service's root. Given `url`, MapLibre
+ * fetches it before the first tile, then lets `tiles` override what it says. Dropping
+ * `url` saves that round trip. The source's own `attribution` is what the map credits,
+ * set in sentence case like the rest of the attribution line: "Source: NYC OTI".
+ */
+export async function loadEsriStyle(styleUrl: string): Promise<StyleSpecification> {
+  const resp = await fetch(styleUrl);
+  if (!resp.ok) throw new Error(`basemap style ${styleUrl} returned ${resp.status}`);
+  const style = await resp.json();
+  for (const source of Object.values(style.sources || {}) as Record<string, unknown>[]) {
+    if (source.type === "vector" && Array.isArray(source.tiles)) delete source.url;
+    if (typeof source.attribution === "string") {
+      source.attribution = source.attribution.replace(/^SOURCE:/, "Source:");
+    }
+  }
+  return style;
+}
+
+/**
+ * Report the rules that matched no layer, in place.
+ *
+ * The functions below change OTI's style by its layer and source-layer names, which
+ * were set when the tiles were authored and can change when OTI re-releases the
+ * basemap. A rule whose layer was renamed stops applying without an error, and the map
+ * quietly drifts back towards OTI's own look. So each function counts the layers every
+ * rule touched, and a rule that touched none is logged and listed in the style's
+ * metadata. basemap-style.test.ts runs every rule against OTI's live style.
+ */
+function reportUnmatched(style: StyleSpecification, hits: Record<string, number>): void {
+  const missed = Object.keys(hits).filter((rule) => hits[rule] === 0);
+  if (!missed.length) return;
+  console.warn(`[basemap] NYC basemap rules that matched no layer: ${missed.join(", ")}`);
+  const before = (style.metadata as Record<string, unknown> | undefined)?.["nyc-map-kit:unmatched"];
+  style.metadata = Object.assign({}, style.metadata, {
+    "nyc-map-kit:unmatched": [...(Array.isArray(before) ? before : []), ...missed],
+  });
+}
+
+/** The NYC basemap's source-layers, grouped by the colour this block gives them.
+ *  Plazas count as parks: residents use them as open space, and OpenStreetMap maps the
+ *  larger ones, MetroTech Commons among them, as parks. */
+const NYC_WATER = ["Ocean", "Inland Hydrography", "Region Hydrography"];
+const NYC_PARK = ["Parks", "Region Parks", "Plaza", "The High Line"];
+const NYC_LAND = ["Land/Land_NYC", "Land/Land_Region"];
+const NYC_LAND_COLOR = "rgb(242,243,240)";
+/** Buildings in positron's fill and outline. */
+const NYC_BUILDING = { fill: "rgb(234, 234, 229)", outline: "rgb(219, 219, 218)" };
+/** Walking paths: OTI's sidewalk layer, which also holds the paths through parks. It is
+ *  drawn in the land colour, so sidewalks vanish into the blocks, and part-transparent,
+ *  so a path through grass takes the tone of positron's paths rather than the land's. */
+const NYC_PATH_OPACITY = 0.74;
+/** Station platforms: darker than the buildings, not the dark grey OTI draws. */
+const NYC_STATION = "rgb(191,191,187)";
+
+/**
+ * Repaint the NYC Basemap style in this block's palette, in place.
+ *
+ * The style's own palette is made for a full reference map: mid-green parks, slate
+ * water, dark green sports fields. This brings it to the same quiet ground positron gives the
+ * block — positron's land greys, the caller's `water` and `park` — and warmTint() then
+ * warms the neutrals exactly as it does positron's. Fill patterns (wetland, beach) are
+ * left as the style draws them; labels are nycLabels' job.
+ *
+ * Water and parks are drawn opaque at every zoom, as positron draws them. OTI's style
+ * fades parks in instead, from transparent at z5 to opaque at z16 or later, which at
+ * the opening zoom leaves Central Park a pale wash rather than a landmark.
+ *
+ * Land is one colour inside the city and out, as positron draws it. The style draws
+ * the region around the city a step darker; this block keeps positron's single ground,
+ * and water already outlines most of the city.
+ *
+ * Buildings, landmarks included, are drawn flat in positron's fill and outline. The
+ * style draws them a darker grey, and landmarks darker still, which suits a reference
+ * map but at street level outweighs the pins; quietNycDetail drops the outlines and
+ * drop shadows it draws them with. Station platforms are drawn darker than the buildings but not in
+ * the style's dark grey, which along an elevated line like the 7 in Jackson Heights
+ * is the heaviest thing at street level. A dark block reads as a mark on the map,
+ * which is the pins' job.
+ *
+ * Sidewalks are drawn in the land colour, at NYC_PATH_OPACITY: on a block they cannot
+ * be seen, and through a park they are its paths, as positron draws them.
+ */
+export function nycBasemapPalette(
+  style: StyleSpecification, options: { water: string; park: string },
+): StyleSpecification {
+  const hits: Record<string, number> = { water: 0, park: 0, stations: 0, buildings: 0, paths: 0 };
+  for (const key of NYC_LAND) hits[key] = 0;
+  for (const layer of style.layers || []) {
+    if (layer.type !== "fill" && layer.type !== "line") continue;
+    const paint = layer.paint as Record<string, unknown> | undefined;
+    if (!paint || "fill-pattern" in paint) continue;
+    const sourceLayer = layer["source-layer"] || "";
+    if (sourceLayer === "Buildings" && layer.type === "fill") {
+      hits.buildings++;
+      layer.paint = { "fill-color": NYC_BUILDING.fill, "fill-outline-color": NYC_BUILDING.outline };
+      continue;
+    }
+    if (layer.id === "Sidewalks/Sidewalk") {
+      hits.paths++;
+      layer.paint = { "fill-color": NYC_LAND_COLOR, "fill-opacity": NYC_PATH_OPACITY };
+      continue;
+    }
+    const land = NYC_LAND.find((k) => layer.id.startsWith(k + "/"));
+    let rule: string | undefined;
+    let color: string | undefined;
+    if (layer.id === "Parks/Pool" || NYC_WATER.includes(sourceLayer)) [rule, color] = ["water", options.water];
+    else if (NYC_PARK.includes(sourceLayer)) [rule, color] = ["park", options.park];
+    else if (sourceLayer === "Rail Stations") [rule, color] = ["stations", NYC_STATION];
+    else if (land) [rule, color] = [land, NYC_LAND_COLOR];
+    if (!rule || !color) continue;
+    hits[rule]++;
+    for (const prop of Object.keys(paint)) {
+      if (prop.includes("color")) paint[prop] = color;
+      else if (prop.endsWith("-opacity") && (rule === "water" || rule === "park")) delete paint[prop];
+    }
+  }
+  reportUnmatched(style, hits);
+  return style;
+}
+
+/** What quietNycDetail drops: source-layers, plus the layers that share theirs with
+ *  something kept (station entrances, and the buildings' drop shadows and outlines). */
+const NYC_DETAIL = [
+  "Sidewalks/Elevated Sidewalk/1", "Sidewalks/Elevated Sidewalk/0",
+  "Medians", "Parking Lots", "Pedestrian Overpass", "Traffic Direction",
+  "Addresses", "Rail Stations/Station Entrance", "NYC Open Space",
+  "Buildings/Building/2", "Buildings/Building/0",
+  "Buildings/Landmark Building/2", "Buildings/Landmark Building/0",
+];
+
+/**
+ * Drop the survey detail, and the open-space layer, in place.
+ *
+ * The tiles are drawn from the city's planimetric survey, which maps every sidewalk,
+ * median and parking lot. That is accurate, and from z14 in it fills much of the
+ * screen, so a resident looking for one address sees the survey before the pins. This
+ * keeps what people find their way by — streets, buildings, parks, plazas, water, rail
+ * lines and stations — and drops medians, parking lots, pedestrian overpasses, one-way
+ * arrows and address numbers, which the hurricane finder's Human Geography style leaves
+ * out as well. Station entrances go too: they are small dark shapes with no label,
+ * which read as data. Sidewalks stay, since the same layer holds the paths through
+ * parks, and nycBasemapPalette draws them so only those show; elevated sidewalks go,
+ * since they are drawn over the roads.
+ *
+ * So do the buildings' drop shadows and outlines, which give a reference map depth
+ * but here compete with the pins, and "open space": the survey's layer for schoolyards,
+ * cemeteries and vacant lots, which reaches the tiles with no field to tell them apart.
+ * Painted as park, it shows a vacant lot as a place to go.
+ */
+export function quietNycDetail(style: StyleSpecification): StyleSpecification {
+  const hits: Record<string, number> = Object.fromEntries(NYC_DETAIL.map((k) => [k, 0]));
+  style.layers = (style.layers || []).filter((layer) => {
+    const key = [layer.id, "source-layer" in layer ? layer["source-layer"] : undefined]
+      .find((k) => k !== undefined && k in hits);
+    if (key === undefined) return true;
+    hits[key]++;
+    return false;
+  });
+  reportUnmatched(style, hits);
+  return style;
+}
+
+/** OTI's road classes, by how positron draws their counterparts: side streets as one
+ *  line, major roads as a white line on a pale casing. */
+const NYC_MINOR_ROADS = ["Local Road", "Ramp", "Alley, Private Road"];
+const NYC_MAJOR_ROADS = ["Primary", "Secondary", "Bridge"];
+
+/** Positron's roads: its colours, before warmTint, and its widths, which grow
+ *  exponentially with zoom. Side streets turn from grey to white at z14, as
+ *  lightenSideStreets has them on positron. */
+const POSITRON_ROADS: Record<"minor" | "major" | "casing",
+  { color: string | ExpressionSpecification; width: ExpressionSpecification }> = {
+  minor: {
+    color: ["interpolate", ["linear"], ["zoom"], 13, "hsl(0, 0%, 88%)", 14, "#fff"],
+    width: ["interpolate", ["exponential", 1.55], ["zoom"], 13, 1.8, 20, 20],
+  },
+  major: {
+    color: "#fff",
+    width: ["interpolate", ["exponential", 1.3], ["zoom"], 10, 2, 20, 20],
+  },
+  casing: {
+    color: "rgb(213, 213, 213)",
+    width: ["interpolate", ["exponential", 1.3], ["zoom"], 10, 3, 20, 23],
+  },
+};
+/** Below this zoom positron draws every road but the motorways as one thin grey line,
+ *  in this colour; from it, white on a casing. */
+const POSITRON_MAJOR_ZOOM = 11;
+const POSITRON_SUBTLE = "hsla(0, 0%, 85%, 0.69)";
+
+/**
+ * Draw streets as centre lines at every zoom, as positron does, in place.
+ *
+ * From z14 OTI's style stops drawing streets as lines and draws the survey's roadbed
+ * instead: each street's pavement, curb to curb, outlined in grey. That is each
+ * street's true shape, and it draws an avenue and a side street alike. The tiles carry
+ * the centre lines at every zoom, so this drops the roadbed and keeps drawing the
+ * lines, in positron's colours and widths: side streets as one line, major roads white
+ * on a pale casing, so width tells the main road.
+ * Below z11 secondary roads are one thin grey line, as positron draws its own, which
+ * at city zoom gives the street grid some texture. The tiles carry secondary roads
+ * from z10 and local streets from z12, so below those zooms there are none to draw.
+ */
+export function nycRoadsAsLines(style: StyleSpecification): StyleSpecification {
+  const hits: Record<string, number> = { Roadbeds: 0, "Roadbed Edge": 0 };
+  for (const cls of [...NYC_MINOR_ROADS, ...NYC_MAJOR_ROADS]) hits[cls] = 0;
+  style.layers = (style.layers || []).filter((layer) => {
+    const sourceLayer = "source-layer" in layer ? layer["source-layer"] : undefined;
+    if (sourceLayer === "Roadbeds" || sourceLayer === "Roadbed Edge") {
+      hits[sourceLayer]++;
+      return false;
+    }
+    // Each road is a casing (".../1") drawn under a fill (".../0"), in the city and out.
+    const [, cls, part] = layer.id.match(/^(?:NYC|Region) Roads\/(.+)\/([01])$/) || [];
+    const minor = NYC_MINOR_ROADS.includes(cls);
+    if (layer.type !== "line" || (!minor && !NYC_MAJOR_ROADS.includes(cls))) return true;
+    hits[cls]++;
+    if (minor && part === "1") return false;
+    const look = minor ? POSITRON_ROADS.minor
+      : part === "1" ? POSITRON_ROADS.casing : POSITRON_ROADS.major;
+    delete layer.maxzoom;
+    layer.paint = { "line-color": look.color, "line-width": look.width };
+    if (cls === "Secondary" && part === "1") layer.minzoom = POSITRON_MAJOR_ZOOM;
+    else if (cls === "Secondary") {
+      layer.paint["line-color"] = ["step", ["zoom"], POSITRON_SUBTLE, POSITRON_MAJOR_ZOOM, "#fff"];
+    }
+    return true;
+  });
+  reportUnmatched(style, hits);
+  return style;
+}
+
+/** Label source-layers by what they name, and the colour each kind is printed in. */
+const NYC_LABEL_KINDS = {
+  place: ["City Labels", "Neighborhoods"],
+  water: ["Water Area Labels", "Water Line Labels/label", "Region Hydrography/label"],
+  park: ["Parks/label", "The High Line/label"],
+};
+const NYC_LABEL_COLORS = {
+  place: "#4a4a4a",              // the borough labels' soft near-black
+  water: "#495e91",              // positron's water labels
+  park: PARK_NAME_COLOR,
+  other: "#666",                 // positron's road labels; streets, airports, buildings
+};
+
+/** Towns outside the city named at every zoom, as the tiles spell them, line breaks and
+ *  all: a large neighbour to the west and one to the north, to say which way the map
+ *  is facing. Positron's balanced labels keep Newark and Jersey City for the same reason. */
+const NYC_ORIENTING_CITIES = ["Newark", "Jersey\nCity", "Yonkers"];
+
+/** Highway shields wait until this zoom, as positron's do, so that at city zoom they are
+ *  not among the pins. */
+const NYC_SHIELD_ZOOM = 11;
+
+/** Below this zoom the boroughs are named; from it, the neighbourhoods. The tiles carry
+ *  neighbourhood names from z10, where they pile up with the borough names under the
+ *  pins; by z12 the screen shows a few neighbourhoods, not the city, and theirs are the
+ *  useful names. */
+const NYC_NEIGHBOURHOOD_ZOOM = 12;
+
+/**
+ * Bring the NYC basemap's labels in line with the rest of the block, in place.
+ *
+ *   1. Type. Every label is set in Noto Sans, the typeface of the list and the card:
+ *      Regular, with water and park names in Italic and shield numbers in Bold, which
+ *      is positron's scheme. Esri's font server carries Noto, so glyphs still come
+ *      from the style's own `glyphs` URL.
+ *   2. Colour. Each kind of label takes its NYC_LABEL_COLORS colour, on a white halo
+ *      as positron's are. Highway shields keep theirs; the shield is the colour.
+ *   3. Balance — the correction balancePlaceLabels makes to positron. At the opening
+ *      zoom the tiles print a dozen New Jersey and Westchester towns, neighbourhood
+ *      names, and borough names that land under the pins, all at once. So towns
+ *      outside the city wait until z11.5, apart from NYC_ORIENTING_CITIES; the
+ *      boroughs are drawn from BOROUGH_LABELS, anchored on open ground and translated,
+ *      until neighbourhood names take over at NYC_NEIGHBOURHOOD_ZOOM; and county names
+ *      outside the city are dropped, since they name nothing a resident is looking for.
+ *      Highway shields wait until NYC_SHIELD_ZOOM.
+ *   4. Placeholders. A few features in the data are named "NO NAME", and the style
+ *      prints the placeholder. Those labels are filtered out.
+ *
+ * Takes `lang` for the borough labels. Every other label is English: the tiles carry no
+ * other language.
+ */
+export function nycLabels(style: StyleSpecification, lang: string): StyleSpecification {
+  const hits: Record<string, number> = {
+    "place labels": 0, "water labels": 0, "park labels": 0,
+    "City Labels/label/Region": 0, "City Labels/label/NYC": 0,
+    "Neighborhoods/label/Default": 0, "Boundaries/Counties/label/Default": 0,
+  };
+  const dropped = ["City Labels/label/NYC", "Boundaries/Counties/label/Default"];
+  style.layers = (style.layers || []).filter((l) => {
+    if (!dropped.includes(l.id)) return true;
+    hits[l.id]++;
+    return false;
+  });
+
+  for (const layer of style.layers) {
+    if (layer.type !== "symbol" || !layer.layout?.["text-font"]) continue;
+    const shield = "icon-image" in layer.layout;
+    const italic = /Italic/.test(JSON.stringify(layer.layout["text-font"]));
+    layer.layout["text-font"] =
+      [shield ? "Noto Sans Bold" : italic ? "Noto Sans Italic" : "Noto Sans Regular"];
+    if (JSON.stringify(layer.layout["text-field"]).includes("_name}")) {
+      layer.filter = and(layer.filter, ["!=", "_name", "NO NAME"]);
+    }
+    if (shield) {
+      if (layer["source-layer"] === "Region Road Labels/label") {
+        layer.minzoom = Math.max(layer.minzoom ?? 0, NYC_SHIELD_ZOOM);
+      }
+      continue;
+    }
+    const kind = (Object.keys(NYC_LABEL_KINDS) as (keyof typeof NYC_LABEL_KINDS)[])
+      .find((k) => NYC_LABEL_KINDS[k].includes(layer["source-layer"] || ""));
+    if (kind) hits[`${kind} labels`]++;
+    layer.paint = Object.assign({}, layer.paint, {
+      "text-color": NYC_LABEL_COLORS[kind || "other"],
+      "text-halo-color": "rgba(255, 255, 255, 0.8)",
+    });
+  }
+
+  // Region towns. The tiles rank none above another, so the orienting cities are named.
+  // Esri writes its filters in the legacy syntax, so the added clauses are legacy too.
+  const at = style.layers.findIndex((l) => l.id === "City Labels/label/Region");
+  const region = style.layers[at];
+  if (region && region.type === "symbol") {
+    hits["City Labels/label/Region"]++;
+    const orienting = structuredClone(region);
+    orienting.id += "/orienting";
+    orienting.filter = and(region.filter, ["in", "_name1", ...NYC_ORIENTING_CITIES]);
+    region.filter = and(region.filter, ["!in", "_name1", ...NYC_ORIENTING_CITIES]);
+    region.minzoom = 11.5;
+    style.layers.splice(at + 1, 0, orienting);
+  }
+
+  const neighbourhoods = style.layers.find((l) => l.id === "Neighborhoods/label/Default");
+  if (neighbourhoods) {
+    hits["Neighborhoods/label/Default"]++;
+    neighbourhoods.minzoom = NYC_NEIGHBOURHOOD_ZOOM;
+  }
+  addBoroughLabels(style, lang, NYC_NEIGHBOURHOOD_ZOOM);
+
+  reportUnmatched(style, hits);
   return style;
 }
 

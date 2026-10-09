@@ -22,6 +22,14 @@ describe("readSettings", () => {
   test("anything but list=off is on", () => {
     expect(readSettings("?list=no", BASE, ORIGIN).list).toBe("on");
   });
+
+  test("basemap is positron unless it names one of the NYC variants", () => {
+    expect(readSettings("", BASE, ORIGIN).basemap).toBe("positron");
+    expect(readSettings("?basemap=nyc", BASE, ORIGIN).basemap).toBe("nyc");
+    expect(readSettings("?basemap=nyc-original", BASE, ORIGIN).basemap).toBe("nyc-original");
+    expect(readSettings("?basemap=https://evil.example/style.json", BASE, ORIGIN).basemap)
+      .toBe("positron");
+  });
 });
 
 describe("sameOriginUrl", () => {

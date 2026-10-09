@@ -31,7 +31,9 @@
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
 import {
-  addLandcoverParks, balancePlaceLabels, lightenSideStreets, loadBasemapStyle, warmTint,
+  addLandcoverParks, addParkNames, balancePlaceLabels, lightenSideStreets, loadBasemapStyle,
+  loadEsriStyle, NYC_BASEMAP_STYLE, nycBasemapPalette, nycLabels, nycRoadsAsLines, quietNycDetail,
+  warmTint,
 } from "../core/basemap-style.ts";
 import type { MapCore, SelectInfo } from "../core/map-core.ts";
 import { track } from "../logic/analytics.ts";
@@ -102,7 +104,7 @@ export default function App({ settings }: AppProps) {
       const loaded = await loadData(settings);
       if (cancelled) return;
       setModel(loaded);                // the list can render while the basemap loads
-      const style = await loadBasemap(settings.lang);
+      const style = await loadBasemap(settings);
       if (!cancelled) setBasemap(style);
     }
     load().catch((err) => {
@@ -431,11 +433,18 @@ async function loadData(settings: Settings): Promise<Model> {
   return { config: cfg, data, ...prepareData(cfg, data, orgsDoc) };
 }
 
-/** The basemap style, with its labels in the reader's language. See basemap-style.ts. */
-async function loadBasemap(lang: string): Promise<StyleSpecification> {
+/** The basemap style. Positron's labels follow the reader's language; on the NYC
+ *  basemap only the borough names do. See basemap-style.ts. */
+async function loadBasemap({ basemap, lang }: Settings): Promise<StyleSpecification> {
+  if (basemap === "nyc-original") return loadEsriStyle(NYC_BASEMAP_STYLE);
+  if (basemap === "nyc") {
+    const style = await loadEsriStyle(NYC_BASEMAP_STYLE);
+    const quiet = nycRoadsAsLines(quietNycDetail(nycBasemapPalette(style, BASEMAP_PALETTE)));
+    return warmTint(nycLabels(quiet, lang));
+  }
   const style = await loadBasemapStyle(BASEMAP_STYLE, lang);
-  return warmTint(balancePlaceLabels(lightenSideStreets(addLandcoverParks(style)), lang),
-    BASEMAP_PALETTE);
+  const parks = addParkNames(lightenSideStreets(addLandcoverParks(style)), lang);
+  return warmTint(balancePlaceLabels(parks, lang), BASEMAP_PALETTE);
 }
 
 // ------------------------------------------------------------------------ live region
