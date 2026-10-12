@@ -71,6 +71,10 @@
  * (Plain `?url` emits the worker without the shared chunk it imports, and vector tiles
  * then silently fail to load.) Its stylesheet is imported here too, so any page that
  * imports this file gets working zoom buttons and attribution without a separate link.
+ *
+ * A `pmtiles://` source reads its tiles out of one PMTiles file by HTTP range request, with
+ * no tile server; the Protomaps basemap (basemaps/protomaps.ts) is one. The protocol is
+ * registered here once, like the worker, so any map the core creates can draw one.
  */
 
 import type { Feature, FeatureCollection, Point } from "geojson";
@@ -78,8 +82,10 @@ import * as maplibregl from "maplibre-gl";
 import type { ExpressionSpecification, GeoJSONSource, StyleSpecification } from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { Protocol } from "pmtiles";
 
 maplibregl.setWorkerUrl(workerUrl);
+maplibregl.addProtocol("pmtiles", new Protocol().tile);
 
 // -------------------------------------------------------------------------------- types
 

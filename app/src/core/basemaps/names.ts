@@ -6,6 +6,7 @@
  */
 
 export const BASEMAP_NAMES = {
+  protomaps: "Protomaps, self-hosted",
   openfreemap: "OpenFreeMap",
   nyc: "OTI NYC Basemap, our palette",
   "nyc-original": "OTI NYC Basemap, its own colours",
