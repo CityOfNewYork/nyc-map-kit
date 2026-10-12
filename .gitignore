@@ -4,6 +4,8 @@ __pycache__/
 .DS_Store
 node_modules/
 data/*.pmtiles
+# The Protomaps basemap, cut by build/protomaps.sh (about 150 MB)
+app/public/*.pmtiles
 
 # Raw source exports carry organization contact emails; the sanitized CSV is the committed source
 data/*.kml

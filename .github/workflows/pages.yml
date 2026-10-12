@@ -33,6 +33,19 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      # The Protomaps basemap is too large for git, so each deploy cuts it fresh from
+      # Protomaps' daily build (build/protomaps.sh). Pull requests build without it.
+      - name: Cut the Protomaps basemap
+        if: github.ref == 'refs/heads/main'
+        env:
+          PMTILES_CLI: https://github.com/protomaps/go-pmtiles/releases/download/v1.31.2/go-pmtiles_1.31.2_Linux_x86_64.tar.gz
+          PMTILES_CLI_SHA256: 3ed7dbf4ec2e6dfe5e25b6f70d1ffc932729f93c86db353bf514dd71010a312f
+        run: |
+          curl -fsSL "$PMTILES_CLI" -o "$RUNNER_TEMP/pmtiles.tar.gz"
+          echo "$PMTILES_CLI_SHA256  $RUNNER_TEMP/pmtiles.tar.gz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/pmtiles.tar.gz" -C "$RUNNER_TEMP" pmtiles
+          build_name=$(PATH="$RUNNER_TEMP:$PATH" build/protomaps.sh)
+          echo "Protomaps basemap cut from daily build $build_name" >> "$GITHUB_STEP_SUMMARY"
       - run: npm run build
       - uses: actions/upload-pages-artifact@v5
         if: github.ref == 'refs/heads/main'
