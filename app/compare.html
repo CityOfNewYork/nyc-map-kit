@@ -10,9 +10,12 @@
   in step: pan, zoom or rotate either one and the other follows. It is for judging
   basemap changes, and is published alongside the demo.
 
-    compare.html                              current basemap | OTI's, in our palette
-    compare.html?right=nyc-original           current basemap | OTI's, in its own colours
+    compare.html                              Protomaps | OTI's, in our palette
+    compare.html?left=openfreemap             OpenFreeMap | OTI's, in our palette
+    compare.html?right=nyc-original           Protomaps | OTI's, in its own colours
     compare.html?lang=es                      any other parameter goes to both frames
+
+  The basemaps are listed in src/core/basemaps/names.ts.
 
   The sync reaches into each frame's `nycMapKit` global (see App.tsx), which works because
   the frames are same-origin. Only the camera is mirrored: a card opened on one side stays
@@ -44,13 +47,10 @@
 <section><label>Right <select></select></label><iframe title="Right map"></iframe></section>
 
 <script type="module">
-const BASEMAPS = {
-  positron: "Current (OpenFreeMap)",
-  nyc: "OTI NYC Basemap, our palette",
-  "nyc-original": "OTI NYC Basemap, its own colours",
-};
+import { BASEMAP_NAMES, basemapId, DEFAULT_BASEMAP } from "./src/core/basemaps/names.ts";
+
 const SIDES = ["left", "right"];
-const DEFAULT = { left: "positron", right: "nyc" };
+const DEFAULT = { left: DEFAULT_BASEMAP, right: "nyc" };
 
 const page = new URLSearchParams(location.search);
 const frames = [...document.querySelectorAll("iframe")];
@@ -96,8 +96,8 @@ function attach(i, n) {
 }
 
 SIDES.forEach((side, i) => {
-  const chosen = BASEMAPS[page.get(side)] ? page.get(side) : DEFAULT[side];
-  for (const [value, name] of Object.entries(BASEMAPS)) {
+  const chosen = page.has(side) ? basemapId(page.get(side)) : DEFAULT[side];
+  for (const [value, name] of Object.entries(BASEMAP_NAMES)) {
     selects[i].add(new Option(name, value, false, value === chosen));
   }
   selects[i].addEventListener("change", () => {

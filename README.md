@@ -16,6 +16,12 @@ npm run lint
 npm run build   # type-check, then build the static site, in dist/
 ```
 
+The default basemap reads `app/public/nyc.pmtiles`, which is too large for git. To draw it
+locally, put the [pmtiles CLI](https://github.com/protomaps/go-pmtiles/releases) on your
+`PATH` and run `build/protomaps.sh` once (about 150 MB, two minutes); CI runs it before
+each deploy. `?basemap=openfreemap` and `?basemap=nyc` work without it, and
+`compare.html` shows any two basemaps side by side.
+
 The code is TypeScript. Vite strips the types without checking them, so `npm run build`
 runs the type checker (`tsc`) first, and a type error fails the build here and in CI;
 editors show the same errors as you type. The types for the files the app loads
@@ -35,7 +41,8 @@ Per-map settings live in `app/public/config.json`; the data files sit next to it
 
 ## Attribution
 
-Basemap © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, served by
-[OpenFreeMap](https://openfreemap.org/). Map rendering by
+Basemap data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, in
+tiles built by [Protomaps](https://protomaps.com/) (the default) or served by
+[OpenFreeMap](https://openfreemap.org/); or OTI's NYC Basemap (`?basemap=nyc`). Map rendering by
 [MapLibre GL JS](https://maplibre.org/). Geocoding by
 [NYC GeoSearch](https://geosearch.planninglabs.nyc/).

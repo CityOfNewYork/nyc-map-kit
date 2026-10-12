@@ -7,10 +7,10 @@
 
 <!--
   The demo page: the block near full width with the list, the same data without the list,
-  a one-site frame, and a switch for the second language. Nothing else. Everything the
-  page used to say about itself — what the component is, what to try, what the network
-  tab shows — belongs in the README, where it can be read without a map scrolled off the
-  top of the screen.
+  a one-site frame, and a menu that switches the basemap under all of them. Nothing
+  else. Everything the page used to say about itself — what the component is, what to
+  try, what the network tab shows — belongs in the README, where it can be read without
+  a map scrolled off the top of the screen.
 
   No web font. The claim the block makes is that nothing loads from a third party except
   the tile server and the CDN serving MapLibre, and dressing up the demo from
@@ -84,6 +84,11 @@
     line-height: 1.55;
   }
   .note p { margin: 0; }
+
+  /* The basemap menu. It sets ?basemap= on this page, so a link carries the choice, and
+     hands it to every frame. */
+  .basemap { margin: 0 0 16px; font-size: 0.9375rem; }
+  .basemap select { font: inherit; margin-left: 8px; }
   a { color: var(--accent); text-underline-offset: 2px; }
   a:focus-visible {
     outline: 3px solid var(--accent);
@@ -112,6 +117,8 @@
     page</a>, and confirm any site with the organization that runs it.</p>
   </div>
 
+  <p class="basemap"><label>Basemap <select id="basemap"></select></label></p>
+
   <figure>
     <iframe id="map-all" title="Map of SNAP volunteer opportunities in New York City"
             src="embed.html?list=on"></iframe>
@@ -133,6 +140,32 @@
   </figure>
 
 </main>
+
+<script type="module">
+import { BASEMAP_NAMES, basemapId } from "./src/core/basemaps/names.ts";
+
+const page = new URLSearchParams(location.search);
+const menu = document.getElementById("basemap");
+const chosen = basemapId(page.get("basemap"));
+for (const [id, name] of Object.entries(BASEMAP_NAMES)) {
+  menu.add(new Option(name, id, false, id === chosen));
+}
+
+function show(id) {
+  for (const frame of document.querySelectorAll("figure iframe")) {
+    const url = new URL(frame.getAttribute("src"), location.href);
+    url.searchParams.set("basemap", id);
+    frame.src = `embed.html?${url.searchParams}`;
+  }
+}
+
+if (page.has("basemap")) show(chosen);
+menu.addEventListener("change", () => {
+  page.set("basemap", menu.value);
+  history.replaceState(null, "", `?${page}`);
+  show(menu.value);
+});
+</script>
 
 <!--
   The language toggle that used to sit here is removed until the translation approach is

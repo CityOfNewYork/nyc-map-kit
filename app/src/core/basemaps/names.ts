@@ -14,7 +14,7 @@ export const BASEMAP_NAMES = {
 
 export type BasemapId = keyof typeof BASEMAP_NAMES;
 
-export const DEFAULT_BASEMAP: BasemapId = "openfreemap";
+export const DEFAULT_BASEMAP: BasemapId = "protomaps";
 
 /** Older links name OpenFreeMap by its style, positron. */
 const ALIASES: Record<string, BasemapId> = { positron: "openfreemap" };
