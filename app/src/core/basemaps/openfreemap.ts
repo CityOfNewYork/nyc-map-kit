@@ -4,11 +4,13 @@
  * OpenFreeMap serves OpenMapTiles-schema vector tiles of the whole planet, with positron
  * as one of its styles. Positron is the reference look the other basemaps are brought
  * to (see basemap-style.ts); these rules fill in what it leaves out for New York: city
- * parks, cemeteries, park names, white side streets, and labels balanced on the city.
+ * parks, cemeteries, park names, white side streets, labels balanced on the city, and
+ * the land outside the city greyed.
  */
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, and, loadBasemapStyle, nameExpression, PARK_NAME_COLOR, warmTint,
+  addBoroughLabels, and, greyOutsideCity, hideLabelsOutsideCity, loadBasemapStyle,
+  nameExpression, PARK_NAME_COLOR, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -20,7 +22,29 @@ export async function loadOpenFreeMap(lang: string, palette: Palette): Promise<S
   const parkland = addLandcoverParks(dropHistoricDistricts(style));
   const ground = addCemeteries(parkland, palette.cemetery);
   const parks = addParkNames(lightenSideStreets(ground), lang);
-  return warmTint(balancePlaceLabels(parks, lang), palette);
+  const labels = balancePlaceLabels(parks, lang);
+  const outside = greyOutsideCity(landUnderWater(labels), "water");
+  return warmTint(hideLabelsOutsideCity(outside, "openmaptiles", (l) => /shield/.test(l.id)
+    || ("source-layer" in l && WATER_LABELS.includes(l["source-layer"] ?? ""))), palette);
+}
+
+/** Labels of the water, which stay outside the city as inside it. */
+const WATER_LABELS = ["water_name", "waterway"];
+
+/**
+ * Draw every land fill under the water, in place, so that greyOutsideCity's grey,
+ * which goes directly under the water, covers all of the land outside the city.
+ * Positron draws woods, residential areas and ice above its water layer; they barely
+ * meet the water, and where they do the water is the truer edge.
+ */
+function landUnderWater(style: StyleSpecification): StyleSpecification {
+  const water = style.layers.findIndex((l) => l.id === "water");
+  if (water < 0) return style;
+  const above = style.layers.slice(water + 1).filter((l) => l.type === "fill"
+    && ["landcover", "landuse"].includes(l["source-layer"] ?? ""));
+  style.layers = style.layers.filter((l) => !above.includes(l));
+  style.layers.splice(water, 0, ...above);
+  return style;
 }
 
 /**
@@ -195,10 +219,8 @@ const ISLANDS_NAMED_FOR_BOROUGHS = ["Staten Island", "Manhattan Island"];
  * Rebalance the place labels for a map framed on New York City, in place.
  *
  * Four edits, each reversible on its own:
- *   1. Town labels wait until z11.5 and village labels until z12.5 — far enough in
- *      that a reader looking at Hoboken or Valley Stream is asking about it. City
- *      names (Newark, Jersey City, Hackensack) are untouched at every zoom, because
- *      they are what tells you which way you are facing.
+ *   1. Village labels wait until z12.5. Inside the city those are hamlets such as Todt
+ *      Hill; the towns and villages around it are not named at all (hideLabelsOutsideCity).
  *   2. The boroughs are drawn from BOROUGH_LABELS below z14, where the tiles have
  *      nothing, and stop there because that is where real neighbourhood names take
  *      over and a borough name becomes noise.
@@ -219,8 +241,6 @@ export function balancePlaceLabels(
   // filter: every kind but background.
   const layer = (id: string) => layers.find((l) => l.id === id) as
     Exclude<LayerSpecification, { type: "background" }> | undefined;
-  const town = layer("label_town");
-  if (town) town.minzoom = 11.5;
   const village = layer("label_village");
   if (village) village.minzoom = 12.5;
 

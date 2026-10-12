@@ -9,8 +9,8 @@
  */
 import type { StyleSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, and, PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND, POSITRON_MAJOR_ZOOM,
-  POSITRON_ROADS, POSITRON_SUBTLE, reportUnmatched, warmTint,
+  addBoroughLabels, and, OUTSIDE, PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND,
+  POSITRON_MAJOR_ZOOM, POSITRON_ROADS, POSITRON_SUBTLE, reportUnmatched, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -23,7 +23,7 @@ export async function loadNyc(lang: string, palette: Palette): Promise<StyleSpec
   const style = await loadEsriStyle(NYC_BASEMAP_STYLE);
   const quiet = nycRoadsAsLines(quietNycDetail(nycBasemapPalette(style, palette)));
   const cemeteries = addNycCemeteries(quiet, CEMETERIES, palette.cemetery);
-  return warmTint(nycLabels(cemeteries, lang));
+  return warmTint(quietNycRegion(nycLabels(cemeteries, lang)));
 }
 
 /** OTI's style as published, for comparison. */
@@ -274,11 +274,6 @@ const NYC_LABEL_COLORS = {
   other: "#666",                 // positron's road labels; streets, airports, buildings
 };
 
-/** Towns outside the city named at every zoom, as the tiles spell them, line breaks and
- *  all: a large neighbour to the west and one to the north, to say which way the map
- *  is facing. Positron's balanced labels keep Newark and Jersey City for the same reason. */
-const NYC_ORIENTING_CITIES = ["Newark", "Jersey\nCity", "Yonkers"];
-
 /** Highway shields wait until this zoom, as positron's do, so that at city zoom they are
  *  not among the pins. */
 const NYC_SHIELD_ZOOM = 11;
@@ -299,13 +294,11 @@ const NYC_NEIGHBOURHOOD_ZOOM = 12;
  *   2. Colour. Each kind of label takes its NYC_LABEL_COLORS colour, on a white halo
  *      as positron's are. Highway shields keep theirs; the shield is the colour.
  *   3. Balance — the correction balancePlaceLabels makes to positron. At the opening
- *      zoom the tiles print a dozen New Jersey and Westchester towns, neighbourhood
- *      names, and borough names that land under the pins, all at once. So towns
- *      outside the city wait until z11.5, apart from NYC_ORIENTING_CITIES; the
- *      boroughs are drawn from BOROUGH_LABELS, anchored on open ground and translated,
- *      until neighbourhood names take over at NYC_NEIGHBOURHOOD_ZOOM; and county names
- *      outside the city are dropped, since they name nothing a resident is looking for.
- *      Highway shields wait until NYC_SHIELD_ZOOM.
+ *      zoom the tiles print neighbourhood names and borough names that land under the
+ *      pins, all at once. So the tiles' borough names give way to BOROUGH_LABELS,
+ *      anchored on open ground and translated, until neighbourhood names take over at
+ *      NYC_NEIGHBOURHOOD_ZOOM, and county names are dropped. Highway shields wait until
+ *      NYC_SHIELD_ZOOM. Places outside the city are not named at all (quietNycRegion).
  *   4. Placeholders. A few features in the data are named "NO NAME", and the style
  *      prints the placeholder. Those labels are filtered out.
  *
@@ -315,7 +308,7 @@ const NYC_NEIGHBOURHOOD_ZOOM = 12;
 export function nycLabels(style: StyleSpecification, lang: string): StyleSpecification {
   const hits: Record<string, number> = {
     "place labels": 0, "water labels": 0, "park labels": 0,
-    "City Labels/label/Region": 0, "City Labels/label/NYC": 0,
+    "City Labels/label/NYC": 0,
     "Neighborhoods/label/Default": 0, "Boundaries/Counties/label/Default": 0,
   };
   const dropped = ["City Labels/label/NYC", "Boundaries/Counties/label/Default"];
@@ -349,20 +342,6 @@ export function nycLabels(style: StyleSpecification, lang: string): StyleSpecifi
     });
   }
 
-  // Region towns. The tiles rank none above another, so the orienting cities are named.
-  // Esri writes its filters in the legacy syntax, so the added clauses are legacy too.
-  const at = style.layers.findIndex((l) => l.id === "City Labels/label/Region");
-  const region = style.layers[at];
-  if (region && region.type === "symbol") {
-    hits["City Labels/label/Region"]++;
-    const orienting = structuredClone(region);
-    orienting.id += "/orienting";
-    orienting.filter = and(region.filter, ["in", "_name1", ...NYC_ORIENTING_CITIES]);
-    region.filter = and(region.filter, ["!in", "_name1", ...NYC_ORIENTING_CITIES]);
-    region.minzoom = 11.5;
-    style.layers.splice(at + 1, 0, orienting);
-  }
-
   const neighbourhoods = style.layers.find((l) => l.id === "Neighborhoods/label/Default");
   if (neighbourhoods) {
     hits["Neighborhoods/label/Default"]++;
@@ -370,6 +349,55 @@ export function nycLabels(style: StyleSpecification, lang: string): StyleSpecifi
   }
   addBoroughLabels(style, lang, NYC_NEIGHBOURHOOD_ZOOM);
 
+  reportUnmatched(style, hits);
+  return style;
+}
+
+/** Region labels kept outside the city: the highway shields. Water labels stay too. */
+const NYC_REGION_SHIELDS = [
+  "Region Road Labels/label/Interstate Shield", "Region Road Labels/label/US Route",
+];
+
+/**
+ * Grey the land outside the city, fade its streets and drop its labels, in place, as
+ * the other basemaps empty the outside.
+ *
+ * OTI's tiles split their layers at the city line, Land_NYC from Land_Region and NYC
+ * Roads from Region Roads, so here the outside is drawn from the region layers, on
+ * OTI's own line, with no shape to test against. The grey is a copy of the region's
+ * land in OUTSIDE's colour, laid over it and its parks, under the water: the tiles' sea
+ * lies under the land, so a shape laid over everything would grey the harbour too.
+ * Airport grounds outside the city are dropped, as positron leaves them out.
+ */
+export function quietNycRegion(style: StyleSpecification): StyleSpecification {
+  const hits: Record<string, number> = {
+    "Land/Land_Region/1": 0, "Inland Hydrography": 0, "Region Roads": 0,
+    "City Labels/label/Region": 0,
+  };
+  const land = style.layers.find((l) => l.id === "Land/Land_Region/1");
+  const water = style.layers.findIndex((l) => "source-layer" in l
+    && l["source-layer"] === "Inland Hydrography");
+  if (land?.type === "fill" && water >= 0) {
+    hits["Land/Land_Region/1"]++;
+    hits["Inland Hydrography"]++;
+    style.layers.splice(water, 0, { ...structuredClone(land), id: "outside_city",
+      paint: { "fill-color": OUTSIDE.color, "fill-opacity": OUTSIDE.opacity } });
+  }
+  style.layers = style.layers.filter((l) => {
+    const sourceLayer = "source-layer" in l ? l["source-layer"] ?? "" : "";
+    if (l.id === "City Labels/label/Region") {
+      hits[l.id]++;
+      return false;
+    }
+    if (l.type === "fill" && sourceLayer === "Region Airports") return false;
+    return !(l.type === "symbol" && sourceLayer.startsWith("Region")
+      && !sourceLayer.startsWith("Region Hydrography") && !NYC_REGION_SHIELDS.includes(l.id));
+  });
+  for (const l of style.layers) {
+    if (l.type !== "line" || l["source-layer"] !== "Region Roads") continue;
+    hits["Region Roads"]++;
+    l.paint = { ...l.paint, "line-opacity": OUTSIDE.streets };
+  }
   reportUnmatched(style, hits);
   return style;
 }

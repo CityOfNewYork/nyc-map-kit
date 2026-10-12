@@ -3,16 +3,16 @@ import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
 import { warmTint } from "../basemap-style.ts";
 import {
   addNycCemeteries, loadEsriStyle, NYC_BASEMAP_STYLE, nycBasemapPalette, nycLabels,
-  nycRoadsAsLines, quietNycDetail,
+  nycRoadsAsLines, quietNycDetail, quietNycRegion,
 } from "./nyc.ts";
 
 const PALETTE = { water: "hsl(202, 42%, 80%)", park: "hsl(96, 30%, 84%)" };
 const CEMETERY = "hsl(96, 16%, 83%)";
 
-/** The five NYC steps, in the order the app runs them. */
+/** The six NYC steps, in the order the app runs them. */
 function styleNyc(style: StyleSpecification, lang = "en") {
   const quiet = nycRoadsAsLines(quietNycDetail(nycBasemapPalette(style, PALETTE)));
-  return nycLabels(addNycCemeteries(quiet, "cemeteries.geojson", CEMETERY), lang);
+  return quietNycRegion(nycLabels(addNycCemeteries(quiet, "cemeteries.geojson", CEMETERY), lang));
 }
 
 const unmatched = (style: StyleSpecification) =>
@@ -53,6 +53,7 @@ function fixture(): StyleSpecification {
       line("NYC Roads/Secondary/0", "NYC Roads", { minzoom: 10, maxzoom: 14 }),
       line("NYC Roads/Primary/1", "NYC Roads", { minzoom: 6, maxzoom: 14 }),
       line("NYC Roads/Primary/0", "NYC Roads", { minzoom: 6, maxzoom: 14 }),
+      line("Region Roads/Local Road/0", "Region Roads", { minzoom: 12 }),
       fill("Buildings/Building/2", "Buildings", { "fill-translate": [2, 2] }),
       fill("Buildings/Building/1", "Buildings", { "fill-color": "#DCDBDA" }),
       line("Buildings/Building/0", "Buildings"),
@@ -124,7 +125,9 @@ describe("the NYC basemap steps", () => {
   test("draw the cemeteries where the open-space layer was, below the ponds", () => {
     const style = styleNyc(fixture());
     const ids = style.layers.map((l) => l.id);
-    expect(ids.indexOf("cemetery")).toBe(ids.indexOf("Inland Hydrography") - 1);
+    // Below the ponds, with only the grey outside the city between them.
+    expect(ids.slice(ids.indexOf("cemetery") + 1, ids.indexOf("Inland Hydrography")))
+      .toEqual(["outside_city"]);
     expect(style.sources.cemeteries).toEqual({ type: "geojson", data: "cemeteries.geojson" });
     expect(warmTint(style).layers.find((l) => l.id === "cemetery")?.paint)
       .toMatchObject({ "fill-color": CEMETERY });
@@ -172,17 +175,16 @@ describe("the NYC basemap steps", () => {
     expect(park && "filter" in park && park.filter).toEqual(["all", ["!=", "_name", "NO NAME"]]);
   });
 
-  test("hold back the region's towns but not the orienting cities", () => {
-    const style = nycLabels(fixture(), "en");
-    const towns = style.layers.find((l) => l.id === "City Labels/label/Region");
-    const cities = style.layers.find((l) => l.id === "City Labels/label/Region/orienting");
-    expect(towns?.minzoom).toBe(11.5);
-    expect(cities?.minzoom).toBeUndefined();
-    // Legacy syntax throughout, as Esri's own filter is: MapLibre rejects a mix.
-    expect(towns && "filter" in towns && towns.filter).toEqual(["all",
-      ["==", "_label_class1", 1], ["!in", "_name1", "Newark", "Jersey\nCity", "Yonkers"]]);
-    expect(cities && "filter" in cities && cities.filter).toEqual(["all",
-      ["==", "_label_class1", 1], ["in", "_name1", "Newark", "Jersey\nCity", "Yonkers"]]);
+  test("grey the land outside the city, fade its streets and name only its highways", () => {
+    const style = styleNyc(fixture());
+    const ids = style.layers.map((l) => l.id);
+    expect(ids.indexOf("outside_city")).toBe(ids.indexOf("Inland Hydrography") - 1);
+    expect(style.layers.find((l) => l.id === "outside_city")).toMatchObject({
+      "source-layer": "Land", paint: { "fill-color": "#4f5b78", "fill-opacity": 0.16 } });
+    expect(ids).not.toContain("City Labels/label/Region");
+    expect(ids).toContain("Region Road Labels/label/Interstate Shield");
+    expect(style.layers.find((l) => l.id === "Region Roads/Local Road/0")?.paint)
+      .toMatchObject({ "line-opacity": 0.35 });
   });
 
   test("hand the boroughs over to the neighbourhoods at z12", () => {

@@ -4,10 +4,12 @@
 #     build/protomaps.sh
 #
 # Writes app/public/nyc.pmtiles: every tile from z0 to z15 that covers the area the map
-# lets a reader pan to (MAX_BOUNDS in app/src/core/map-core.ts), about 150 MB. A reader's
-# browser fetches only the tiles on screen, by range request. The file is too large for
-# git and is not committed: CI runs this before each deploy, so every deploy carries the
-# newest daily build of OpenStreetMap. Prints the name of the build it cut from.
+# lets a reader pan to (MAX_BOUNDS in app/src/core/map-core.ts). Outside the city line
+# the tiles then keep only land, water and highways (build/protomaps-outside.py), which
+# brings the file from about 150 MB to about 75 MB. A reader's browser fetches only the
+# tiles on screen, by range request. The file is too large for git and is not committed:
+# CI runs this before each deploy, so every deploy carries the newest daily build of
+# OpenStreetMap. Prints the name of the build it cut from.
 #
 # Needs the pmtiles CLI on PATH, a single binary from
 # https://github.com/protomaps/go-pmtiles/releases. Protomaps keeps a week of daily builds.
@@ -26,4 +28,5 @@ BUILD="$(curl -fsS https://build-metadata.protomaps.dev/builds.json | node -e '
 
 pmtiles extract "https://build.protomaps.com/$BUILD" "$OUT" \
   --bbox="$BBOX" --maxzoom="$MAXZOOM" --download-threads=8 >&2
+python3 "$ROOT/build/protomaps-outside.py"
 echo "$BUILD"

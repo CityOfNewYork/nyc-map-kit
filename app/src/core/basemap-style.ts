@@ -17,10 +17,12 @@
  * Each basemap's own rules live in basemaps/, one file per basemap; basemaps/index.ts
  * lists them.
  */
-import type { FeatureCollection, Point } from "geojson";
+import type { FeatureCollection, Point, Polygon } from "geojson";
+import { convertFilter } from "@maplibre/maplibre-gl-style-spec";
 import type {
   ExpressionSpecification, FilterSpecification, LayerSpecification, StyleSpecification,
 } from "maplibre-gl";
+import CITY_LIMITS from "./city-limits.json";
 
 /** The label fields a text-field expression may read. If an expression mentions any of
  *  these, it is a name label and we rewrite it. `ref` (highway shields) is not one. */
@@ -380,11 +382,84 @@ export function warmTint(
 export function reportUnmatched(style: StyleSpecification, hits: Record<string, number>): void {
   const missed = Object.keys(hits).filter((rule) => hits[rule] === 0);
   if (!missed.length) return;
-  console.warn(`[basemap] NYC basemap rules that matched no layer: ${missed.join(", ")}`);
+  console.warn(`[basemap] rules that matched no layer: ${missed.join(", ")}`);
   const before = (style.metadata as Record<string, unknown> | undefined)?.["nyc-map-kit:unmatched"];
   style.metadata = Object.assign({}, style.metadata, {
     "nyc-map-kit:unmatched": [...(Array.isArray(before) ? before : []), ...missed],
   });
+}
+
+/* ------------------------------------------------------------ outside the city
+
+ * WHY THIS EXISTS
+ * The map is of New York City. The land around it is there to show where the city ends,
+ * not to be read, and at street level New Jersey's streets and town names compete with
+ * the city's own. So outside the city line the ground is a cool grey and nothing is
+ * named but the highways and the water, as the City's Summer in NYC map draws it. The
+ * grey goes under the water, so a river or the harbour stays one colour from shore to
+ * shore.
+ *
+ * The line is the city's own: City Planning's borough boundaries with water included,
+ * merged into one outline by build/city-limits.py. Each basemap empties the outside its
+ * own way, as cheaply as its tiles allow: the Protomaps file is cut down when it is built
+ * (build/protomaps-outside.py), so the browser has nothing to hide; OTI's tiles split
+ * their layers at the city line (quietNycRegion); only OpenFreeMap, whose tiles we do not
+ * build, hides its labels in the browser (hideLabelsOutsideCity).
+ */
+
+/** The outside: a cool grey laid over the ground, and how much of a street remains. */
+export const OUTSIDE = { color: "#4f5b78", opacity: 0.16, streets: 0.35 };
+
+/** Everything outside the city: the world, with the city's rings cut out of it. */
+const OUTSIDE_CITY: Polygon = {
+  type: "Polygon",
+  coordinates: [
+    [[-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]],
+    ...CITY_LIMITS.geometry.coordinates.map((polygon) => [...polygon[0]].reverse()),
+  ],
+};
+
+/**
+ * Grey the land outside the city, in place, directly under the layer `below`: the first
+ * water layer drawn over the land, so water outside the city keeps its colour. It is one
+ * fill of one polygon, which costs the map next to nothing to draw.
+ */
+export function greyOutsideCity(style: StyleSpecification, below: string): StyleSpecification {
+  const at = style.layers.findIndex((l) => l.id === below);
+  if (at < 0) {
+    reportUnmatched(style, { [below]: 0 });
+    return style;
+  }
+  style.sources = Object.assign({}, style.sources, {
+    outside_city: { type: "geojson" as const, data: OUTSIDE_CITY },
+  });
+  style.layers.splice(at, 0, {
+    id: "outside_city", type: "fill", source: "outside_city",
+    paint: { "fill-color": OUTSIDE.color, "fill-opacity": OUTSIDE.opacity },
+  });
+  return style;
+}
+
+/**
+ * Show the labels of `source` only inside the city, in place, except those `keep` names
+ * (the highway shields and the water).
+ *
+ * This uses MapLibre's `within` test, which the browser runs on every label as its tile
+ * loads, and which counts a label along a street that crosses the city line as outside.
+ * It is for basemaps whose tiles we do not build; where we build the tiles, the labels
+ * outside the city are left out of the file instead.
+ */
+export function hideLabelsOutsideCity(style: StyleSpecification, source: string,
+  keep: (layer: LayerSpecification) => boolean): StyleSpecification {
+  const inside = ["within", CITY_LIMITS] as ExpressionSpecification;
+  for (const layer of style.layers) {
+    if (layer.type !== "symbol" || layer.source !== source || keep(layer)) continue;
+    // Expression and legacy filters cannot be mixed, so the layer's own is converted.
+    layer.filter = layer.filter
+      ? ["all", convertFilter(layer.filter) as ExpressionSpecification, inside]
+      : inside;
+  }
+  return style;
 }
 
 /* ---------------------------------------------------------- positron's look

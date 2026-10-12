@@ -18,7 +18,7 @@ npm run build   # type-check, then build the static site, in dist/
 
 The default basemap reads `app/public/nyc.pmtiles`, which is too large for git. To draw it
 locally, put the [pmtiles CLI](https://github.com/protomaps/go-pmtiles/releases) on your
-`PATH` and run `build/protomaps.sh` once (about 150 MB, two minutes); CI runs it before
+`PATH` and run `build/protomaps.sh` once (about 75 MB, four minutes); CI runs it before
 each deploy. `?basemap=openfreemap` and `?basemap=nyc` work without it, and
 `compare.html` shows any two basemaps side by side.
 

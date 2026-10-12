@@ -10,15 +10,15 @@
  * The style is not fetched: @protomaps/basemaps writes it in code from a flavor, a table
  * of colours. This file sets that table to positron's colours and the block's palette,
  * then applies the few rules a colour cannot express, the same ones the other basemaps
- * get: cemeteries apart from parks, park names, the borough labels, and place labels
- * balanced on the city.
+ * get: cemeteries apart from parks, park names, the borough labels, place labels
+ * balanced on the city, and the land outside the city greyed.
  */
 import { layers, namedFlavor } from "@protomaps/basemaps";
 import type { Flavor } from "@protomaps/basemaps";
 import type { ExpressionSpecification, LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
   addBoroughLabels, and, nameExpression, PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND,
-  POSITRON_MAJOR_ZOOM, POSITRON_ROADS, POSITRON_SUBTLE, warmTint,
+  POSITRON_MAJOR_ZOOM, POSITRON_ROADS, POSITRON_SUBTLE, greyOutsideCity, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -56,7 +56,9 @@ export function protomapsStyle(
   flatBuildings(style);
   positronRoads(style);
   placeLabels(style, lang);
-  return warmTint(style);
+  // The file holds only land, water and highways outside the city (build/protomaps-outside.py),
+  // so all that is left to do there is the grey.
+  return warmTint(greyOutsideCity(style, "water"));
 }
 
 /**
@@ -192,12 +194,10 @@ function positronRoads(style: StyleSpecification) {
   }
 }
 
-/** Places outside the city that are not cities wait until a reader has zoomed in on
- *  them, as balancePlaceLabels has them on positron. */
-const TOWN_ZOOM = 11.5;
+/** Of the places Protomaps files as localities, the city holds only New York itself and
+ *  hamlets such as Todt Hill. The hamlets wait until this zoom, as balancePlaceLabels
+ *  has positron's villages wait. */
 const VILLAGE_ZOOM = 12.5;
-const CITIES = ["city"];
-const TOWNS = ["town"];
 const VILLAGES = ["village", "hamlet"];
 /** Below this zoom the boroughs are named; from it, the neighbourhoods the tiles carry. */
 const NEIGHBOURHOOD_ZOOM = 13;
@@ -210,9 +210,8 @@ const ISLANDS_NAMED_FOR_BOROUGHS = ["Manhattan", "Staten Island", "Manhattan Isl
  *  and every park from PARK_NAME_ZOOM, as positron names them. */
 const PARK_KINDS = ["park"];
 const PARK_NAME_ZOOM = 14;
-/** Positron's label sizes: neighbourhoods small, and towns outside the city smaller
- *  than the boroughs. Protomaps sizes places by population, which at city zoom sets
- *  Jersey City larger than any borough name. */
+/** Positron's label sizes: neighbourhoods small, and villages smaller than the boroughs.
+ *  Protomaps sizes places by population. */
 const POSITRON_SUBPLACE_SIZE = ["interpolate", ["linear"], ["zoom"], 8, 9, 12, 10];
 const POSITRON_TOWN_SIZE = ["interpolate", ["exponential", 1.2], ["zoom"], 7, 12, 11, 14];
 /** Positron names major roads from this zoom; Protomaps from z11. */
@@ -224,10 +223,11 @@ const POSITRON_ROAD_NAME_ZOOM = 12.2;
  *   1. The tiles' own borough labels (neighbourhoods of kind `suburb`), the islands named
  *      after boroughs, and "New York" are dropped. The block draws the boroughs itself,
  *      translated and anchored on open ground, until NEIGHBOURHOOD_ZOOM.
- *   2. Towns and villages outside the city wait until TOWN_ZOOM and VILLAGE_ZOOM; cities
- *      (Newark, Jersey City, Yonkers) are named at every zoom, for orientation. The other
- *      things OpenStreetMap files as places, such as named localities and farms ("Clinton
- *      Hill Historic District", a rooftop farm), are left out, as positron leaves them out.
+ *   2. Of the localities, only villages and hamlets are named, from VILLAGE_ZOOM. The
+ *      other things OpenStreetMap files as places, such as named localities and farms
+ *      ("Clinton Hill Historic District", a rooftop farm), are left out, as positron
+ *      leaves them out. Outside the city nothing is named: the file holds no labels
+ *      there but the highways' and the water's (build/protomaps-outside.py).
  *   3. Neighbourhood and town names are set as positron sets them: neighbourhoods small,
  *      in Noto Sans Italic, and every place with positron's narrow collision margin.
  *      Protomaps pads neighbourhood names by up to 20 px, which at street level leaves
@@ -257,18 +257,12 @@ function placeLabels(style: StyleSpecification, lang: string) {
     islands.filter = and(islands.filter, ["!in", "name", ...ISLANDS_NAMED_FOR_BOROUGHS]);
   }
 
-  const at = style.layers.findIndex((l) => l.id === "places_locality");
-  const locality = style.layers[at];
+  const locality = layer(style, "places_locality");
   if (locality?.type === "symbol") {
     const { "text-padding": _, ...layout } = locality.layout ?? {};
     locality.layout = { ...layout, "text-size": POSITRON_TOWN_SIZE as ExpressionSpecification };
-    const base = and(locality.filter, ["!=", "name", "New York"]);
-    const towns = { ...structuredClone(locality), id: "places_locality_town",
-      filter: and(base, ["in", "kind_detail", ...TOWNS]), minzoom: TOWN_ZOOM };
-    const villages = { ...structuredClone(locality), id: "places_locality_village",
-      filter: and(base, ["in", "kind_detail", ...VILLAGES]), minzoom: VILLAGE_ZOOM };
-    locality.filter = and(base, ["in", "kind_detail", ...CITIES]);
-    style.layers.splice(at + 1, 0, towns, villages);
+    locality.filter = and(locality.filter, ["in", "kind_detail", ...VILLAGES]);
+    locality.minzoom = VILLAGE_ZOOM;
   }
 
   const parkNames: LayerSpecification = {

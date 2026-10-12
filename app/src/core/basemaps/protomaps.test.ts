@@ -54,18 +54,20 @@ describe("the Protomaps basemap", () => {
     expect(ids.indexOf("park_name")).toBeLessThan(ids.indexOf("places_subplace"));
   });
 
-  test("leaves the boroughs to the block's own labels, and drops New York", () => {
+  test("leaves the boroughs to the block's own labels", () => {
     expect(filter("places_subplace")).toContainEqual(["!=", "kind_detail", "suburb"]);
     expect(layer("places_subplace")?.minzoom).toBe(13);
     expect(layer("borough_label")?.maxzoom).toBe(13);
-    for (const id of ["places_locality", "places_locality_town", "places_locality_village"]) {
-      expect(JSON.stringify(filter(id))).toContain('["!=","name","New York"]');
-    }
   });
 
-  test("holds back towns and villages, and names cities at every zoom", () => {
-    expect(layer("places_locality")?.minzoom).toBeUndefined();
-    expect(layer("places_locality_town")?.minzoom).toBe(11.5);
-    expect(layer("places_locality_village")?.minzoom).toBe(12.5);
+  test("names only villages and hamlets of the localities, from z12.5", () => {
+    expect(filter("places_locality")).toContainEqual(["in", "kind_detail", "village", "hamlet"]);
+    expect(layer("places_locality")?.minzoom).toBe(12.5);
+  });
+
+  test("greys the land outside the city under the water, with no test in the browser", () => {
+    expect(ids.indexOf("outside_city")).toBe(ids.indexOf("water") - 1);
+    // The file holds nothing outside the city to hide (build/protomaps-outside.py).
+    expect(JSON.stringify(style.layers)).not.toContain('"within"');
   });
 });
