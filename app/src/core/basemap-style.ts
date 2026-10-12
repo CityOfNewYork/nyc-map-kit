@@ -133,6 +133,27 @@ export function addLandcoverParks(style: StyleSpecification): StyleSpecification
   return style;
 }
 
+/** Classes in the `park` source-layer that are heritage designations, not open ground. */
+const HISTORIC_PARK_CLASSES = ["historic", "historic_district"];
+
+/**
+ * Leave historic districts out of positron's `park` layer, in place.
+ *
+ * The `park` source-layer holds every protected area OpenStreetMap maps, and in New
+ * York that includes historic districts: NoHo, DUMBO, Boerum Hill, Ditmas Park,
+ * Prospect Park South. Positron paints the layer a grey close to the land's, so a
+ * district barely shows; in the park green warmTint() gives it, whole neighbourhoods
+ * read as parkland. Nature reserves, wildlife refuges, state parks, Gateway and the
+ * national monuments stay.
+ */
+export function dropHistoricDistricts(style: StyleSpecification): StyleSpecification {
+  const park = (style.layers || []).find((l) => l.id === "park");
+  if (park?.type !== "fill") return style;
+  park.filter = and(park.filter,
+    ["!", ["in", ["get", "class"], ["literal", HISTORIC_PARK_CLASSES]]]);
+  return style;
+}
+
 /**
  * Draw cemeteries in `color`, in place.
  *

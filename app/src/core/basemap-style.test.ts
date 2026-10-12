@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
-  addCemeteries, addLandcoverParks, addNycCemeteries, addParkNames, loadEsriStyle,
-  NYC_BASEMAP_STYLE, nycBasemapPalette, nycLabels, nycRoadsAsLines, quietNycDetail, warmTint,
+  addCemeteries, addLandcoverParks, addNycCemeteries, addParkNames, dropHistoricDistricts,
+  loadEsriStyle, NYC_BASEMAP_STYLE, nycBasemapPalette, nycLabels, nycRoadsAsLines,
+  quietNycDetail, warmTint,
 } from "./basemap-style.ts";
 
 const PALETTE = { water: "hsl(202, 42%, 80%)", park: "hsl(96, 30%, 84%)" };
@@ -107,6 +108,19 @@ test("draw positron's cemeteries above the parks, below water, in their own colo
     .toEqual(["background", "park", "landcover_park", "landuse_cemetery", "water"]);
   expect(style.layers[3]).toMatchObject({ "source-layer": "landuse",
     paint: { "fill-color": CEMETERY } });
+});
+
+test("leave historic districts out of positron's parks", () => {
+  const geometry = ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false];
+  const style = dropHistoricDistricts({
+    version: 8,
+    sources: { openmaptiles: { type: "vector", url: "https://example.test/tiles.json" } },
+    layers: [{ id: "park", type: "fill", source: "openmaptiles", "source-layer": "park",
+      filter: geometry } as LayerSpecification],
+  });
+  const park = style.layers[0];
+  expect(park.type === "fill" && park.filter).toEqual(["all", geometry,
+    ["!", ["in", ["get", "class"], ["literal", ["historic", "historic_district"]]]]]);
 });
 
 test("load an Esri style without its service URL, credited in sentence case", async () => {

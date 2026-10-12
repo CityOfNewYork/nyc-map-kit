@@ -32,8 +32,8 @@ import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "re
 import type { StyleSpecification } from "maplibre-gl";
 import {
   addCemeteries, addLandcoverParks, addNycCemeteries, addParkNames, balancePlaceLabels,
-  lightenSideStreets, loadBasemapStyle, loadEsriStyle, NYC_BASEMAP_STYLE, nycBasemapPalette,
-  nycLabels, nycRoadsAsLines, quietNycDetail, warmTint,
+  dropHistoricDistricts, lightenSideStreets, loadBasemapStyle, loadEsriStyle, NYC_BASEMAP_STYLE,
+  nycBasemapPalette, nycLabels, nycRoadsAsLines, quietNycDetail, warmTint,
 } from "../core/basemap-style.ts";
 import type { MapCore, SelectInfo } from "../core/map-core.ts";
 import { track } from "../logic/analytics.ts";
@@ -450,7 +450,8 @@ async function loadBasemap({ basemap, lang }: Settings): Promise<StyleSpecificat
     return warmTint(nycLabels(cemeteries, lang));
   }
   const style = await loadBasemapStyle(BASEMAP_STYLE, lang);
-  const ground = addCemeteries(addLandcoverParks(style), BASEMAP_PALETTE.cemetery);
+  const parkland = addLandcoverParks(dropHistoricDistricts(style));
+  const ground = addCemeteries(parkland, BASEMAP_PALETTE.cemetery);
   const parks = addParkNames(lightenSideStreets(ground), lang);
   return warmTint(balancePlaceLabels(parks, lang), BASEMAP_PALETTE);
 }
