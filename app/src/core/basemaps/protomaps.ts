@@ -232,7 +232,9 @@ const POSITRON_ROAD_NAME_ZOOM = 12.2;
  *      in Noto Sans Italic, and every place with positron's narrow collision margin.
  *      Protomaps pads neighbourhood names by up to 20 px, which at street level leaves
  *      no room for the park names below them.
- *   4. Parks are named in the green italic the other basemaps use, above the street names
+ *   4. House numbers and one-way arrows are dropped, as positron and quietNycDetail leave
+ *      them out.
+ *   5. Parks are named in the green italic the other basemaps use, above the street names
  *      and below the place names. Protomaps names more streets than positron, so below
  *      the street names, as the other basemaps put them, few park names find room.
  *
@@ -249,6 +251,7 @@ function placeLabels(style: StyleSpecification, lang: string) {
   }
   const roadNames = layer(style, "roads_labels_major");
   if (roadNames) roadNames.minzoom = POSITRON_ROAD_NAME_ZOOM;
+  style.layers = style.layers.filter((l) => l.id !== "address_label" && l.id !== "roads_oneway");
   const islands = layer(style, "earth_label_islands");
   if (islands?.type === "symbol") {
     islands.filter = and(islands.filter, ["!in", "name", ...ISLANDS_NAMED_FOR_BOROUGHS]);

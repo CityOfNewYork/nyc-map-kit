@@ -48,6 +48,8 @@ describe("the Protomaps basemap", () => {
 
   test("names parks, above the street names, and no other points of interest", () => {
     expect(ids).not.toContain("pois");
+    expect(ids).not.toContain("address_label");
+    expect(ids).not.toContain("roads_oneway");
     expect(ids.indexOf("park_name")).toBe(ids.indexOf("roads_labels_major") + 1);
     expect(ids.indexOf("park_name")).toBeLessThan(ids.indexOf("places_subplace"));
   });
