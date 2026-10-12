@@ -30,11 +30,7 @@
  */
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
-import {
-  addCemeteries, addLandcoverParks, addNycCemeteries, addParkNames, balancePlaceLabels,
-  dropHistoricDistricts, lightenSideStreets, loadBasemapStyle, loadEsriStyle, NYC_BASEMAP_STYLE,
-  nycBasemapPalette, nycLabels, nycRoadsAsLines, quietNycDetail, warmTint,
-} from "../core/basemap-style.ts";
+import { loadBasemap } from "../core/basemaps/index.ts";
 import type { MapCore, SelectInfo } from "../core/map-core.ts";
 import { track } from "../logic/analytics.ts";
 import { coincidentWith, prepareData } from "../logic/data.ts";
@@ -46,26 +42,6 @@ import { Panel } from "./Panel.tsx";
 import { SiteDialog } from "./SiteDialog.tsx";
 import type { StepDirection } from "./SiteDialog.tsx";
 import { useMapCore } from "./useMapCore.ts";
-
-const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
-
-/**
- * Water and parks get real, if quiet, colour. Positron draws both as greys a few steps
- * from the land, which is faithful to its brief as a background but leaves a resident
- * with no landmarks: the East River and Prospect Park are what tell someone which part
- * of the city they are looking at. Both stay well below the pins in saturation, so the
- * data is still the loudest thing on the map. Cemeteries are open green ground too, and
- * are drawn in a greyer green than the parks, as OpenStreetMap's own style draws them,
- * so that they do not read as parks.
- */
-const BASEMAP_PALETTE = {
-  water: "hsl(202, 42%, 80%)",
-  park:  "hsl(96, 30%, 84%)",
-  cemetery: "hsl(96, 16%, 83%)",
-};
-
-/** The city's cemeteries for the NYC basemap, written by build/cemeteries.py. */
-const NYC_CEMETERIES = "cemeteries.geojson";
 
 /** The heading until config.json or `?title=` names the map. */
 const DEFAULT_TITLE = "SNAP volunteer opportunities";
@@ -110,7 +86,7 @@ export default function App({ settings }: AppProps) {
       const loaded = await loadData(settings);
       if (cancelled) return;
       setModel(loaded);                // the list can render while the basemap loads
-      const style = await loadBasemap(settings);
+      const style = await loadBasemap(settings.basemap, settings.lang);
       if (!cancelled) setBasemap(style);
     }
     load().catch((err) => {
@@ -437,23 +413,6 @@ async function loadData(settings: Settings): Promise<Model> {
   }
   const cfg = config || {};
   return { config: cfg, data, ...prepareData(cfg, data, orgsDoc) };
-}
-
-/** The basemap style. Positron's labels follow the reader's language; on the NYC
- *  basemap only the borough names do. See basemap-style.ts. */
-async function loadBasemap({ basemap, lang }: Settings): Promise<StyleSpecification> {
-  if (basemap === "nyc-original") return loadEsriStyle(NYC_BASEMAP_STYLE);
-  if (basemap === "nyc") {
-    const style = await loadEsriStyle(NYC_BASEMAP_STYLE);
-    const quiet = nycRoadsAsLines(quietNycDetail(nycBasemapPalette(style, BASEMAP_PALETTE)));
-    const cemeteries = addNycCemeteries(quiet, NYC_CEMETERIES, BASEMAP_PALETTE.cemetery);
-    return warmTint(nycLabels(cemeteries, lang));
-  }
-  const style = await loadBasemapStyle(BASEMAP_STYLE, lang);
-  const parkland = addLandcoverParks(dropHistoricDistricts(style));
-  const ground = addCemeteries(parkland, BASEMAP_PALETTE.cemetery);
-  const parks = addParkNames(lightenSideStreets(ground), lang);
-  return warmTint(balancePlaceLabels(parks, lang), BASEMAP_PALETTE);
 }
 
 // ------------------------------------------------------------------------ live region

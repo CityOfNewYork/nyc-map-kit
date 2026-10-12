@@ -4,6 +4,8 @@
  * Pure: the page's address, base URI and origin are passed in rather than read from
  * `window`, so this runs (and is tested) without a browser.
  */
+import { basemapId } from "../core/basemaps/names.ts";
+import type { BasemapId } from "../core/basemaps/names.ts";
 
 export const DEFAULTS = { data: "sites.geojson", orgs: "orgs.json", list: "on" } as const;
 
@@ -20,9 +22,8 @@ export interface Settings {
   title: string | null;
   /** The site whose card opens on load. */
   site: string | null;
-  /** Which basemap to draw: OpenFreeMap's positron, or OTI's NYC basemap in this block's
-   *  palette ("nyc") or in its own ("nyc-original"). */
-  basemap: "positron" | "nyc" | "nyc-original";
+  /** Which basemap to draw. See core/basemaps/names.ts. */
+  basemap: BasemapId;
 }
 
 /**
@@ -60,6 +61,6 @@ export function readSettings(
     list: params.get("list") === "off" ? "off" : DEFAULTS.list,
     title: params.get("title"),
     site: params.get("site"),
-    basemap: ((b) => b === "nyc" || b === "nyc-original" ? b : "positron")(params.get("basemap")),
+    basemap: basemapId(params.get("basemap")),
   };
 }
