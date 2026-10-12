@@ -30,6 +30,17 @@ describe("the Protomaps basemap", () => {
     expect(paint(style, "landuse_park")).toEqual({ "fill-color": PALETTE.park });
   });
 
+  test("draws no land use but green ground, runways and piers, so none covers a park", () => {
+    expect(ids.filter((id) => id.startsWith("landuse_")))
+      .toEqual(["landuse_park", "landuse_cemetery", "landuse_urban_green", "landuse_runway",
+        "landuse_pier"]);
+  });
+
+  test("shields Interstates and US routes only", () => {
+    expect(JSON.stringify(filter("roads_shields")))
+      .toContain('["in",["get","network"],["literal",["US:I","US:US"]]]');
+  });
+
   test("warms the land but not the water, parks or cemeteries", () => {
     expect(paint(style, "earth")).not.toEqual({ "fill-color": POSITRON_LAND });
     expect(paint(style, "water")).toMatchObject({ "fill-color": PALETTE.water });

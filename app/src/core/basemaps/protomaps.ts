@@ -60,10 +60,9 @@ export function protomapsStyle(
 }
 
 /**
- * Positron's colours, in Protomaps' terms. Kinds of land positron leaves uncoloured
- * (schools, hospitals, industry, beaches, airports) take the land colour, so they don't
- * show. Points of interest are left out, as positron leaves them out: the pins are the
- * points on this map. The low-zoom land cover is left out too; the map never shows it.
+ * Positron's colours, in Protomaps' terms. Points of interest are left out, as positron
+ * leaves them out: the pins are the points on this map. The low-zoom land cover is left
+ * out too; the map never shows it.
  */
 function flavor(palette: Palette): Flavor {
   const land = POSITRON_LAND;
@@ -75,9 +74,7 @@ function flavor(palette: Palette): Flavor {
     background: land, earth: land, water: palette.water,
     park_a: palette.park, park_b: palette.park, wood_a: palette.park, wood_b: palette.park,
     scrub_a: palette.park, scrub_b: palette.park,
-    glacier: land, sand: land, beach: land, zoo: land, military: land, hospital: land,
-    industrial: land, school: land, pedestrian: land, aerodrome: land, pier: land,
-    runway: "#fff",
+    pier: land, runway: "#fff",
     buildings: POSITRON_BUILDING.fill,
     highway: "#fff", highway_casing_early: casing, highway_casing_late: casing,
     major: "#fff", major_casing_early: casing, major_casing_late: casing,
@@ -109,16 +106,26 @@ const layer = (style: StyleSpecification, id: string) =>
 const GREEN_KINDS = ["national_park", "park", "protected_area", "nature_reserve", "forest",
   "golf_course", "wood", "scrub", "grassland", "grass"];
 
+/** Land use positron gives no colour of its own. */
+const UNCOLOURED_LAND_USE = ["landuse_hospital", "landuse_industrial", "landuse_school",
+  "landuse_beach", "landuse_zoo", "landuse_aerodrome", "landuse_pedestrian"];
+
 /**
- * Parks opaque at every zoom, as positron draws them, and cemeteries apart from them.
+ * Parks opaque at every zoom, as positron draws them, cemeteries apart from them, and
+ * no other land use.
  *
  * Protomaps' park layer covers cemeteries, and military land, glaciers and sand in the
  * land colour. It fades in from z6 to z11, which at the opening zoom leaves the parks a
  * wash. It keeps only the green kinds here, in one colour: warmTint() skips park layers,
  * so a land colour inside this one would stay cool against the warmed ground. The
  * cemeteries go in a layer of their own, directly above, in the palette's greyer green.
+ *
+ * Schools, hospitals, industry, beaches, the zoo, airports and plazas are left out, as
+ * positron leaves them out. Protomaps draws them above the parks, so in any colour they
+ * cover the green inside them: a university campus covers MetroTech's Brooklyn Commons.
  */
 function parkland(style: StyleSpecification, palette: Palette) {
+  style.layers = style.layers.filter((l) => !UNCOLOURED_LAND_USE.includes(l.id));
   const at = style.layers.findIndex((l) => l.id === "landuse_park");
   const park = style.layers[at];
   if (park?.type !== "fill") return;
@@ -142,11 +149,17 @@ function flatBuildings(style: StyleSpecification) {
   };
 }
 
+/** Route networks that get a shield: Interstates and US routes, the two OTI's map
+ *  shields. Protomaps shields every numbered road, state, county and parkway, which
+ *  at z11–12 puts some thirty shields over the city and New Jersey. */
+const SHIELD_NETWORKS = ["US:I", "US:US"];
+
 /**
  * Streets in positron's widths and colours, as nycRoadsAsLines draws OTI's: side streets
  * one line that turns from grey to white at z14, major roads white on a pale casing from
  * z11 and one thin grey line below it. Protomaps draws every street thinner, cased in
- * grey, which reads as a different map at street level.
+ * grey, which reads as a different map at street level. Highway shields wait until z11,
+ * as positron's do, and only Interstates and US routes get one.
  */
 function positronRoads(style: StyleSpecification) {
   const drop = new Set(["roads_minor_casing", "roads_minor_service_casing",
@@ -172,7 +185,11 @@ function positronRoads(style: StyleSpecification) {
     casing.paint = { "line-color": POSITRON_ROADS.casing.color, "line-width": POSITRON_ROADS.casing.width };
   }
   const shields = layer(style, "roads_shields");
-  if (shields) shields.minzoom = POSITRON_MAJOR_ZOOM;
+  if (shields?.type === "symbol") {
+    shields.minzoom = POSITRON_MAJOR_ZOOM;
+    shields.filter = and(shields.filter,
+      ["in", ["get", "network"], ["literal", SHIELD_NETWORKS]]);
+  }
 }
 
 /** Places outside the city that are not cities wait until a reader has zoomed in on
