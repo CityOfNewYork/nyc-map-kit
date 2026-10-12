@@ -31,9 +31,9 @@
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
 import {
-  addLandcoverParks, addParkNames, balancePlaceLabels, lightenSideStreets, loadBasemapStyle,
-  loadEsriStyle, NYC_BASEMAP_STYLE, nycBasemapPalette, nycLabels, nycRoadsAsLines, quietNycDetail,
-  warmTint,
+  addCemeteries, addLandcoverParks, addNycCemeteries, addParkNames, balancePlaceLabels,
+  lightenSideStreets, loadBasemapStyle, loadEsriStyle, NYC_BASEMAP_STYLE, nycBasemapPalette,
+  nycLabels, nycRoadsAsLines, quietNycDetail, warmTint,
 } from "../core/basemap-style.ts";
 import type { MapCore, SelectInfo } from "../core/map-core.ts";
 import { track } from "../logic/analytics.ts";
@@ -54,12 +54,18 @@ const BASEMAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
  * from the land, which is faithful to its brief as a background but leaves a resident
  * with no landmarks: the East River and Prospect Park are what tell someone which part
  * of the city they are looking at. Both stay well below the pins in saturation, so the
- * data is still the loudest thing on the map.
+ * data is still the loudest thing on the map. Cemeteries are open green ground too, and
+ * are drawn in a greyer green than the parks, as OpenStreetMap's own style draws them,
+ * so that they do not read as parks.
  */
 const BASEMAP_PALETTE = {
   water: "hsl(202, 42%, 80%)",
   park:  "hsl(96, 30%, 84%)",
+  cemetery: "hsl(96, 16%, 83%)",
 };
+
+/** The city's cemeteries for the NYC basemap, written by build/cemeteries.py. */
+const NYC_CEMETERIES = "cemeteries.geojson";
 
 /** The heading until config.json or `?title=` names the map. */
 const DEFAULT_TITLE = "SNAP volunteer opportunities";
@@ -440,10 +446,12 @@ async function loadBasemap({ basemap, lang }: Settings): Promise<StyleSpecificat
   if (basemap === "nyc") {
     const style = await loadEsriStyle(NYC_BASEMAP_STYLE);
     const quiet = nycRoadsAsLines(quietNycDetail(nycBasemapPalette(style, BASEMAP_PALETTE)));
-    return warmTint(nycLabels(quiet, lang));
+    const cemeteries = addNycCemeteries(quiet, NYC_CEMETERIES, BASEMAP_PALETTE.cemetery);
+    return warmTint(nycLabels(cemeteries, lang));
   }
   const style = await loadBasemapStyle(BASEMAP_STYLE, lang);
-  const parks = addParkNames(lightenSideStreets(addLandcoverParks(style)), lang);
+  const ground = addCemeteries(addLandcoverParks(style), BASEMAP_PALETTE.cemetery);
+  const parks = addParkNames(lightenSideStreets(ground), lang);
   return warmTint(balancePlaceLabels(parks, lang), BASEMAP_PALETTE);
 }
 

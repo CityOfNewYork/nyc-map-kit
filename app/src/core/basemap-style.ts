@@ -134,6 +134,39 @@ export function addLandcoverParks(style: StyleSpecification): StyleSpecification
 }
 
 /**
+ * Draw cemeteries in `color`, in place.
+ *
+ * The OpenMapTiles data carries cemeteries as `landuse` polygons with class `cemetery`,
+ * from z10, and positron paints no landuse but residential. Green-Wood, Calvary and
+ * Woodlawn are among the largest open spaces in the city; left out, each reads as a
+ * block with nothing in it. They are inserted directly after the parks, below water and
+ * roads, so a cemetery's ponds and drives are drawn over it. warmTint() leaves the
+ * colour as it is.
+ */
+export function addCemeteries(style: StyleSpecification, color: string): StyleSpecification {
+  const layers = style.layers || [];
+  if (layers.some((l) => l.id === "landuse_cemetery")) return style;
+  const source = Object.keys(style.sources || {})
+    .find((k) => style.sources[k] && style.sources[k].type === "vector");
+  if (!source) return style;
+  const layer: LayerSpecification = {
+    id: "landuse_cemetery",
+    type: "fill",
+    source,
+    "source-layer": "landuse",
+    filter: ["all",
+      ["match", ["geometry-type"], ["Polygon", "MultiPolygon"], true, false],
+      ["==", ["get", "class"], "cemetery"]],
+    paint: { "fill-color": color, "fill-antialias": false },
+  };
+  let at = layers.findIndex((l) => l.id === "landcover_park");
+  if (at < 0) at = layers.findIndex((l) => l.id === "park");
+  if (at < 0) at = layers.findIndex((l) => l.type === "background");
+  layers.splice(at + 1, 0, layer);
+  return style;
+}
+
+/**
  * Draw side streets white from z14, as positron already draws the major roads, in place.
  *
  * Positron gives its two road classes opposite contrasts: major roads are white, lighter
@@ -364,11 +397,12 @@ export function addBoroughLabels(
  * THE RULE, in three parts:
  *   1. Symbol layers are left alone. Label colours are a contrast decision, not
  *      a palette one, and their halos are meant to read as separation.
- *   2. Water and park layers are left alone by the tint. A beige Hudson looks
- *      broken, and the cool water against warm land is what makes the tint read
- *      as paper rather than as a colour cast over the whole map. The caller can
- *      instead hand each its own colour (`water`, `park`), which is how the block
- *      gives the rivers and the big parks just enough hue to be landmarks.
+ *   2. Water, park and cemetery layers are left alone by the tint. A beige Hudson
+ *      looks broken, and the cool water against warm land is what makes the tint
+ *      read as paper rather than as a colour cast over the whole map. The caller can
+ *      instead hand water and parks their own colour (`water`, `park`), which is how
+ *      the block gives the rivers and the big parks just enough hue to be landmarks;
+ *      cemeteries are added with theirs (addCemeteries, addNycCemeteries).
  *   3. Every other paint colour that is already near-neutral is re-emitted at
  *      the warm hue, keeping its original lightness and alpha. Anything that
  *      carries real colour is left as-is, so pointing this at a style with a
@@ -512,6 +546,7 @@ export function warmTint(
     if (layer.type === "symbol") continue;                        // rule 1
     if (/water/.test(layer.id || "")) { setColor(layer, water); continue; }
     if (/park|wood/.test(layer.id || "")) { setColor(layer, park); continue; }
+    if (/cemetery/.test(layer.id || "")) continue;
     if (layer.type === "background" && layer.paint == null) continue;
     for (const [prop, value] of Object.entries(layer.paint || {})) {
       if (!prop.includes("color")) continue;                      // rule 3
@@ -689,7 +724,8 @@ const NYC_DETAIL = [
  * So do the buildings' drop shadows and outlines, which give a reference map depth
  * but here compete with the pins, and "open space": the survey's layer for schoolyards,
  * cemeteries and vacant lots, which reaches the tiles with no field to tell them apart.
- * Painted as park, it shows a vacant lot as a place to go.
+ * Painted as park, it shows a vacant lot as a place to go. addNycCemeteries draws the
+ * cemeteries back from the survey's own data.
  */
 export function quietNycDetail(style: StyleSpecification): StyleSpecification {
   const hits: Record<string, number> = Object.fromEntries(NYC_DETAIL.map((k) => [k, 0]));
@@ -700,6 +736,40 @@ export function quietNycDetail(style: StyleSpecification): StyleSpecification {
     hits[key]++;
     return false;
   });
+  reportUnmatched(style, hits);
+  return style;
+}
+
+/**
+ * Draw the city's cemeteries in `color` from the GeoJSON at `url`, in place.
+ *
+ * The open-space layer quietNycDetail drops is where the tiles keep the cemeteries. The
+ * survey's own open-space data does tell a cemetery from a vacant lot, and
+ * build/cemeteries.py extracts the city's 111 cemeteries from it into
+ * app/public/cemeteries.geojson. This draws them where the open-space layer was: above
+ * the parks, directly below the lakes and ponds. The survey stops at the city line, so
+ * cemeteries outside the city are not drawn. MapLibre resolves `url` against the page
+ * and fetches it alongside the tiles, so the map does not wait for it.
+ */
+export function addNycCemeteries(
+  style: StyleSpecification, url: string, color: string,
+): StyleSpecification {
+  const layers = style.layers || [];
+  if (layers.some((l) => l.id === "cemetery")) return style;
+  const hits = { "Inland Hydrography": 0 };
+  const at = layers.findIndex((l) => "source-layer" in l && l["source-layer"] === "Inland Hydrography");
+  if (at >= 0) {
+    hits["Inland Hydrography"]++;
+    style.sources = Object.assign({}, style.sources, {
+      cemeteries: { type: "geojson" as const, data: url },
+    });
+    layers.splice(at, 0, {
+      id: "cemetery",
+      type: "fill",
+      source: "cemeteries",
+      paint: { "fill-color": color, "fill-antialias": false },
+    });
+  }
   reportUnmatched(style, hits);
   return style;
 }

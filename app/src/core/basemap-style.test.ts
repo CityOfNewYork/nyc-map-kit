@@ -1,15 +1,17 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
-  addParkNames, loadEsriStyle, NYC_BASEMAP_STYLE, nycBasemapPalette, nycLabels, nycRoadsAsLines,
-  quietNycDetail,
+  addCemeteries, addLandcoverParks, addNycCemeteries, addParkNames, loadEsriStyle,
+  NYC_BASEMAP_STYLE, nycBasemapPalette, nycLabels, nycRoadsAsLines, quietNycDetail, warmTint,
 } from "./basemap-style.ts";
 
 const PALETTE = { water: "hsl(202, 42%, 80%)", park: "hsl(96, 30%, 84%)" };
+const CEMETERY = "hsl(96, 16%, 83%)";
 
-/** The four NYC steps, in the order the app runs them. */
+/** The five NYC steps, in the order the app runs them. */
 function styleNyc(style: StyleSpecification, lang = "en") {
-  return nycLabels(nycRoadsAsLines(quietNycDetail(nycBasemapPalette(style, PALETTE))), lang);
+  const quiet = nycRoadsAsLines(quietNycDetail(nycBasemapPalette(style, PALETTE)));
+  return nycLabels(addNycCemeteries(quiet, "cemeteries.geojson", CEMETERY), lang);
 }
 
 const unmatched = (style: StyleSpecification) =>
@@ -40,6 +42,7 @@ function fixture(): StyleSpecification {
       fill("Sidewalks/Elevated Sidewalk/1", "Sidewalks"),
       fill("NYC Open Space", "NYC Open Space", { "fill-color": "#96A797" }),
       fill("Plaza/Plaza", "Plaza", { "fill-opacity": { stops: [[14, 0.25], [15, 1]] } }),
+      fill("Inland Hydrography", "Inland Hydrography", { "fill-color": "#88A9BC" }),
       line("Roadbeds/Roadbed/1", "Roadbeds", { minzoom: 14 }),
       fill("Roadbeds/Roadbed/0", "Roadbeds"),
       line("Roadbed Edge", "Roadbed Edge"),
@@ -89,6 +92,23 @@ test("name positron's parks in the reader's language, below every other label", 
     ["coalesce", ["get", "name:es"], ["get", "name:latin"], ["get", "name"]]);
 });
 
+test("draw positron's cemeteries above the parks, below water, in their own colour", () => {
+  const ground = addCemeteries(addLandcoverParks({
+    version: 8,
+    sources: { openmaptiles: { type: "vector", url: "https://example.test/tiles.json" } },
+    layers: [
+      { id: "background", type: "background", paint: { "background-color": "rgb(242,243,240)" } },
+      { id: "park", type: "fill", source: "openmaptiles", "source-layer": "park" },
+      { id: "water", type: "fill", source: "openmaptiles", "source-layer": "water" },
+    ],
+  }), CEMETERY);
+  const style = warmTint(ground, PALETTE);
+  expect(style.layers.map((l) => l.id))
+    .toEqual(["background", "park", "landcover_park", "landuse_cemetery", "water"]);
+  expect(style.layers[3]).toMatchObject({ "source-layer": "landuse",
+    paint: { "fill-color": CEMETERY } });
+});
+
 test("load an Esri style without its service URL, credited in sentence case", async () => {
   vi.stubGlobal("fetch", async () => new Response(JSON.stringify({
     version: 8,
@@ -132,6 +152,15 @@ describe("the NYC basemap steps", () => {
     const flat = { "fill-color": "rgb(234, 234, 229)", "fill-outline-color": "rgb(219, 219, 218)" };
     expect(paint("Buildings/Building/1")).toEqual(flat);
     expect(paint("Buildings/Landmark Building/1")).toEqual(flat);
+  });
+
+  test("draw the cemeteries where the open-space layer was, below the ponds", () => {
+    const style = styleNyc(fixture());
+    const ids = style.layers.map((l) => l.id);
+    expect(ids.indexOf("cemetery")).toBe(ids.indexOf("Inland Hydrography") - 1);
+    expect(style.sources.cemeteries).toEqual({ type: "geojson", data: "cemeteries.geojson" });
+    expect(warmTint(style).layers.find((l) => l.id === "cemetery")?.paint)
+      .toMatchObject({ "fill-color": CEMETERY });
   });
 
   test("draw streets as centre lines at every zoom, not as roadbed", () => {
