@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
-import { warmTint } from "../basemap-style.ts";
+import { OUTSIDE, warmTint } from "../basemap-style.ts";
 import {
   addNycCemeteries, loadEsriStyle, NYC_BASEMAP_STYLE, nycBasemapPalette, nycLabels,
   nycRoadsAsLines, quietNycDetail, quietNycRegion,
@@ -180,11 +180,11 @@ describe("the NYC basemap steps", () => {
     const ids = style.layers.map((l) => l.id);
     expect(ids.indexOf("outside_city")).toBe(ids.indexOf("Inland Hydrography") - 1);
     expect(style.layers.find((l) => l.id === "outside_city")).toMatchObject({
-      "source-layer": "Land", paint: { "fill-color": "#4f5b78", "fill-opacity": 0.16 } });
+      "source-layer": "Land", paint: { "fill-color": OUTSIDE.color, "fill-opacity": OUTSIDE.opacity } });
     expect(ids).not.toContain("City Labels/label/Region");
     expect(ids).toContain("Region Road Labels/label/Interstate Shield");
     expect(style.layers.find((l) => l.id === "Region Roads/Local Road/0")?.paint)
-      .toMatchObject({ "line-opacity": 0.35 });
+      .toMatchObject({ "line-opacity": OUTSIDE.streets });
   });
 
   test("hand the boroughs over to the neighbourhoods at z12", () => {

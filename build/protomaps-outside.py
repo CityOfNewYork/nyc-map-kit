@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
 """
-nyc-map-kit — strip the Protomaps basemap down to land, water and highways outside the city.
+nyc-map-kit — strip the Protomaps basemap down to what the map shows outside the city.
 
     python3 build/protomaps-outside.py          # run by build/protomaps.sh
 
 Rewrites app/public/nyc.pmtiles in place. Outside the city line (app/src/core/city-limits.json)
-the map shows only where the land and water are and where the highways run, so every other
-feature that lies wholly outside the line is dropped from the file: streets, buildings,
-parks, place and street names, points of interest. Features inside the city, and features
-that cross the line, are kept as they are. At the opening zoom about 70% of the bytes a
-browser downloads describe things outside the city, so dropping them makes the map lighter
-to load, and the browser has nothing to hide.
+the map shows the land and water, the parks, the highways, and from STREETS_ZOOM the other
+streets, which the style draws pale. Everything else that lies wholly outside the line is
+dropped from the file: buildings, place names, points of interest, and the streets below
+STREETS_ZOOM. At the opening zoom about 70% of the bytes a browser downloads describe things
+outside the city, so dropping them makes the map lighter to load, and the browser has
+nothing to hide.
 
-A tile the line does not cross is decided whole: a tile inside the city is copied unchanged,
-and a tile outside keeps only its land, water, highways and piers. In a tile the line
-crosses, each shape is tested vertex by vertex. Up to z14 Protomaps merges many streets or
-buildings into one feature, so the test is on each separate shape a feature holds: shapes
-wholly outside the city are dropped, and a feature with none left goes too. Shapes are
-dropped, never cut, so a street that crosses the line keeps its outside part.
+Roads are cut at the city line. The part inside the city is kept as it was; the part
+outside is kept only where the map shows it, and marked `outside_city`, so the style can
+draw it pale without testing anything in the browser. Other features are never cut: a
+tile the line does not cross is decided whole, and in a tile it crosses each separate
+shape is tested vertex by vertex and dropped if it lies wholly outside the city. (Up to
+z14 Protomaps merges many streets or buildings into one feature, which is why shapes, not
+features, are tested.) So a building or park that crosses the line keeps its outside part.
 
 Writes the result through an MBTiles file, which `pmtiles convert` turns back into a
 PMTiles archive, so it needs the pmtiles CLI on PATH, as build/protomaps.sh does.
@@ -39,9 +40,19 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TILES = os.path.join(ROOT, "app", "public", "nyc.pmtiles")
 CITY = os.path.join(ROOT, "app", "src", "core", "city-limits.json")
 
-# What stays outside the city: the land and the water whole, highways, and piers, which
-# shape the waterfront. Each layer's features are filtered on their `kind`.
-KEEP_OUTSIDE = {"earth": None, "water": None, "roads": {"highway"}, "landuse": {"pier"}}
+# What stays outside the city: the land and the water whole, highways, parks, and piers,
+# which shape the waterfront. Each layer's features are filtered on their `kind`. Woods,
+# scrub and lawns are left out: in New Jersey and Westchester they are most of the green,
+# and at the opening zoom they would add about 160 KB of tiles to the parks' 45 KB.
+PARKS = {"park", "national_park", "nature_reserve", "protected_area", "golf_course",
+         "cemetery", "playground", "village_green", "allotments"}
+KEEP_OUTSIDE = {"earth": None, "water": None, "landuse": PARKS | {"pier"}}
+# Roads outside the city: highways at every zoom, other streets from this zoom, the zoom
+# from which a reader is looking at streets. Below it they would add bytes to the views
+# that show the whole city.
+STREETS_ZOOM = 13
+# The mark on a road's part outside the city: a boolean property.
+MARK = "outside_city"
 
 
 # ------------------------------------------------------------------------- the city line
@@ -263,8 +274,110 @@ def inside_part(feature, z, x, y, extent):
     return bytes(body) + encode_varint(4 << 3 | 2) + encode_varint(len(geometry)) + geometry
 
 
+def geometry_kind(feature):
+    for number, value, _ in fields(feature):
+        if number == 3:
+            return value
+    return 1
+
+
+def tile_edges(z, x, y, extent):
+    """The city line in this tile's coordinates."""
+    n = 2 ** z
+    def project(lon, lat):
+        r = math.radians(lat)
+        tx = (lon + 180) / 360 * n
+        ty = (1 - math.log(math.tan(r) + 1 / math.cos(r)) / math.pi) / 2 * n
+        return (tx - x) * extent, (ty - y) * extent
+    return [(project(*a), project(*b)) for a, b in EDGES]
+
+
+def inside_tile(px, py, edges):
+    hit = False
+    for (x1, y1), (x2, y2) in edges:
+        if (y1 > py) != (y2 > py) and px < (x2 - x1) * (py - y1) / (y2 - y1) + x1:
+            hit = not hit
+    return hit
+
+
+def crossings(a, b, edges):
+    """Where the segment a-b crosses the city line, as fractions along it."""
+    out = []
+    (ax, ay), (bx, by) = a, b
+    for (cx, cy), (dx, dy) in edges:
+        if max(ax, bx) < min(cx, dx) or min(ax, bx) > max(cx, dx):
+            continue
+        if max(ay, by) < min(cy, dy) or min(ay, by) > max(cy, dy):
+            continue
+        den = (bx - ax) * (dy - cy) - (by - ay) * (dx - cx)
+        if den == 0:
+            continue
+        t = ((cx - ax) * (dy - cy) - (cy - ay) * (dx - cx)) / den
+        u = ((cx - ax) * (by - ay) - (cy - ay) * (bx - ax)) / den
+        if 0 < t < 1 and 0 <= u <= 1:
+            out.append(t)
+    return sorted(out)
+
+
+def with_geometry(feature, shapes, kind):
+    body = bytearray()
+    for number, value, field in fields(feature):
+        if number != 4:
+            body += field
+    geometry = encode(shapes, kind)
+    return bytes(body) + encode_varint(4 << 3 | 2) + encode_varint(len(geometry)) + geometry
+
+
+def split_at_line(feature, edges):
+    """A line feature cut where it crosses the city line: (inside part, outside part), each
+    a feature or None."""
+    kind, geometry = 1, []
+    for number, value, _ in fields(feature):
+        if number == 3:
+            kind = value
+        elif number == 4:
+            geometry = packed(value)
+    if kind != 2:
+        return feature, None
+    pieces = {True: [], False: []}
+    for (line,) in parts(geometry, kind):
+        state = inside_tile(*line[0], edges)
+        current = [line[0]]
+        for a, b in zip(line, line[1:]):
+            for t in crossings(a, b, edges):
+                c = (round(a[0] + (b[0] - a[0]) * t), round(a[1] + (b[1] - a[1]) * t))
+                current.append(c)
+                pieces[state].append(current)
+                current, state = [c], not state
+            current.append(b)
+        pieces[state].append(current)
+    def clean(lines):
+        out = []
+        for line in lines:
+            line = [p for i, p in enumerate(line) if i == 0 or p != line[i - 1]]
+            if len(line) >= 2:
+                out.append([line])
+        return out
+    inner, outer = clean(pieces[True]), clean(pieces[False])
+    return (with_geometry(feature, inner, kind) if inner else None,
+            with_geometry(feature, outer, kind) if outer else None)
+
+
+def marked(feature, key, value):
+    """The feature with one more tag, key and value given as indexes into its layer."""
+    tags, rest = [], bytearray()
+    for number, v, field in fields(feature):
+        if number == 2:
+            tags = packed(v)
+        else:
+            rest += field
+    data = b"".join(encode_varint(t) for t in tags + [key, value])
+    return encode_varint(2 << 3 | 2) + encode_varint(len(data)) + data + bytes(rest)
+
+
 def trim(tile, z, x, y, line_crosses_tile):
-    """The tile with every feature dropped that lies outside the city and is not kept."""
+    """The tile with everything outside the city dropped that the map does not show there,
+    and the roads cut at the line with their outside parts marked."""
     out = bytearray()
     for number, layer, raw in fields(tile):
         if number != 3:
@@ -284,18 +397,41 @@ def trim(tile, z, x, y, line_crosses_tile):
             out += raw
             continue
         kinds = KEEP_OUTSIDE.get(name, set())
-        body, kept = bytearray(), 0
+        body, kept, marks, edges = bytearray(), 0, 0, None
         for n, value, field in fields(layer):
             if n != 2:
                 body += field
-            elif feature_kind(value, keys, values) in kinds:
-                body += field
-                kept += 1
+                continue
+            kind = feature_kind(value, keys, values)
+            if name == "roads":
+                if not line_crosses_tile:
+                    inner, outer = None, value
+                elif geometry_kind(value) == 2:
+                    edges = edges or tile_edges(z, x, y, extent)
+                    inner, outer = split_at_line(value, edges)
+                else:
+                    inner, outer = inside_part(value, z, x, y, extent), None
+                if not (kind == "highway" or z >= STREETS_ZOOM):
+                    outer = None
+                pieces = [(inner, False), (outer, True)]
+            elif kind in kinds:
+                pieces = [(value, False)]
             elif line_crosses_tile:
-                part = inside_part(value, z, x, y, extent)
-                if part is not None:
-                    body += encode_varint(2 << 3 | 2) + encode_varint(len(part)) + part
-                    kept += 1
+                pieces = [(inside_part(value, z, x, y, extent), False)]
+            else:
+                pieces = []
+            for feature, outside in pieces:
+                if feature is None:
+                    continue
+                if outside:
+                    feature = marked(feature, len(keys), len(values))
+                    marks += 1
+                body += encode_varint(2 << 3 | 2) + encode_varint(len(feature)) + feature
+                kept += 1
+        if marks:                       # the mark's key, and the value true (field 7)
+            body += encode_varint(3 << 3 | 2) + encode_varint(len(MARK)) + MARK.encode()
+            true = encode_varint(7 << 3) + encode_varint(1)
+            body += encode_varint(4 << 3 | 2) + encode_varint(len(true)) + true
         if kept:
             out += encode_varint(3 << 3 | 2) + encode_varint(len(body)) + body
     return bytes(out)

@@ -394,10 +394,10 @@ export function reportUnmatched(style: StyleSpecification, hits: Record<string, 
  * WHY THIS EXISTS
  * The map is of New York City. The land around it is there to show where the city ends,
  * not to be read, and at street level New Jersey's streets and town names compete with
- * the city's own. So outside the city line the ground is a cool grey and nothing is
- * named but the highways and the water, as the City's Summer in NYC map draws it. The
- * grey goes under the water, so a river or the harbour stays one colour from shore to
- * shore.
+ * the city's own. So outside the city line the ground is a cool grey, the roads are
+ * pale, and nothing is named but the highways and the water, as the City's Summer in NYC
+ * map draws it. The grey goes under the water, so a river or the harbour stays one colour
+ * from shore to shore.
  *
  * The line is the city's own: City Planning's borough boundaries with water included,
  * merged into one outline by build/city-limits.py. Each basemap empties the outside its
@@ -407,8 +407,8 @@ export function reportUnmatched(style: StyleSpecification, hits: Record<string, 
  * build, hides its labels in the browser (hideLabelsOutsideCity).
  */
 
-/** The outside: a cool grey laid over the ground, and how much of a street remains. */
-export const OUTSIDE = { color: "#4f5b78", opacity: 0.16, streets: 0.35 };
+/** The outside: a cool grey laid over the ground, and how much of a road remains. */
+export const OUTSIDE = { color: "#4f5b78", opacity: 0.1, streets: 0.35 };
 
 /** Everything outside the city: the world, with the city's rings cut out of it. */
 const OUTSIDE_CITY: Polygon = {

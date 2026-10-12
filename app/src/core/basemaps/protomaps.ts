@@ -18,7 +18,7 @@ import type { Flavor } from "@protomaps/basemaps";
 import type { ExpressionSpecification, LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
   addBoroughLabels, and, nameExpression, PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND,
-  POSITRON_MAJOR_ZOOM, POSITRON_ROADS, POSITRON_SUBTLE, greyOutsideCity, warmTint,
+  OUTSIDE, POSITRON_MAJOR_ZOOM, POSITRON_ROADS, POSITRON_SUBTLE, greyOutsideCity, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -56,9 +56,30 @@ export function protomapsStyle(
   flatBuildings(style);
   positronRoads(style);
   placeLabels(style, lang);
-  // The file holds only land, water and highways outside the city (build/protomaps-outside.py),
-  // so all that is left to do there is the grey.
+  paleRoadsOutside(style);
+  // Outside the city the file holds only land, water, parks and roads
+  // (build/protomaps-outside.py), so all that is left to do there is the grey.
   return warmTint(greyOutsideCity(style, "water"));
+}
+
+/**
+ * Draw the roads outside the city pale and unnamed, in place, as the NYC basemap draws its
+ * region roads: at OUTSIDE.streets of their opacity, with no street names, though the
+ * highway shields stay. The file cuts every road at the city line and marks the part
+ * outside `outside_city`, so this is a lookup on the feature, not a test of its shape.
+ */
+function paleRoadsOutside(style: StyleSpecification) {
+  for (const layer of style.layers) {
+    if (!("source-layer" in layer) || layer["source-layer"] !== "roads") continue;
+    if (layer.type === "line") {
+      const opacity = layer.paint?.["line-opacity"] ?? 1;
+      if (typeof opacity !== "number") continue;
+      layer.paint = { ...layer.paint, "line-opacity":
+        ["case", ["==", ["get", "outside_city"], true], opacity * OUTSIDE.streets, opacity] };
+    } else if (layer.type === "symbol" && layer.id.startsWith("roads_labels")) {
+      layer.filter = and(layer.filter, ["!=", "outside_city", true]);
+    }
+  }
 }
 
 /**

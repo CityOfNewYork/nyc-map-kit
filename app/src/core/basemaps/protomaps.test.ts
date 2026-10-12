@@ -70,4 +70,11 @@ describe("the Protomaps basemap", () => {
     // The file holds nothing outside the city to hide (build/protomaps-outside.py).
     expect(JSON.stringify(style.layers)).not.toContain('"within"');
   });
+
+  test("draws the roads the file marks as outside the city pale, and unnamed", () => {
+    expect(paint(style, "roads_minor")).toMatchObject({ "line-opacity":
+      ["case", ["==", ["get", "outside_city"], true], 0.35, 1] });
+    expect(filter("roads_labels_major")).toContainEqual(["!=", "outside_city", true]);
+    expect(JSON.stringify(filter("roads_shields"))).not.toContain("outside_city");
+  });
 });
