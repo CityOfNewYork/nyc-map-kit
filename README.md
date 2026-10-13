@@ -51,7 +51,7 @@ Geoclient needs a subscription key. Copy `app/.env.example` to `app/.env.local`
 (git-ignored) and put the key in `VITE_GEOCLIENT_KEY`. The key is compiled into the
 JavaScript, so anyone can read it from the published site. Without a key, the box still
 finds boroughs, neighborhoods and ZIP codes, and says that is all it finds. The Pages
-build does not set a key yet.
+build reads the key from the repository's Actions secret `VITE_GEOCLIENT_KEY`.
 
 ## Attribution
 

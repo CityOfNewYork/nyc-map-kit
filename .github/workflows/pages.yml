@@ -46,7 +46,12 @@ jobs:
           tar -xzf "$RUNNER_TEMP/pmtiles.tar.gz" -C "$RUNNER_TEMP" pmtiles
           build_name=$(PATH="$RUNNER_TEMP:$PATH" build/protomaps.sh)
           echo "Protomaps basemap cut from daily build $build_name" >> "$GITHUB_STEP_SUMMARY"
+      # The Geoclient key for the search box. It ends up in the published bundle, readable
+      # by anyone; the secret only keeps it out of git. Without it the search box still
+      # finds neighborhoods, boroughs and ZIP codes.
       - run: npm run build
+        env:
+          VITE_GEOCLIENT_KEY: ${{ secrets.VITE_GEOCLIENT_KEY }}
       - uses: actions/upload-pages-artifact@v5
         if: github.ref == 'refs/heads/main'
         with:
