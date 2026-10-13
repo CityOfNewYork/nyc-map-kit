@@ -10,7 +10,7 @@
 import type { StyleSpecification } from "maplibre-gl";
 import {
   addBoroughLabels, and, OUTSIDE, PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND,
-  POSITRON_MAJOR_ZOOM, POSITRON_ROADS, POSITRON_SUBTLE, reportUnmatched, warmTint,
+  POSITRON_ROADS, reportUnmatched, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -227,10 +227,8 @@ const NYC_MAJOR_ROADS = ["Primary", "Secondary", "Bridge"];
  * street's true shape, and it draws an avenue and a side street alike. The tiles carry
  * the centre lines at every zoom, so this drops the roadbed and keeps drawing the
  * lines, in positron's colours and widths: side streets as one line, major roads white
- * on a pale casing, so width tells the main road.
- * Below z11 secondary roads are one thin grey line, as positron draws its own, which
- * at city zoom gives the street grid some texture. The tiles carry secondary roads
- * from z10 and local streets from z12, so below those zooms there are none to draw.
+ * on a pale casing, so width tells the main road. The tiles carry secondary roads from
+ * z10 and local streets from z12, so below those zooms there are none to draw.
  */
 export function nycRoadsAsLines(style: StyleSpecification): StyleSpecification {
   const hits: Record<string, number> = { Roadbeds: 0, "Roadbed Edge": 0 };
@@ -251,10 +249,6 @@ export function nycRoadsAsLines(style: StyleSpecification): StyleSpecification {
       : part === "1" ? POSITRON_ROADS.casing : POSITRON_ROADS.major;
     delete layer.maxzoom;
     layer.paint = { "line-color": look.color, "line-width": look.width };
-    if (cls === "Secondary" && part === "1") layer.minzoom = POSITRON_MAJOR_ZOOM;
-    else if (cls === "Secondary") {
-      layer.paint["line-color"] = ["step", ["zoom"], POSITRON_SUBTLE, POSITRON_MAJOR_ZOOM, "#fff"];
-    }
     return true;
   });
   reportUnmatched(style, hits);

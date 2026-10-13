@@ -17,8 +17,9 @@ import { layers, namedFlavor } from "@protomaps/basemaps";
 import type { Flavor } from "@protomaps/basemaps";
 import type { ExpressionSpecification, LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, and, nameExpression, PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND,
-  OUTSIDE, POSITRON_MAJOR_ZOOM, POSITRON_ROADS, POSITRON_SUBTLE, greyOutsideCity, warmTint,
+  addBoroughLabels, and, dotCityLine, nameExpression, PARK_NAME_COLOR, POSITRON_BUILDING,
+  POSITRON_LAND, OUTSIDE, POSITRON_ROADS, greyOutsideCity,
+  warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -57,10 +58,18 @@ export function protomapsStyle(
   positronRoads(style);
   placeLabels(style, lang);
   paleRoadsOutside(style);
+  dotCityLine(style, style.layers.findIndex((l) => l.type === "symbol"));
   // Outside the city the file holds only land, water, parks and roads
-  // (build/protomaps-outside.py), so all that is left to do there is the grey.
-  return warmTint(greyOutsideCity(style, "water"));
+  // (build/protomaps-outside.py), so all that is left to do there is the grey, a touch
+  // darker than on the other basemaps: with streets this pale, the city line needs it.
+  return warmTint(greyOutsideCity(style, "water", OUTSIDE_GREY));
 }
+
+/** How strongly the grey covers the land outside the city on this basemap. */
+const OUTSIDE_GREY = 0.13;
+
+/** True for a road's part outside the city, as build/protomaps-outside.py marks it. */
+const OUTSIDE_ROAD = ["==", ["get", "outside_city"], true] as ExpressionSpecification;
 
 /**
  * Draw the roads outside the city pale and unnamed, in place, as the NYC basemap draws its
@@ -74,8 +83,8 @@ function paleRoadsOutside(style: StyleSpecification) {
     if (layer.type === "line") {
       const opacity = layer.paint?.["line-opacity"] ?? 1;
       if (typeof opacity !== "number") continue;
-      layer.paint = { ...layer.paint, "line-opacity":
-        ["case", ["==", ["get", "outside_city"], true], opacity * OUTSIDE.streets, opacity] };
+      layer.paint = { ...layer.paint,
+        "line-opacity": ["case", OUTSIDE_ROAD, opacity * OUTSIDE.streets, opacity] };
     } else if (layer.type === "symbol" && layer.id.startsWith("roads_labels")) {
       layer.filter = and(layer.filter, ["!=", "outside_city", true]);
     }
@@ -102,7 +111,7 @@ function flavor(palette: Palette): Flavor {
     highway: "#fff", highway_casing_early: casing, highway_casing_late: casing,
     major: "#fff", major_casing_early: casing, major_casing_late: casing,
     link: "#fff", link_casing: casing,
-    minor_a: POSITRON_SUBTLE, minor_b: "#fff", minor_casing: casing,
+    minor_b: "#fff", minor_casing: casing,
     minor_service: "#fff", minor_service_casing: casing, other: path,
     tunnel_highway: path, tunnel_major: path, tunnel_link: path, tunnel_minor: path,
     tunnel_other: path, tunnel_highway_casing: casing, tunnel_major_casing: casing,
@@ -176,13 +185,16 @@ function flatBuildings(style: StyleSpecification) {
  *  shields. Protomaps shields every numbered road, state, county and parkway, which
  *  at z11–12 puts some thirty shields over the city and New Jersey. */
 const SHIELD_NETWORKS = ["US:I", "US:US"];
+/** Highway shields wait until this zoom, as positron's do, so that at city zoom they are
+ *  not among the pins. */
+const SHIELD_ZOOM = 11;
 
 /**
  * Streets in positron's widths and colours, as nycRoadsAsLines draws OTI's: side streets
- * one line that turns from grey to white at z14, major roads white on a pale casing from
- * z11 and one thin grey line below it. Protomaps draws every street thinner, cased in
- * grey, which reads as a different map at street level. Highway shields wait until z11,
- * as positron's do, and only Interstates and US routes get one.
+ * one line that turns from grey to white at z14, major roads white on a pale casing.
+ * Protomaps draws every street thinner, cased in grey, which reads as a different map at
+ * street level. Highway shields wait until SHIELD_ZOOM, as positron's do, and only
+ * Interstates and US routes get one.
  */
 function positronRoads(style: StyleSpecification) {
   const drop = new Set(["roads_minor_casing", "roads_minor_service_casing",
@@ -196,29 +208,23 @@ function positronRoads(style: StyleSpecification) {
   }
   const major = layer(style, "roads_major");
   if (major?.type === "line") {
-    major.paint = {
-      "line-color": ["step", ["zoom"], POSITRON_SUBTLE, POSITRON_MAJOR_ZOOM, "#fff"],
-      "line-width": POSITRON_ROADS.major.width,
-    };
+    major.paint = { "line-color": POSITRON_ROADS.major.color, "line-width": POSITRON_ROADS.major.width };
   }
   const casing = layer(style, "roads_major_casing_early");
   if (casing?.type === "line") {
     delete casing.maxzoom;
-    casing.minzoom = POSITRON_MAJOR_ZOOM;
     casing.paint = { "line-color": POSITRON_ROADS.casing.color, "line-width": POSITRON_ROADS.casing.width };
   }
   const shields = layer(style, "roads_shields");
   if (shields?.type === "symbol") {
-    shields.minzoom = POSITRON_MAJOR_ZOOM;
+    shields.minzoom = SHIELD_ZOOM;
     shields.filter = and(shields.filter,
       ["in", ["get", "network"], ["literal", SHIELD_NETWORKS]]);
   }
 }
 
 /** Of the places Protomaps files as localities, the city holds only New York itself and
- *  hamlets such as Todt Hill. The hamlets wait until this zoom, as balancePlaceLabels
- *  has positron's villages wait. */
-const VILLAGE_ZOOM = 12.5;
+ *  hamlets such as Todt Hill; only villages and hamlets are named. */
 const VILLAGES = ["village", "hamlet"];
 /** Below this zoom the boroughs are named; from it, the neighbourhoods the tiles carry. */
 const NEIGHBOURHOOD_ZOOM = 13;
@@ -244,7 +250,7 @@ const POSITRON_ROAD_NAME_ZOOM = 12.2;
  *   1. The tiles' own borough labels (neighbourhoods of kind `suburb`), the islands named
  *      after boroughs, and "New York" are dropped. The block draws the boroughs itself,
  *      translated and anchored on open ground, until NEIGHBOURHOOD_ZOOM.
- *   2. Of the localities, only villages and hamlets are named, from VILLAGE_ZOOM. The
+ *   2. Of the localities, only villages and hamlets are named. The
  *      other things OpenStreetMap files as places, such as named localities and farms
  *      ("Clinton Hill Historic District", a rooftop farm), are left out, as positron
  *      leaves them out. Outside the city nothing is named: the file holds no labels
@@ -283,7 +289,6 @@ function placeLabels(style: StyleSpecification, lang: string) {
     const { "text-padding": _, ...layout } = locality.layout ?? {};
     locality.layout = { ...layout, "text-size": POSITRON_TOWN_SIZE as ExpressionSpecification };
     locality.filter = and(locality.filter, ["in", "kind_detail", ...VILLAGES]);
-    locality.minzoom = VILLAGE_ZOOM;
   }
 
   const parkNames: LayerSpecification = {

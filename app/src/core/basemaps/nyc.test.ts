@@ -146,9 +146,10 @@ describe("the NYC basemap steps", () => {
       ["interpolate", ["linear"], ["zoom"], 13, "hsl(0, 0%, 88%)", 14, "#fff"] });
     expect(layer("NYC Roads/Primary/1")?.paint).toMatchObject({ "line-color": "rgb(213, 213, 213)" });
     expect(layer("NYC Roads/Primary/0")?.paint).toMatchObject({ "line-color": "#fff" });
-    expect(layer("NYC Roads/Secondary/1")?.minzoom).toBe(11);
-    expect(layer("NYC Roads/Secondary/0")?.paint).toMatchObject({ "line-color":
-      ["step", ["zoom"], "hsla(0, 0%, 85%, 0.69)", 11, "#fff"] });
+    // Secondary roads as the other major roads: white on a casing from the zoom the tiles
+    // carry them, with no grey stage first.
+    expect(layer("NYC Roads/Secondary/1")?.minzoom).toBe(10);
+    expect(layer("NYC Roads/Secondary/0")?.paint).toMatchObject({ "line-color": "#fff" });
   });
 
   test("hold highway shields until z11", () => {

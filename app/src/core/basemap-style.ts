@@ -17,12 +17,13 @@
  * Each basemap's own rules live in basemaps/, one file per basemap; basemaps/index.ts
  * lists them.
  */
-import type { FeatureCollection, Point, Polygon } from "geojson";
+import type { Feature, FeatureCollection, MultiLineString, Point, Polygon } from "geojson";
 import { convertFilter } from "@maplibre/maplibre-gl-style-spec";
 import type {
   ExpressionSpecification, FilterSpecification, LayerSpecification, StyleSpecification,
 } from "maplibre-gl";
 import CITY_LIMITS from "./city-limits.json";
+import CITY_LINE from "./city-line.json";
 
 /** The label fields a text-field expression may read. If an expression mentions any of
  *  these, it is a name label and we rewrite it. `ref` (highway shields) is not one. */
@@ -407,8 +408,9 @@ export function reportUnmatched(style: StyleSpecification, hits: Record<string, 
  * build, hides its labels in the browser (hideLabelsOutsideCity).
  */
 
-/** The outside: a cool grey laid over the ground, and how much of a road remains. */
-export const OUTSIDE = { color: "#4f5b78", opacity: 0.1, streets: 0.35 };
+/** The outside: a cool grey laid over the ground, how much of a road remains, and the
+ *  city line's colour, positron's for boundaries. */
+export const OUTSIDE = { color: "#4f5b78", opacity: 0.1, streets: 0.35, line: "hsl(0, 0%, 70%)" };
 
 /** Everything outside the city: the world, with the city's rings cut out of it. */
 const OUTSIDE_CITY: Polygon = {
@@ -424,7 +426,8 @@ const OUTSIDE_CITY: Polygon = {
  * water layer drawn over the land, so water outside the city keeps its colour. It is one
  * fill of one polygon, which costs the map next to nothing to draw.
  */
-export function greyOutsideCity(style: StyleSpecification, below: string): StyleSpecification {
+export function greyOutsideCity(style: StyleSpecification, below: string,
+  opacity = OUTSIDE.opacity): StyleSpecification {
   const at = style.layers.findIndex((l) => l.id === below);
   if (at < 0) {
     reportUnmatched(style, { [below]: 0 });
@@ -435,7 +438,25 @@ export function greyOutsideCity(style: StyleSpecification, below: string): Style
   });
   style.layers.splice(at, 0, {
     id: "outside_city", type: "fill", source: "outside_city",
-    paint: { "fill-color": OUTSIDE.color, "fill-opacity": OUTSIDE.opacity },
+    paint: { "fill-color": OUTSIDE.color, "fill-opacity": opacity },
+  });
+  return style;
+}
+
+/**
+ * Dot the city line where it crosses land, in place, as the NYC basemap draws it: Queens
+ * against Nassau, the Bronx against Westchester. Inserted at `at`, above the streets,
+ * since the line runs down some of them. Only the land stretches are drawn
+ * (app/src/core/city-line.json, from build/city-limits.py), so no line crosses the water.
+ * For a basemap whose own boundary lines do not already draw it.
+ */
+export function dotCityLine(style: StyleSpecification, at: number): StyleSpecification {
+  style.sources = Object.assign({}, style.sources, {
+    city_line: { type: "geojson" as const, data: CITY_LINE as Feature<MultiLineString> },
+  });
+  style.layers.splice(at < 0 ? style.layers.length : at, 0, {
+    id: "city_line", type: "line", source: "city_line",
+    paint: { "line-color": OUTSIDE.line, "line-width": 1, "line-dasharray": [1, 2] },
   });
   return style;
 }
@@ -492,9 +513,5 @@ export const POSITRON_ROADS: Record<"minor" | "major" | "casing",
     width: ["interpolate", ["exponential", 1.3], ["zoom"], 10, 3, 20, 23],
   },
 };
-/** Below this zoom positron draws every road but the motorways as one thin grey line,
- *  in this colour; from it, white on a casing. */
-export const POSITRON_MAJOR_ZOOM = 11;
-export const POSITRON_SUBTLE = "hsla(0, 0%, 85%, 0.69)";
 
 export { NAME_FIELDS };

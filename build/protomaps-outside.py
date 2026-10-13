@@ -47,10 +47,11 @@ CITY = os.path.join(ROOT, "app", "src", "core", "city-limits.json")
 PARKS = {"park", "national_park", "nature_reserve", "protected_area", "golf_course",
          "cemetery", "playground", "village_green", "allotments"}
 KEEP_OUTSIDE = {"earth": None, "water": None, "landuse": PARKS | {"pier"}}
-# Roads outside the city: highways at every zoom, other streets from this zoom, the zoom
-# from which a reader is looking at streets. Below it they would add bytes to the views
-# that show the whole city.
-STREETS_ZOOM = 13
+# Roads outside the city: highways at every zoom, other streets from this zoom, the one
+# at which the tiles first carry local streets, so the blocks outside the city fill in at
+# the same zoom as those inside it (and as on the NYC basemap). Below it the tiles carry
+# major roads, which would add bytes to the views that show the whole city.
+STREETS_ZOOM = 12
 # The mark on a road's part outside the city: a boolean property.
 MARK = "outside_city"
 

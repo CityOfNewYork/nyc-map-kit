@@ -60,9 +60,8 @@ describe("the Protomaps basemap", () => {
     expect(layer("borough_label")?.maxzoom).toBe(13);
   });
 
-  test("names only villages and hamlets of the localities, from z12.5", () => {
+  test("names only villages and hamlets of the localities", () => {
     expect(filter("places_locality")).toContainEqual(["in", "kind_detail", "village", "hamlet"]);
-    expect(layer("places_locality")?.minzoom).toBe(12.5);
   });
 
   test("greys the land outside the city under the water, with no test in the browser", () => {
@@ -76,5 +75,10 @@ describe("the Protomaps basemap", () => {
       ["case", ["==", ["get", "outside_city"], true], 0.35, 1] });
     expect(filter("roads_labels_major")).toContainEqual(["!=", "outside_city", true]);
     expect(JSON.stringify(filter("roads_shields"))).not.toContain("outside_city");
+  });
+
+  test("dots the city line where it crosses land, above the streets", () => {
+    expect(ids.indexOf("city_line")).toBeGreaterThan(ids.indexOf("roads_major"));
+    expect(ids.indexOf("city_line")).toBeLessThan(ids.indexOf("park_name"));
   });
 });

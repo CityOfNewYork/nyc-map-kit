@@ -218,15 +218,14 @@ const ISLANDS_NAMED_FOR_BOROUGHS = ["Staten Island", "Manhattan Island"];
 /**
  * Rebalance the place labels for a map framed on New York City, in place.
  *
- * Four edits, each reversible on its own:
- *   1. Village labels wait until z12.5. Inside the city those are hamlets such as Todt
- *      Hill; the towns and villages around it are not named at all (hideLabelsOutsideCity).
- *   2. The boroughs are drawn from BOROUGH_LABELS below z14, where the tiles have
+ * Three edits, each reversible on its own. (Outside the city nothing is named at all;
+ * see hideLabelsOutsideCity.)
+ *   1. The boroughs are drawn from BOROUGH_LABELS below z14, where the tiles have
  *      nothing, and stop there because that is where real neighbourhood names take
  *      over and a borough name becomes noise.
- *   3. The tiles' own borough labels are dropped, along with the two islands named
+ *   2. The tiles' own borough labels are dropped, along with the two islands named
  *      after boroughs, so no name is printed twice.
- *   4. "New York" is dropped. It is the city the whole map is of; once the labels
+ *   3. "New York" is dropped. It is the city the whole map is of; once the labels
  *      around it thin out it wins its collision and stamps itself across Lower
  *      Manhattan, which tells the reader nothing.
  *
@@ -241,9 +240,6 @@ export function balancePlaceLabels(
   // filter: every kind but background.
   const layer = (id: string) => layers.find((l) => l.id === id) as
     Exclude<LayerSpecification, { type: "background" }> | undefined;
-  const village = layer("label_village");
-  if (village) village.minzoom = 12.5;
-
   const other = layer("label_other");
   if (other) {
     other.filter = and(other.filter,
