@@ -26,19 +26,22 @@
  *
  * 2. ACCESSIBILITY. The list is the text alternative to the map. Every site the map
  *    draws is reachable from it by keyboard, selection moves focus to the card, and
- *    closing the card puts focus back where it came from.
+ *    closing the card puts focus back where it came from. A search re-orders the list;
+ *    it never removes a site from it.
  */
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
 import { loadBasemap } from "../core/basemaps/index.ts";
 import type { MapCore, SelectInfo } from "../core/map-core.ts";
 import { track } from "../logic/analytics.ts";
-import { coincidentWith, prepareData } from "../logic/data.ts";
+import { coincidentWith, metresBetween, prepareData } from "../logic/data.ts";
 import type { Settings } from "../logic/params.ts";
+import type { Found } from "../logic/places.ts";
 import type {
   Config, Model, OrgsDoc, Site, SiteCollection, SiteProperties,
 } from "../logic/types.ts";
 import { Panel } from "./Panel.tsx";
+import { Search } from "./Search.tsx";
 import { SiteDialog } from "./SiteDialog.tsx";
 import type { StepDirection } from "./SiteDialog.tsx";
 import { useMapCore } from "./useMapCore.ts";
@@ -54,6 +57,11 @@ const LIST_PADDING = 340;
  *  this" for one place, not "what is near me". */
 const MINI_MAP_ZOOM = 15.5;
 
+/** A searched-for place is framed with the sites nearest it — this many, within this
+ *  far — so the map answers "what is near here" and not only "where is here". */
+const NEAREST_SITES = 3;
+const NEAREST_WITHIN_M = 3000;
+
 interface AppProps {
   settings: Settings;
 }
@@ -66,6 +74,7 @@ export default function App({ settings }: AppProps) {
   // to it, say) still runs the effect that opens and focuses the card.
   const [selection, setSelection] = useState<{ feature: Site | null; seq: number }>(
     { feature: null, seq: 0 });
+  const [found, setFound] = useState<Found | null>(null);   // what the search box found
 
   const main = useMapCore<SiteProperties>();
   const mini = useMapCore<SiteProperties>();   // the map in the card; made on first open
@@ -160,6 +169,22 @@ export default function App({ settings }: AppProps) {
   }, [model, basemap, settings, main]);
 
   useEffect(() => mini.destroy, [mini]);
+
+  // A search result: mark it and frame it with the sites nearest it. A neighborhood or
+  // ZIP code is marked at its centre too — that is the point the list's distances are
+  // measured from, so the reader can see where "nearest" means. An effect rather
+  // than the search's callback so that a search made before the map exists lands once
+  // the map does.
+  useEffect(() => {
+    const map = main.mapRef.current;
+    if (!map || !model) return;
+    if (!found) {
+      map.showPlace(null);
+      return;
+    }
+    map.showPlace({ center: found.center, bbox: found.bbox },
+                  nearestIds(model.features, found.center));
+  }, [found, model, basemap, main]);
 
   // ---------------------------------------------------------------------- selection
   //
@@ -361,8 +386,13 @@ export default function App({ settings }: AppProps) {
       <a className="skip-link" href="#map">Skip the list and go to the map</a>
 
       <div className="stage" id="stage" data-list={model ? settings.list : "on"}>
-        <Panel model={model} list={settings.list}
-               selectedId={feature && feature.properties.id} onOpen={openFromList} />
+        {/* The search box above the list, one column on a desktop. On a phone the list is
+            a bottom sheet and this wrapper drops out of the layout (see style.css). */}
+        <div className="side">
+          <Search onFound={setFound} onClear={() => setFound(null)} />
+          <Panel model={model} list={settings.list} origin={found && found.center}
+                 selectedId={feature && feature.properties.id} onOpen={openFromList} />
+        </div>
         {/* map-core fills this div; React only puts the loading and error notes in it. */}
         <div className="map" id="map" tabIndex={-1} ref={main.containerRef}>
           {failed ? (
@@ -436,4 +466,16 @@ function siteUrl(id: string | null): URL {
   if (id) url.searchParams.set("site", id);
   else url.searchParams.delete("site");
   return url;
+}
+
+/** The ids of the sites nearest `center`: at most NEAREST_SITES, none further than
+ *  NEAREST_WITHIN_M, so a search in a part of the city with no sites does not frame
+ *  half the city. */
+function nearestIds(features: Site[], center: [number, number]): string[] {
+  return features
+    .map((f) => ({ id: f.properties.id, m: metresBetween(center, f.geometry.coordinates) }))
+    .filter((s) => s.m <= NEAREST_WITHIN_M)
+    .sort((a, b) => a.m - b.m)
+    .slice(0, NEAREST_SITES)
+    .map((s) => s.id);
 }

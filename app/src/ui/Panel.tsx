@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent } from "react";
-import { compareSites } from "../logic/data.ts";
+import { compareSites, metresBetween } from "../logic/data.ts";
 import type { Settings } from "../logic/params.ts";
+import type { LngLat } from "../logic/places.ts";
 import type { Model, Site } from "../logic/types.ts";
+
+const METRES_PER_MILE = 1609.344;
 
 /** The bottom sheet's three heights on a phone; the handle cycles through them in order. */
 const SHEET_HEIGHTS = { collapsed: "48px", half: "45dvh", full: "85dvh" };
@@ -14,6 +17,8 @@ interface PanelProps {
   model: Model | null;
   list: Settings["list"];
   selectedId: string | null;
+  /** Where the reader searched for, or null. The list is ordered nearest-first from it. */
+  origin: LngLat | null;
   /** A row was chosen: the button that was pressed, and its site. */
   onOpen: (button: HTMLElement, feature: Site) => void;
 }
@@ -21,18 +26,21 @@ interface PanelProps {
 /**
  * The list of sites: a panel floating over the map on a desktop, a bottom sheet on a phone.
  *
- * The list is a TEXT ALTERNATIVE to the map, not a finder: no search, no filters, no
- * sort. It exists so that everything the map shows is reachable without a pointer and
- * without sight. Focus order is title -> list -> map controls, which is why it sits
- * before the map in the DOM. The card is a modal and takes focus when it opens.
+ * The list is a TEXT ALTERNATIVE to the map, not a finder: no filters, and nothing ever
+ * hidden. It exists so that everything the map shows is reachable without a pointer and
+ * without sight. After a search (ui/Search.tsx) it is ordered nearest-first from the
+ * place found, with each site's distance; otherwise north to south. Focus order is title
+ * -> search -> list -> map controls, which is why it sits before the map in the DOM. The
+ * card is a modal and takes focus when it opens.
  *
  * `model` is null until the data has loaded; until then the panel shows its frame and
  * nothing in it responds.
  */
-export function Panel({ model, list, selectedId, onOpen }: PanelProps) {
+export function Panel({ model, list, selectedId, origin, onOpen }: PanelProps) {
   const [step, setStep] = useState<SheetStep>("collapsed");
   const [dragging, setDragging] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const drag = useRef<{ y: number; h: number } | null>(null);
 
   // The sheet's height is a CSS variable on <html>, because the map's own controls read
@@ -41,9 +49,20 @@ export function Panel({ model, list, selectedId, onOpen }: PanelProps) {
     if (model) document.documentElement.style.setProperty("--sheet-h", SHEET_HEIGHTS[step]);
   }, [model, step]);
 
-  const sites = useMemo(
-    () => (model && list !== "off" ? model.features.slice().sort(compareSites) : []),
-    [model, list]);
+  const sites = useMemo(() => {
+    if (!model || list === "off") return [];
+    const rows = model.features.map((feature) => ({
+      feature,
+      metres: origin ? metresBetween(origin, feature.geometry.coordinates) : null,
+    }));
+    return rows.sort((a, b) =>
+      (a.metres ?? 0) - (b.metres ?? 0) || compareSites(a.feature, b.feature));
+  }, [model, list, origin]);
+
+  // A new order starts at the top, where the nearest site now is.
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0;
+  }, [origin]);
 
   // Drag, in addition to tap. Pointer events cover mouse, touch and pen with one path.
   // While dragging, the height is set directly on the element rather than through state,
@@ -102,10 +121,6 @@ export function Panel({ model, list, selectedId, onOpen }: PanelProps) {
         <span className="visually-hidden">Show the list of sites</span>
       </button>
 
-      <p className="panel-intro">
-        <span>Every site on the map. Select one to see the details.</span>
-      </p>
-
       {/*
         One row per site. Not per organization.
 
@@ -121,10 +136,12 @@ export function Panel({ model, list, selectedId, onOpen }: PanelProps) {
         tooltip — it is what makes each row its own place. The borough is already inside
         the address string, so a row is two lines, not three.
 
-        Sorted north to south, borough by borough — see `compareSites` in logic/data.ts.
+        Sorted north to south, borough by borough — see `compareSites` in logic/data.ts —
+        or, after a search, nearest first. The distance is straight-line, in its own
+        elements: the number, then "mi" for the eye and "miles" for a screen reader.
       */}
-      <ul className="site-list" id="site-list">
-        {sites.map((feature) => {
+      <ul className="site-list" id="site-list" ref={listRef}>
+        {sites.map(({ feature, metres }) => {
           const p = feature.properties;
           return (
             <li key={p.id}>
@@ -133,6 +150,13 @@ export function Panel({ model, list, selectedId, onOpen }: PanelProps) {
                       onClick={(e) => onOpen(e.currentTarget, feature)}>
                 <span className="name">{p.org}</span>
                 <span className="addr">{p.address}</span>
+                {metres != null && (
+                  <span className="dist">
+                    <span>{miles(metres)}</span>{" "}
+                    <span aria-hidden="true">mi</span>
+                    <span className="visually-hidden">miles</span>
+                  </span>
+                )}
               </button>
             </li>
           );
@@ -140,4 +164,9 @@ export function Panel({ model, list, selectedId, onOpen }: PanelProps) {
       </ul>
     </nav>
   );
+}
+
+/** One decimal place; never "0.0", which would read as "here". */
+function miles(metres: number): string {
+  return Math.max(0.1, metres / METRES_PER_MILE).toFixed(1);
 }

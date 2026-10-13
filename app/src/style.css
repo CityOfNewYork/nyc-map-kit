@@ -75,6 +75,7 @@
   --radius-card: 16px;     /* nyc-sys-radius-base */
   --radius-pill: 40px;     /* nyc-sys-radius-2xl */
   --tap:        44px;      /* minimum touch target, WCAG 2.2 SC 2.5.8 */
+  --search-h:   44px;      /* the search box's one line: a full touch target */
   --font: "Noto Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
@@ -164,19 +165,137 @@ body {
   min-height: 0;
 }
 
-/* ------------------------------------------------------------------ list --------- */
+/* ------------------------------------------------------------------ side --------- */
 
-/* On a desktop the list floats over the map, inset from the frame by the same 10 px
-   MapLibre gives its zoom buttons, with the same corner radius and shadow — so the two
-   read as one set of controls on one map, rather than a sidebar beside it. The map runs
+/* On a desktop the search box and the list float over the map's left edge as one column,
+   inset from the frame by the same 10 px MapLibre gives its zoom buttons and 10 px apart.
+   Both have the zoom buttons' corner radius and shadow, so they read as controls on one
+   map rather than a sidebar beside it. The column lets clicks through to the map where it
+   has nothing to show (below the search box when the list is off). The map runs
    underneath the full width; App.tsx pads the camera so pins never land under the list. */
-.panel {
+.side {
   position: relative;
   z-index: 3;
   grid-area: 1 / 1;
   justify-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   width: 320px;
   margin: 10px;
+  min-height: 0;
+  pointer-events: none;
+}
+.side > * { pointer-events: auto; }
+
+/* ------------------------------------------------------------------ search ------- */
+
+/* The search box. Anything it has to say, and any choices, open under it and push the
+   list down rather than cover it. */
+.search {
+  flex: none;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  background: var(--surface);
+  overflow: hidden;
+}
+.search-bar {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  height: var(--search-h);
+}
+.search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0 4px 0 12px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 1rem;         /* 16 px, or iOS zooms the page when it takes focus */
+  color: var(--ink);
+}
+.search-input:focus-visible { outline-offset: -4px; }
+/* The hint in the empty box. It is the input's <label>, drawn where a placeholder would
+   be, because a placeholder is an attribute the translation proxy cannot reach. Once
+   there is text it is only moved out of sight, never removed, so the input keeps its
+   name. */
+.search-label {
+  position: absolute;
+  left: 12px;
+  right: calc(var(--search-h) + 4px);
+  top: 0;
+  line-height: var(--search-h);
+  font-size: 0.9375rem;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.search-label.filled {
+  width: 1px; height: 1px;
+  clip-path: inset(50%);
+}
+.search-clear,
+.search-submit {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--search-h);
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.search-clear { color: var(--ink-muted); }
+.search-submit { border-left: 1px solid var(--line); }
+.search-clear:hover,
+.search-submit:hover { background: rgba(0, 0, 0, 0.05); }
+.search-clear:focus-visible,
+.search-submit:focus-visible { outline-offset: -4px; }
+
+.search-status:empty { display: none; }
+.search-status {
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+}
+.search-status p { margin: 0; }
+.search-found .place-name { color: var(--ink); font-weight: 700; }
+
+.search-choices {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.search-choices > li { border-top: 1px solid var(--line); }
+.search-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 8px 12px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.search-choice:hover { background: var(--hover); }
+.search-choice:focus-visible { outline-offset: -4px; }
+.search-choice .place-name { font-weight: 700; }
+.search-choice .place-boro { font-size: 0.9375rem; color: var(--ink-muted); }
+
+/* ------------------------------------------------------------------ list --------- */
+
+.panel {
+  flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -186,13 +305,6 @@ body {
   background: var(--surface);
 }
 .stage[data-list="off"] .panel { display: none; }
-
-.panel-intro {
-  padding: 10px 14px 8px;
-  font-size: 0.875rem;
-  color: var(--ink-muted);
-  border-bottom: 1px solid var(--line);
-}
 
 /* One row per site: organization name, then its address. Flat, because a row that is
    sometimes a destination and sometimes a container has to be learned before it can be
@@ -226,6 +338,7 @@ body {
 .site-button:hover { background: var(--surface-2); }
 .site-button .name { font-weight: 700; }
 .site-button .addr { font-size: 0.9375rem; color: var(--ink-muted); }
+.site-button .dist { font-size: 0.875rem; color: var(--ink-muted); }
 .site-button[aria-current="true"] {
   /* The selected row is marked by a rule and a tint, as the design system marks the
      current page in its side navigation — and not by the tint alone. */
@@ -556,7 +669,17 @@ body {
   .sheet-handle .counts { flex: 1; font-size: 0.875rem; }
   .sheet-handle .chev { color: var(--ink-muted); }
 
-  .panel-intro { display: none; }
+  /* The column drops out: the list is the bottom sheet, and the search box runs across
+     the top of the map, stopping 10 px short of the zoom buttons in the top-right corner.
+     Above the sheet, so its choices are not hidden when the sheet is pulled up. */
+  .side { display: contents; }
+  .search {
+    position: relative;
+    z-index: 5;
+    grid-area: 1 / 1;
+    align-self: start;
+    margin: 10px calc(10px + 44px + 10px) 10px 10px;
+  }
 
   /* Keep the zoom buttons and the attribution clear of the sheet. */
   .map .maplibregl-ctrl-bottom-left,

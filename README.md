@@ -35,14 +35,30 @@ The code in `app/src/` is in three layers:
   use it.
 - `logic/`: the data rules (grouping, sorting, what a card shows). Plain functions,
   unit-tested.
-- `ui/`: the interface (list, card, bottom sheet). React.
+- `ui/`: the interface (search box, list, card, bottom sheet). React.
 
 Per-map settings live in `app/public/config.json`; the data files sit next to it.
+
+## Search
+
+The search box finds boroughs, neighborhoods and ZIP codes in the page, from
+`app/public/places.json` (rebuild it with `python3 build/places.py`), and sends anything
+else to [NYC Geoclient](https://api-portal.nyc.gov) for addresses, intersections and named
+places like Yankee Stadium. It then marks the place, frames it with the nearest sites, and orders the list nearest-first;
+no site is ever hidden.
+
+Geoclient needs a subscription key. Copy `app/.env.example` to `app/.env.local`
+(git-ignored) and put the key in `VITE_GEOCLIENT_KEY`. The key is compiled into the
+JavaScript, so anyone can read it from the published site. Without a key, the box still
+finds boroughs, neighborhoods and ZIP codes, and says that is all it finds. The Pages
+build does not set a key yet.
 
 ## Attribution
 
 Basemap data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, in
 tiles built by [Protomaps](https://protomaps.com/) (the default) or served by
 [OpenFreeMap](https://openfreemap.org/); or OTI's NYC Basemap (`?basemap=nyc`). Map rendering by
-[MapLibre GL JS](https://maplibre.org/). Geocoding by
-[NYC GeoSearch](https://geosearch.planninglabs.nyc/).
+[MapLibre GL JS](https://maplibre.org/). Site locations geocoded by
+[NYC GeoSearch](https://geosearch.planninglabs.nyc/); search by NYC Geoclient. Neighborhood
+and borough boundaries from NYC Department of City Planning; ZIP code areas from NYC
+Department of Health and Mental Hygiene (MODZCTA), via NYC Open Data.

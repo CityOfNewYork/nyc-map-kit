@@ -1,0 +1,739 @@
+{
+ "1 main st springfield": {
+  "results": [
+   {
+    "request": "address [houseNumber=1, street=main st springfield, borough=MANHATTAN, zip=null]",
+    "response": {
+     "firstBoroughName": "MANHATTAN",
+     "firstStreetNameNormalized": "MAIN ST SPRINGFIELD",
+     "geosupportReturnCode": "EE",
+     "houseNumber": "1",
+     "houseNumberIn": "1",
+     "message": "'MAIN ST SPRINGFIELD' NOT RECOGNIZED. THERE ARE 005 SIMILAR NAMES.",
+     "streetName1": "MAIN ST EAST",
+     "streetName2": "MAIN ST NORTH",
+     "streetName3": "MAIN ST WEST",
+     "streetName4": "MAIDEN LANE",
+     "streetName5": "MAILMAN SCHOOL OF PUBLIC HEALTH"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "address [houseNumber=1, street=main st springfield, borough=BRONX, zip=null]",
+    "response": {
+     "firstBoroughName": "BRONX",
+     "firstStreetNameNormalized": "MAIN ST SPRINGFIELD",
+     "geosupportReturnCode": "EE",
+     "houseNumber": "1",
+     "houseNumberIn": "1",
+     "message": "'MAIN ST SPRINGFIELD' NOT RECOGNIZED. THERE ARE 005 SIMILAR NAMES.",
+     "streetName1": "MAIN STREET",
+     "streetName2": "MAIN STREET EDGEWATR B",
+     "streetName3": "MAIN STREET EDGEWATR C",
+     "streetName4": "MAITLAND AVENUE",
+     "streetName5": "MAIZY COURT"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "address [houseNumber=1, street=main st springfield, borough=BROOKLYN, zip=null]",
+    "response": {
+     "firstBoroughName": "BROOKLYN",
+     "firstStreetNameNormalized": "MAIN ST SPRINGFIELD",
+     "geosupportReturnCode": "EE",
+     "houseNumber": "1",
+     "houseNumberIn": "1",
+     "message": "'MAIN ST SPRINGFIELD' NOT RECOGNIZED. THERE ARE 008 SIMILAR NAMES.",
+     "streetName1": "MAIN ST CITY PARK",
+     "streetName2": "MAIN STREET",
+     "streetName3": "MAIMONIDES CEMETERY",
+     "streetName4": "MAIMONIDES CEMETERY BOUNDARY",
+     "streetName5": "MAIMONIDES HOSPITAL OF BK",
+     "streetName6": "MAIMONIDES MED CENTER BAY RIDGE",
+     "streetName7": "MAIMONIDES MED CENTER N SKYBR",
+     "streetName8": "MAIMONIDES MED CENTER S SKYBR"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "address [houseNumber=1, street=main st springfield, borough=QUEENS, zip=null]",
+    "response": {
+     "firstBoroughName": "QUEENS",
+     "firstStreetNameNormalized": "MAIN ST SPRINGFIELD",
+     "geosupportReturnCode": "EE",
+     "houseNumber": "1",
+     "houseNumberIn": "1",
+     "message": "'MAIN ST SPRINGFIELD' NOT RECOGNIZED. THERE ARE 004 SIMILAR NAMES.",
+     "streetName1": "MAIN ST INNER ROADWAY",
+     "streetName2": "MAIN ST OUTER ROADWAY",
+     "streetName3": "MAIN STREET",
+     "streetName4": "MAIN AVENUE"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "address [houseNumber=1, street=main st springfield, borough=STATEN ISLAND, zip=null]",
+    "response": {
+     "firstBoroughName": "STATEN IS",
+     "firstStreetNameNormalized": "MAIN ST SPRINGFIELD",
+     "geosupportReturnCode": "EE",
+     "houseNumber": "1",
+     "houseNumberIn": "1",
+     "message": "'MAIN ST SPRINGFIELD' NOT RECOGNIZED. THERE ARE 007 SIMILAR NAMES.",
+     "streetName1": "MAIN ST BRIDGE",
+     "streetName2": "MAIN ST PED BR OV SIRT SOUTH SHR",
+     "streetName3": "MAIN STREET",
+     "streetName4": "MAIN CREEK",
+     "streetName5": "MAINE AVENUE",
+     "streetName6": "MAIALO STREET",
+     "streetName7": "MAIDEN LANE"
+    },
+    "status": "REJECTED"
+   }
+  ]
+ },
+ "120 broadway": {
+  "results": [
+   {
+    "request": "address [houseNumber=120, street=broadway, borough=MANHATTAN, zip=null]",
+    "response": {
+     "firstBoroughName": "MANHATTAN",
+     "firstStreetNameNormalized": "BROADWAY",
+     "geosupportReturnCode": "00",
+     "houseNumber": "120",
+     "houseNumberIn": "120",
+     "latitude": 40.708546,
+     "longitude": -74.011041
+    },
+    "status": "POSSIBLE_MATCH"
+   },
+   {
+    "request": "address [houseNumber=120, street=broadway, borough=BROOKLYN, zip=null]",
+    "response": {
+     "firstBoroughName": "BROOKLYN",
+     "firstStreetNameNormalized": "BROADWAY",
+     "geosupportReturnCode": "00",
+     "houseNumber": "120",
+     "houseNumberIn": "120",
+     "latitude": 40.710342,
+     "longitude": -73.964521,
+     "streetName1": "BERRY STREET",
+     "streetName6": "BEDFORD AVENUE",
+     "streetName7": "BILLY JONES WAY"
+    },
+    "status": "POSSIBLE_MATCH"
+   },
+   {
+    "request": "address [houseNumber=120, street=broadway, borough=STATEN ISLAND, zip=null]",
+    "response": {
+     "firstBoroughName": "STATEN IS",
+     "firstStreetNameNormalized": "BROADWAY",
+     "geosupportReturnCode": "00",
+     "houseNumber": "120",
+     "houseNumberIn": "120",
+     "latitude": 40.638486,
+     "longitude": -74.117685,
+     "streetName1": "MARKHAM LANE",
+     "streetName6": "WAYNE STREET"
+    },
+    "status": "POSSIBLE_MATCH"
+   },
+   {
+    "request": "address [houseNumber=120, street=broadway, borough=BRONX, zip=null]",
+    "response": {
+     "firstBoroughName": "BRONX",
+     "firstStreetNameNormalized": "BROADWAY",
+     "geosupportReturnCode": "42",
+     "houseNumber": "120",
+     "houseNumberIn": "120",
+     "message": "ADDRESS NUMBER OUT OF RANGE"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "address [houseNumber=120, street=broadway, borough=QUEENS, zip=null]",
+    "response": {
+     "firstBoroughName": "QUEENS",
+     "firstStreetNameNormalized": "BROADWAY",
+     "geosupportReturnCode": "42",
+     "houseNumber": "120",
+     "houseNumberIn": "120",
+     "message": "ADDRESS NUMBER OUT OF RANGE"
+    },
+    "status": "REJECTED"
+   }
+  ]
+ },
+ "37-11 74th st": {
+  "results": [
+   {
+    "request": "address [houseNumber=37-11, street=74th st, borough=BROOKLYN, zip=null]",
+    "response": {
+     "firstBoroughName": "BROOKLYN",
+     "firstStreetNameNormalized": "74 STREET",
+     "geosupportReturnCode": "01",
+     "houseNumber": "37",
+     "houseNumberIn": "37-11",
+     "latitude": 40.633925,
+     "longitude": -74.034937,
+     "message": "ADDR NUMBER ALTERED: RANGE ASSUMED. USING DIGITS BEFORE DASH ONLY",
+     "streetName1": "NARROWS AVENUE",
+     "streetName6": "COLONIAL ROAD"
+    },
+    "status": "POSSIBLE_MATCH"
+   },
+   {
+    "request": "address [houseNumber=37-11, street=74th st, borough=QUEENS, zip=null]",
+    "response": {
+     "firstBoroughName": "QUEENS",
+     "firstStreetNameNormalized": "74 STREET",
+     "geosupportReturnCode": "00",
+     "houseNumber": "37-11",
+     "houseNumberIn": "37-11",
+     "latitude": 40.748457,
+     "longitude": -73.891735
+    },
+    "status": "POSSIBLE_MATCH"
+   },
+   {
+    "request": "address [houseNumber=37-11, street=74th st, borough=MANHATTAN, zip=null]",
+    "response": {
+     "firstBoroughName": "MANHATTAN",
+     "firstStreetNameNormalized": "74 STREET",
+     "geosupportReturnCode": "EE",
+     "houseNumber": "37-11",
+     "houseNumberIn": "37-11",
+     "message": "'74TH ST' NOT RECOGNIZED. THERE ARE 004 SIMILAR NAMES.",
+     "streetName1": "EAST   74 STREET",
+     "streetName2": "WEST   74 STREET",
+     "streetName3": "EAST   74 STREET EXTENSION",
+     "streetName4": "WEST   74 STREET EXTENSION"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "address [houseNumber=37-11, street=74th st, borough=BRONX, zip=null]",
+    "response": {
+     "firstBoroughName": "BRONX",
+     "firstStreetNameNormalized": "74 STREET",
+     "geosupportReturnCode": "11",
+     "houseNumber": "37-11",
+     "houseNumberIn": "37-11",
+     "message": "'74TH ST' NOT RECOGNIZED. THERE ARE NO SIMILAR NAMES"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "address [houseNumber=37-11, street=74th st, borough=STATEN ISLAND, zip=null]",
+    "response": {
+     "firstBoroughName": "STATEN IS",
+     "firstStreetNameNormalized": "74 STREET",
+     "geosupportReturnCode": "11",
+     "houseNumber": "37-11",
+     "houseNumberIn": "37-11",
+     "message": "'74TH ST' NOT RECOGNIZED. THERE ARE NO SIMILAR NAMES"
+    },
+    "status": "REJECTED"
+   }
+  ]
+ },
+ "851 grand concurse": {
+  "results": [
+   {
+    "request": "address [houseNumber=851, street=grand concurse, borough=MANHATTAN, zip=null]",
+    "response": {
+     "firstBoroughName": "MANHATTAN",
+     "firstStreetNameNormalized": "GRAND CONCURSE",
+     "geosupportReturnCode": "EE",
+     "houseNumber": "851",
+     "houseNumberIn": "851",
+     "message": "'GRAND CONCURSE' NOT RECOGNIZED. THERE ARE 010 SIMILAR NAMES.",
+     "streetName1": "GRAND CANAL COURT",
+     "streetName10": "GRANGE MIDDLE SCHOOL",
+     "streetName2": "GRAND CENTRAL EAST",
+     "streetName3": "GRAND CENTRAL MADISON",
+     "streetName4": "GRAND CENTRAL PLACE",
+     "streetName5": "GRAND CENTRAL TERM",
+     "streetName6": "GRAND CENTRAL TOWER",
+     "streetName7": "GRAND ARMY PLAZA",
+     "streetName8": "GRAND ST EXTENSION",
+     "streetName9": "GRAND STREET"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "address [houseNumber=851, street=grand concurse, borough=BRONX, zip=null]",
+    "response": {
+     "firstBoroughName": "BRONX",
+     "firstStreetNameNormalized": "GRAND CONCURSE",
+     "geosupportReturnCode": "EE",
+     "houseNumber": "851",
+     "houseNumberIn": "851",
+     "message": "'GRAND CONCURSE' NOT RECOGNIZED. THERE ARE 010 SIMILAR NAMES.",
+     "streetName1": "GRAND CONCOURSE",
+     "streetName10": "GRAND CONCOURSE OVER E  175 ST",
+     "streetName2": "GRAND CONCOURSE BIKE PATH",
+     "streetName3": "GRAND CONCOURSE CHARTER SCHOOL",
+     "streetName4": "GRAND CONCOURSE OV BEDFORD PK BL",
+     "streetName5": "GRAND CONCOURSE OVER E  138 ST",
+     "streetName6": "GRAND CONCOURSE OVER E  161 ST",
+     "streetName7": "GRAND CONCOURSE OVER E  167 ST",
+     "streetName8": "GRAND CONCOURSE OVER E  170 ST",
+     "streetName9": "GRAND CONCOURSE OVER E  174 ST"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "address [houseNumber=851, street=grand concurse, borough=BROOKLYN, zip=null]",
+    "response": {
+     "firstBoroughName": "BROOKLYN",
+     "firstStreetNameNormalized": "GRAND CONCURSE",
+     "geosupportReturnCode": "EE",
+     "houseNumber": "851",
+     "houseNumberIn": "851",
+     "message": "'GRAND CONCURSE' NOT RECOGNIZED. THERE ARE 010 SIMILAR NAMES.",
+     "streetName1": "GRAND ARMY PLAZA",
+     "streetName10": "GRAND PARENTS AVENUE",
+     "streetName2": "GRAND ARMY PLAZA GREENWAY",
+     "streetName3": "GRAND ARMY PLAZA MEMORIAL ARCH",
+     "streetName4": "GRAND ARMY PLAZA OVAL",
+     "streetName5": "GRAND ARMY PLZ CONCESSION STAND",
+     "streetName6": "GRAND AVENUE",
+     "streetName7": "GRAND AVENUE BRIDGE",
+     "streetName8": "GRAND FERRY PARK",
+     "streetName9": "GRAND ORIENT GARDEN"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "address [houseNumber=851, street=grand concurse, borough=QUEENS, zip=null]",
+    "response": {
+     "firstBoroughName": "QUEENS",
+     "firstStreetNameNormalized": "GRAND CONCURSE",
+     "geosupportReturnCode": "EE",
+     "houseNumber": "851",
+     "houseNumberIn": "851",
+     "message": "'GRAND CONCURSE' NOT RECOGNIZED. THERE ARE 010 SIMILAR NAMES.",
+     "streetName1": "GRAND CENT PARKWAY",
+     "streetName10": "GRAND CENTRAL PARKWAY SR EB",
+     "streetName2": "GRAND CENTRAL PARKWAY E SVC RD",
+     "streetName3": "GRAND CENTRAL PARKWAY EASTBOUND",
+     "streetName4": "GRAND CENTRAL PARKWAY ET   14 WB",
+     "streetName5": "GRAND CENTRAL PARKWAY N SVC RD",
+     "streetName6": "GRAND CENTRAL PARKWAY NORTH",
+     "streetName7": "GRAND CENTRAL PARKWAY S SVC RD",
+     "streetName8": "GRAND CENTRAL PARKWAY SERVICE RD",
+     "streetName9": "GRAND CENTRAL PARKWAY SOUTH"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "address [houseNumber=851, street=grand concurse, borough=STATEN ISLAND, zip=null]",
+    "response": {
+     "firstBoroughName": "STATEN IS",
+     "firstStreetNameNormalized": "GRAND CONCURSE",
+     "geosupportReturnCode": "EE",
+     "houseNumber": "851",
+     "houseNumberIn": "851",
+     "message": "'GRAND CONCURSE' NOT RECOGNIZED. THERE ARE 010 SIMILAR NAMES.",
+     "streetName1": "GRAND AVENUE",
+     "streetName10": "GRANITE LANE",
+     "streetName2": "GRAND OAKS COUNTRY CLUB",
+     "streetName3": "GRAND STREET",
+     "streetName4": "GRAND VIEW AVENUE",
+     "streetName5": "GRANDVIEW PLAYGROUND",
+     "streetName6": "GRANDVIEW TERRACE",
+     "streetName7": "GRANBY AVENUE",
+     "streetName8": "GRANITE AVENUE",
+     "streetName9": "GRANITE AVENUE OVER B&O RAILRD"
+    },
+    "status": "REJECTED"
+   }
+  ]
+ },
+ "broadway and w 100 st": {
+  "results": [
+   {
+    "request": "intersection [crossStreetOne=broadway, crossStreetTwo=w 100 st, borough=MANHATTAN, compassDirection=null]",
+    "response": {
+     "firstBoroughName": "MANHATTAN",
+     "firstStreetNameNormalized": "BROADWAY",
+     "geosupportReturnCode": "00",
+     "latitude": 40.797217,
+     "longitude": -73.969914,
+     "secondStreetNameNormalized": "WEST  100 STREET",
+     "streetName1": "BROADWAY",
+     "streetName2": "WEST  100 STREET"
+    },
+    "status": "POSSIBLE_MATCH"
+   },
+   {
+    "request": "intersection [crossStreetOne=broadway, crossStreetTwo=w 100 st, borough=BRONX, compassDirection=null]",
+    "response": {
+     "firstBoroughName": "BRONX",
+     "firstStreetNameNormalized": "BROADWAY",
+     "geosupportReturnCode": "11",
+     "message": "'W 100 ST' NOT RECOGNIZED. THERE ARE NO SIMILAR NAMES",
+     "secondStreetNameNormalized": "WEST  100 STREET"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "intersection [crossStreetOne=broadway, crossStreetTwo=w 100 st, borough=BROOKLYN, compassDirection=null]",
+    "response": {
+     "firstBoroughName": "BROOKLYN",
+     "firstStreetNameNormalized": "BROADWAY",
+     "geosupportReturnCode": "11",
+     "message": "'W 100 ST' NOT RECOGNIZED. THERE ARE NO SIMILAR NAMES",
+     "secondStreetNameNormalized": "WEST  100 STREET"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "intersection [crossStreetOne=broadway, crossStreetTwo=w 100 st, borough=QUEENS, compassDirection=null]",
+    "response": {
+     "firstBoroughName": "QUEENS",
+     "firstStreetNameNormalized": "BROADWAY",
+     "geosupportReturnCode": "11",
+     "message": "'W 100 ST' NOT RECOGNIZED. THERE ARE NO SIMILAR NAMES",
+     "secondStreetNameNormalized": "WEST  100 STREET"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "intersection [crossStreetOne=broadway, crossStreetTwo=w 100 st, borough=STATEN ISLAND, compassDirection=null]",
+    "response": {
+     "firstBoroughName": "STATEN IS",
+     "firstStreetNameNormalized": "BROADWAY",
+     "geosupportReturnCode": "11",
+     "message": "'W 100 ST' NOT RECOGNIZED. THERE ARE NO SIMILAR NAMES",
+     "secondStreetNameNormalized": "WEST  100 STREET"
+    },
+    "status": "REJECTED"
+   }
+  ]
+ },
+ "harlem": {
+  "results": [
+   {
+    "request": "place [name=harlem, borough=MANHATTAN, zip=null]",
+    "response": {
+     "firstBoroughName": "MANHATTAN",
+     "firstStreetNameNormalized": "HARLEM",
+     "geosupportReturnCode": "EE",
+     "message": "'HARLEM' NOT RECOGNIZED. THERE ARE 010 SIMILAR NAMES.",
+     "streetName1": "HARLEM 1958 PLACE",
+     "streetName10": "HARLEM HOSPITAL M L K PAVILION",
+     "streetName2": "HARLEM ACADEMY",
+     "streetName3": "HARLEM ART PARK",
+     "streetName4": "HARLEM DRIVE WEST SERVICE ROAD",
+     "streetName5": "HARLEM GROWN",
+     "streetName6": "HARLEM GROWN  134 ST GREEN HOUSE",
+     "streetName7": "HARLEM HOSP RONALD BROWN BLDG",
+     "streetName8": "HARLEM HOSP SAMUEL KOUNTZ PVL",
+     "streetName9": "HARLEM HOSPITAL"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=harlem, borough=BRONX, zip=null]",
+    "response": {
+     "firstBoroughName": "BRONX",
+     "firstStreetNameNormalized": "HARLEM",
+     "geosupportReturnCode": "EE",
+     "message": "'HARLEM' NOT RECOGNIZED. THERE ARE 010 SIMILAR NAMES.",
+     "streetName1": "HARLEM RIV PARK BRIDGE",
+     "streetName10": "HARDING PARK PLAYGROUNDS",
+     "streetName2": "HARLEM RIVER GREENWAY",
+     "streetName3": "HARLEM RIVER RAIL YARD",
+     "streetName4": "HARLEM RIVER TERRACE",
+     "streetName5": "HARBOR POINT COURT",
+     "streetName6": "HARDING AVENUE",
+     "streetName7": "HARDING CAMP",
+     "streetName8": "HARDING FIELD",
+     "streetName9": "HARDING PARK BEAUTIFICATION PROJ"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=harlem, borough=BROOKLYN, zip=null]",
+    "response": {
+     "firstBoroughName": "BROOKLYN",
+     "firstStreetNameNormalized": "HARLEM",
+     "geosupportReturnCode": "EE",
+     "message": "'HARLEM' NOT RECOGNIZED. THERE ARE 010 SIMILAR NAMES.",
+     "streetName1": "HARBOR COURT",
+     "streetName10": "HARKNESS AVENUE",
+     "streetName2": "HARBOR DEFENSE MUSEUM",
+     "streetName3": "HARBOR DRIVE",
+     "streetName4": "HARBOR LANE",
+     "streetName5": "HARBOR VIEW DRIVE",
+     "streetName6": "HARBOR VIEW TERRACE",
+     "streetName7": "HARBORSIDE ROAD",
+     "streetName8": "HARDEN STREET",
+     "streetName9": "HARING STREET"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=harlem, borough=QUEENS, zip=null]",
+    "response": {
+     "firstBoroughName": "QUEENS",
+     "firstStreetNameNormalized": "HARLEM",
+     "geosupportReturnCode": "EE",
+     "message": "'HARLEM' NOT RECOGNIZED. THERE ARE 010 SIMILAR NAMES.",
+     "streetName1": "HARBOR POLICE PIER",
+     "streetName10": "HARMAN STREET",
+     "streetName2": "HARBOR ROAD",
+     "streetName3": "HARBOUR COURT",
+     "streetName4": "HARDING BUILDING",
+     "streetName5": "HARDING EXPRESSWAY",
+     "streetName6": "HARDING EXPRESSWAY SR NORTH",
+     "streetName7": "HARDING EXPRESSWAY SR SOUTH",
+     "streetName8": "HARDING STREET",
+     "streetName9": "HARING STREET"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=harlem, borough=STATEN ISLAND, zip=null]",
+    "response": {
+     "firstBoroughName": "STATEN IS",
+     "firstStreetNameNormalized": "HARLEM",
+     "geosupportReturnCode": "EE",
+     "message": "'HARLEM' NOT RECOGNIZED. THERE ARE 010 SIMILAR NAMES.",
+     "streetName1": "HARLAN AVENUE",
+     "streetName10": "HARBOR VIEW PLACE EAST",
+     "streetName2": "HARBOR COURT",
+     "streetName3": "HARBOR LANE",
+     "streetName4": "HARBOR LIGHTS COURT",
+     "streetName5": "HARBOR LOOP",
+     "streetName6": "HARBOR ROAD",
+     "streetName7": "HARBOR ROAD OVER B&O RAILRD",
+     "streetName8": "HARBOR VIEW COURT",
+     "streetName9": "HARBOR VIEW PLACE"
+    },
+    "status": "REJECTED"
+   }
+  ]
+ },
+ "jfk airport": {
+  "results": [
+   {
+    "request": "place [name=jfk airport, borough=QUEENS, zip=null]",
+    "response": {
+     "boePreferredStreetName": "JOHN F KENNEDY AIRPORT",
+     "firstBoroughName": "QUEENS",
+     "firstStreetNameNormalized": "JFK AIRPORT",
+     "geosupportReturnCode": "01",
+     "latitude": 40.648321,
+     "longitude": -73.788281
+    },
+    "status": "POSSIBLE_MATCH"
+   },
+   {
+    "request": "place [name=jfk airport, borough=MANHATTAN, zip=null]",
+    "response": {
+     "firstBoroughName": "MANHATTAN",
+     "firstStreetNameNormalized": "JFK AIRPORT",
+     "geosupportReturnCode": "EE",
+     "streetName1": "JFK HIGH SCHOOL"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=jfk airport, borough=BRONX, zip=null]",
+    "response": {
+     "firstBoroughName": "BRONX",
+     "firstStreetNameNormalized": "JFK AIRPORT",
+     "geosupportReturnCode": "EE",
+     "streetName1": "JFK HIGH SCHOOL"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=jfk airport, borough=BROOKLYN, zip=null]",
+    "response": {
+     "firstBoroughName": "BROOKLYN",
+     "firstStreetNameNormalized": "JFK AIRPORT",
+     "geosupportReturnCode": "11"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=jfk airport, borough=STATEN ISLAND, zip=null]",
+    "response": {
+     "firstBoroughName": "STATEN IS",
+     "firstStreetNameNormalized": "JFK AIRPORT",
+     "geosupportReturnCode": "11"
+    },
+    "status": "REJECTED"
+   }
+  ]
+ },
+ "madison square garden": {
+  "results": [
+   {
+    "request": "place [name=madison square garden, borough=MANHATTAN, zip=null]",
+    "response": {
+     "boePreferredStreetName": "MADISON SQUARE GARDEN",
+     "firstBoroughName": "MANHATTAN",
+     "firstStreetNameNormalized": "MADISON SQUARE GARDEN",
+     "geosupportReturnCode": "01",
+     "latitude": 40.750475,
+     "longitude": -73.99337
+    },
+    "status": "POSSIBLE_MATCH"
+   },
+   {
+    "request": "place [name=madison square garden, borough=BROOKLYN, zip=null]",
+    "response": {
+     "boePreferredStreetName": "MADISON SQUARE ASSOCIATION GDN",
+     "firstBoroughName": "BROOKLYN",
+     "firstStreetNameNormalized": "MADISON SQUARE GARDEN ASSOC",
+     "geosupportReturnCode": "01",
+     "latitude": 40.694845,
+     "longitude": -73.913023
+    },
+    "status": "POSSIBLE_MATCH"
+   },
+   {
+    "request": "place [name=madison square garden, borough=BRONX, zip=null]",
+    "response": {
+     "firstBoroughName": "BRONX",
+     "firstStreetNameNormalized": "MADISON SQUARE GARDEN",
+     "geosupportReturnCode": "EE",
+     "streetName1": "MADISON AVE BR OVR HARLEM RIV BX",
+     "streetName2": "MADISON AVE BR PED AND BIKE PATH",
+     "streetName3": "MADISON AVENUE BR APPROACH",
+     "streetName4": "MADONIA ROAD",
+     "streetName5": "MADONNA WAY"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=madison square garden, borough=QUEENS, zip=null]",
+    "response": {
+     "firstBoroughName": "QUEENS",
+     "firstStreetNameNormalized": "MADISON SQUARE GARDEN",
+     "geosupportReturnCode": "28"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=madison square garden, borough=STATEN ISLAND, zip=null]",
+    "response": {
+     "firstBoroughName": "STATEN IS",
+     "firstStreetNameNormalized": "MADISON SQUARE GARDEN",
+     "geosupportReturnCode": "28"
+    },
+    "status": "REJECTED"
+   }
+  ]
+ },
+ "pier 17": {
+  "results": [
+   {
+    "request": "place [name=pier 17, borough=MANHATTAN, zip=null]",
+    "response": {
+     "boePreferredStreetName": "PIER   17",
+     "firstBoroughName": "MANHATTAN",
+     "firstStreetNameNormalized": "PIER   17",
+     "geosupportReturnCode": "01",
+     "latitude": 40.705799,
+     "longitude": -74.002572
+    },
+    "status": "POSSIBLE_MATCH"
+   },
+   {
+    "request": "place [name=pier 17, borough=STATEN ISLAND, zip=null]",
+    "response": {
+     "firstBoroughName": "STATEN IS",
+     "firstStreetNameNormalized": "PIER   17",
+     "geosupportReturnCode": "58"
+    },
+    "status": "POSSIBLE_MATCH"
+   },
+   {
+    "request": "place [name=pier 17, borough=BRONX, zip=null]",
+    "response": {
+     "firstBoroughName": "BRONX",
+     "firstStreetNameNormalized": "PIER",
+     "geosupportReturnCode": "58"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=pier 17, borough=BROOKLYN, zip=null]",
+    "response": {
+     "firstBoroughName": "BROOKLYN",
+     "firstStreetNameNormalized": "PIER",
+     "geosupportReturnCode": "58"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=pier 17, borough=QUEENS, zip=null]",
+    "response": {
+     "firstBoroughName": "QUEENS",
+     "firstStreetNameNormalized": "PIER",
+     "geosupportReturnCode": "58"
+    },
+    "status": "REJECTED"
+   }
+  ]
+ },
+ "yankee stadium": {
+  "results": [
+   {
+    "request": "place [name=yankee stadium, borough=BRONX, zip=null]",
+    "response": {
+     "boePreferredStreetName": "YANKEE STADIUM",
+     "firstBoroughName": "BRONX",
+     "firstStreetNameNormalized": "YANKEE STADIUM",
+     "geosupportReturnCode": "01",
+     "latitude": 40.829646,
+     "longitude": -73.926505
+    },
+    "status": "POSSIBLE_MATCH"
+   },
+   {
+    "request": "place [name=yankee stadium, borough=MANHATTAN, zip=null]",
+    "response": {
+     "firstBoroughName": "MANHATTAN",
+     "firstStreetNameNormalized": "YANKEE STADIUM",
+     "geosupportReturnCode": "11"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=yankee stadium, borough=BROOKLYN, zip=null]",
+    "response": {
+     "firstBoroughName": "BROOKLYN",
+     "firstStreetNameNormalized": "YANKEE STADIUM",
+     "geosupportReturnCode": "EE",
+     "streetName1": "YANCEY PLACE"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=yankee stadium, borough=QUEENS, zip=null]",
+    "response": {
+     "firstBoroughName": "QUEENS",
+     "firstStreetNameNormalized": "YANKEE STADIUM",
+     "geosupportReturnCode": "11"
+    },
+    "status": "REJECTED"
+   },
+   {
+    "request": "place [name=yankee stadium, borough=STATEN ISLAND, zip=null]",
+    "response": {
+     "firstBoroughName": "STATEN IS",
+     "firstStreetNameNormalized": "YANKEE STADIUM",
+     "geosupportReturnCode": "11"
+    },
+    "status": "REJECTED"
+   }
+  ]
+ }
+}

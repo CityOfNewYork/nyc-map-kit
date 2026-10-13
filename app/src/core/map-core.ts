@@ -28,6 +28,7 @@
  *   map.select(id | null);           // select + fly to; fires onSelect with via:"api"
  *   map.highlight(ids);              // e.g. every site of one org; [] clears
  *   map.fitTo(ids);                  // fit the viewport to a subset
+ *   map.showPlace(place, ids);       // mark a searched-for place and frame it with `ids`
  *   map.destroy();
  *
  * MapCoreOptions and MapCore, below, are the exact contract.
@@ -109,6 +110,15 @@ export interface MapCoreOptions<P extends PointProperties> {
   focusPoint?: (() => [number, number] | null) | null;
 }
 
+/** A place the client searched for: a point, and for an area the box to frame. */
+export interface PlaceMark {
+  center: [number, number];
+  /** West, south, east, north. */
+  bbox?: [number, number, number, number] | null;
+  /** Draw a dot at `center`. On unless set to false. */
+  mark?: boolean;
+}
+
 /** The map createMap returns. Each method is described where it is written, in `api`. */
 export interface MapCore<P extends PointProperties> {
   readonly raw: maplibregl.Map;
@@ -116,6 +126,7 @@ export interface MapCore<P extends PointProperties> {
   select(id: string | null): MapCore<P>;
   highlight(ids: string[]): MapCore<P>;
   fitTo(ids: string[]): MapCore<P>;
+  showPlace(place: PlaceMark | null, ids?: string[]): MapCore<P>;
   readonly selectedId: string | null;
   announce(content: string | Node | null): void;
   ready(fn: () => void): MapCore<P>;
@@ -398,6 +409,27 @@ export function createMap<P extends PointProperties>(
       }
     }
 
+    // A searched-for place: a black dot ringed in white, under the pins so it never takes
+    // a click meant for a site. Black, not a hue, because colour on this map means a site.
+    map.addSource("place", { type: "geojson", data: EMPTY });
+    map.addLayer({
+      id: "place-halo",
+      type: "circle",
+      source: "place",
+      paint: { "circle-radius": 16, "circle-color": "#000000", "circle-opacity": 0.15 },
+    });
+    map.addLayer({
+      id: "place",
+      type: "circle",
+      source: "place",
+      paint: {
+        "circle-radius": 6,
+        "circle-color": "#000000",
+        "circle-stroke-width": 3,
+        "circle-stroke-color": "#ffffff",
+      },
+    });
+
     map.addSource("sites", {
       type: "geojson",
       data: currentData,
@@ -622,6 +654,29 @@ export function createMap<P extends PointProperties>(
     /** Fit the viewport to a subset of sites (all of them if `ids` is empty). */
     fitTo(ids) {
       whenReady(() => fitToIds(ids, 600));
+      return api;
+    },
+
+    /** Mark a place and frame it together with the sites in `ids` (the client picks
+     *  which: the nearest few, say). Pass null to remove the mark; the camera stays. */
+    showPlace(place, ids = []) {
+      whenReady(() => {
+        const marked = place && place.mark !== false;
+        map.getSource<GeoJSONSource>("place")!.setData(marked ? {
+          type: "Feature", properties: {}, geometry: { type: "Point", coordinates: place.center },
+        } : EMPTY);
+        if (!place) return;
+        const near = ids.map((id) => byId.get(id)).filter(Boolean) as Feature<Point, P>[];
+        if (!place.bbox && !near.length) {
+          map.easeTo({ center: place.center, zoom: STREET_ZOOM, duration: 700 });
+          return;
+        }
+        const b = new maplibregl.LngLatBounds();
+        if (place.bbox) b.extend(place.bbox);
+        else b.extend(place.center);
+        for (const f of near) b.extend(f.geometry.coordinates as LngLat);
+        map.fitBounds(b, { padding: 60, maxZoom: STREET_ZOOM, duration: 700 });
+      });
       return api;
     },
 
