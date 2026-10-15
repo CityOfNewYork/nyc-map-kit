@@ -103,3 +103,10 @@ describe("organizations", () => {
     expect(prepareData({}, sites, orgs).generated).toBe(sites.generated);
   });
 });
+
+// TODOs mark planned coverage; use synthetic sites rather than the snapshot.
+describe("nearestIds", () => {
+  test.todo("returns at most NEAREST_SITES ids, nearest first");
+  test.todo("leaves out sites further than NEAREST_WITHIN_M");
+  test.todo("returns an empty list when no site is in range");
+});
