@@ -45,6 +45,7 @@ export default defineConfig({
         demo: resolve(import.meta.dirname, "app/demo.html"),
         embed: resolve(import.meta.dirname, "app/embed.html"),
         compare: resolve(import.meta.dirname, "app/compare.html"),
+        warming: resolve(import.meta.dirname, "app/warming.html"),
       },
     },
   },

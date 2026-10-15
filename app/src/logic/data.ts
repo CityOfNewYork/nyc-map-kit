@@ -104,6 +104,23 @@ export function metresBetween(a: Position, b: Position): number {
   return Math.hypot(x, y);
 }
 
+/** A searched-for place is framed with the sites nearest it — this many, within this
+ *  far — so the map answers "what is near here" and not only "where is here". */
+export const NEAREST_SITES = 3;
+export const NEAREST_WITHIN_M = 3000;
+
+/** The ids of the sites nearest `center`: at most NEAREST_SITES, none further than
+ *  NEAREST_WITHIN_M, so a search in a part of the city with no sites does not frame
+ *  half the city. */
+export function nearestIds(features: Site[], center: Position): string[] {
+  return features
+    .map((f) => ({ id: f.properties.id, m: metresBetween(center, f.geometry.coordinates) }))
+    .filter((s) => s.m <= NEAREST_WITHIN_M)
+    .sort((a, b) => a.m - b.m)
+    .slice(0, NEAREST_SITES)
+    .map((s) => s.id);
+}
+
 /**
  * Group the features: sets of records within `radius` metres of one another. Computed
  * once, from the coordinates, rather than from what overlaps on screen — at city zoom a
