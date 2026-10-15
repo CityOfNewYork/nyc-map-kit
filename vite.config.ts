@@ -27,7 +27,8 @@ export default defineConfig({
 
       exclude: [
         "src/**/*.test.{ts,tsx}",
-        "src/main.tsx"
+        "src/main.tsx",
+        "src/warming/main.tsx"
       ]
     }
   },
