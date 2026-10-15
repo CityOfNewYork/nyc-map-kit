@@ -288,8 +288,8 @@ export default function App({ settings }: AppProps) {
    * reached, rather than stepping back through each one.
    *
    * Inside an iframe the address that changes is the frame's, not the host page's, so the
-   * link is embed.html?site=<id>. Back still works, because the browser keeps one history
-   * for the page and its frames.
+   * link is the frame's own address with ?site=<id>. Back still works, because the browser
+   * keeps one history for the page and its frames.
    */
 
   /** Put the selected site in the address bar: a new entry when a card opens, else in place. */

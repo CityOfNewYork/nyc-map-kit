@@ -81,9 +81,11 @@
 
 * { box-sizing: border-box; }
 
-html, body, #root { height: 100%; }
+html, body { height: 100%; }
 
 body {
+  display: flex;
+  flex-direction: column;
   margin: 0;
   font-family: var(--font);
   font-size: 16px;
@@ -138,7 +140,23 @@ body {
 
 /* ------------------------------------------------------------------ frame -------- */
 
+/* The strip above the block that says what it is (see index.html): one line on a desktop,
+   two on a phone. */
+.prototype-note {
+  flex: none;
+  margin: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid #d9c79a;
+  background: #fbf7ec;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.prototype-note a { color: var(--link); text-underline-offset: 2px; }
+.prototype-note a:hover { color: var(--link-hover); }
+
 #root {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-rows: auto 1fr;
   overflow: hidden;
@@ -147,7 +165,7 @@ body {
 /* Deliberately block, not a flex row. The counts are not known until the data lands, so
    a flex row re-wraps when they appear and the map below it jumps — measured as a CLS of
    0.153, the block's entire layout-shift score. Two fixed lines never move. */
-/* The header's only child is the visually-hidden <h1> (see embed.html), so it has
+/* The header's only child is the visually-hidden <h1> (see App.tsx), so it has
    nothing left to draw. Without this it would still paint its old padding and rule as a
    ~20px empty bar above the map, and the block would have given up the vertical space
    without getting the heading back. The element stays for the document structure. */
@@ -155,8 +173,6 @@ body {
   padding: 0;
   border: 0;
 }
-/* Occupies its space before the numbers arrive — see the comment in embed.html. */
-.counts[data-pending] { visibility: hidden; }
 
 .stage {
   position: relative;

@@ -8,7 +8,7 @@
 <!--
   Two copies of the block side by side, each on a different basemap, with the camera kept
   in step: pan, zoom or rotate either one and the other follows. It is for judging
-  basemap changes, and is published alongside the demo.
+  basemap changes, and is published alongside the map.
 
     compare.html                              Protomaps | OTI's, in our palette
     compare.html?left=openfreemap             OpenFreeMap | OTI's, in our palette
@@ -64,7 +64,7 @@ function embedUrl(basemap) {
   for (const side of SIDES) params.delete(side);
   if (!params.has("list")) params.set("list", "off");
   params.set("basemap", basemap);
-  return `embed.html?${params}`;
+  return `./?${params}`;
 }
 
 function mirror(from, to) {

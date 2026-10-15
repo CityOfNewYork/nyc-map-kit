@@ -331,7 +331,7 @@ def main():
     write_json(os.path.join(APP, "orgs.json"),
                {"generated": stamp, "orgs": orgs_list}, compact=True)
 
-    # One feature, for the single-point demo iframe on demo.html.
+    # One feature, for the single-point iframe on examples.html.
     if features:
         one = next((f for f in features if f["properties"]["org"].startswith("Henry Street")),
                    features[0])

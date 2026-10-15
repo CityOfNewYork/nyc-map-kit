@@ -2,9 +2,9 @@ import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
-// The app lives in app/ and builds to dist/app/, so the published address keeps its shape:
-// <site>/app/demo.html and <site>/app/embed.html, the same as when GitHub Pages served the
-// source directly. <site>/app/compare.html shows two basemaps side by side.
+// The app lives in app/ and builds to dist/app/. The map is <site>/app/ (index.html), the
+// address a host page's iframe points at too. <site>/app/examples.html embeds it at several
+// sizes, and <site>/app/compare.html shows two basemaps side by side.
 //
 // `base: "./"` makes every built URL relative. The block has to work at localhost, under
 // the GitHub Pages subpath, and wherever a city host puts it, without a rebuild per host.
@@ -43,8 +43,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 1400,
     rolldownOptions: {
       input: {
-        demo: resolve(import.meta.dirname, "app/demo.html"),
-        embed: resolve(import.meta.dirname, "app/embed.html"),
+        index: resolve(import.meta.dirname, "app/index.html"),
+        examples: resolve(import.meta.dirname, "app/examples.html"),
         compare: resolve(import.meta.dirname, "app/compare.html"),
         warming: resolve(import.meta.dirname, "app/warming.html"),
       },

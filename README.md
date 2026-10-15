@@ -2,7 +2,7 @@
 
 Infrastructure and best practices to create delightful, accessible and very useful digital maps for New Yorkers.
 
-**Demo: <https://cityofnewyork.github.io/nyc-map-kit/app/demo.html>**
+**Demo: <https://cityofnewyork.github.io/nyc-map-kit/app/>**
 
 ## Develop
 
@@ -10,7 +10,7 @@ Needs Node.js 22 (see `.nvmrc`).
 
 ```sh
 npm ci          # install
-npm run dev     # local server that reloads on save: http://localhost:5173/demo.html
+npm run dev     # local server that reloads on save: http://localhost:5173/
 npm test        # unit tests for the data logic
 npm run lint
 npm run build   # type-check, then build the static site, in dist/
@@ -20,7 +20,8 @@ The default basemap reads `app/public/nyc.pmtiles`, which is too large for git. 
 locally, put the [pmtiles CLI](https://github.com/protomaps/go-pmtiles/releases) on your
 `PATH` and run `build/protomaps.sh` once (about 95 MB, five minutes); CI runs it before
 each deploy. `?basemap=openfreemap` and `?basemap=nyc` work without it, and
-`compare.html` shows any two basemaps side by side.
+`compare.html` shows any two basemaps side by side. `examples.html` shows the map embedded
+at several sizes, including phone width.
 
 The code is TypeScript. Vite strips the types without checking them, so `npm run build`
 runs the type checker (`tsc`) first, and a type error fails the build here and in CI;
