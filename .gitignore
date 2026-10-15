@@ -16,6 +16,7 @@ internal/
 
 # Build output
 dist/
+coverage/
 
 # Local keys, read by Vite (app/.env.local). See app/.env.example.
 .env*

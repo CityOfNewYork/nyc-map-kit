@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 
 // The app lives in app/ and builds to dist/app/, so the published address keeps its shape:
 // <site>/app/demo.html and <site>/app/embed.html, the same as when GitHub Pages served the
@@ -14,6 +14,23 @@ import { defineConfig } from "vite";
 // swapped-in config.json keep working without touching the build.
 export default defineConfig({
   plugins: [react()],
+  test: {
+    setupFiles: ["./src/test/setup.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "html"],
+      reportsDirectory: "../coverage",
+
+      include: [
+        "src/**/*.{ts,tsx}"
+      ],
+
+      exclude: [
+        "src/**/*.test.{ts,tsx}",
+        "src/main.tsx"
+      ]
+    }
+  },
   root: "app",
   base: "./",
   build: {
