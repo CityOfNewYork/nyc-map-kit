@@ -34,12 +34,13 @@ import type { StyleSpecification } from "maplibre-gl";
 import { loadBasemap } from "../core/basemaps/index.ts";
 import type { MapCore, SelectInfo } from "../core/map-core.ts";
 import { track } from "../logic/analytics.ts";
-import { coincidentWith, metresBetween, prepareData } from "../logic/data.ts";
+import { coincidentWith, nearestIds, prepareData } from "../logic/data.ts";
 import type { Settings } from "../logic/params.ts";
 import type { Found } from "../logic/places.ts";
 import type {
   Config, Model, OrgsDoc, Site, SiteCollection, SiteProperties,
 } from "../logic/types.ts";
+import { keepClearOfList } from "./layout.ts";
 import { Panel } from "./Panel.tsx";
 import { Search } from "./Search.tsx";
 import { SiteDialog } from "./SiteDialog.tsx";
@@ -49,18 +50,9 @@ import { useMapCore } from "./useMapCore.ts";
 /** The heading until config.json or `?title=` names the map. */
 const DEFAULT_TITLE = "SNAP volunteer opportunities";
 
-/** On a desktop the list floats over the map's left edge (see .panel in style.css), so
- *  the camera's centre moves right by the list's width plus its 10 px inset either side. */
-const LIST_PADDING = 340;
-
 /** Street level, a little closer than the main map's: the card's map answers "where is
  *  this" for one place, not "what is near me". */
 const MINI_MAP_ZOOM = 15.5;
-
-/** A searched-for place is framed with the sites nearest it — this many, within this
- *  far — so the map answers "what is near here" and not only "where is here". */
-const NEAREST_SITES = 3;
-const NEAREST_WITHIN_M = 3000;
 
 interface AppProps {
   settings: Settings;
@@ -136,12 +128,7 @@ export default function App({ settings }: AppProps) {
     }
 
     // Set before the style loads, so the first framing already accounts for the list.
-    const desktop = matchMedia("(min-width: 768px)");
-    const padForList = () => map.raw.setPadding({ left: desktop.matches ? LIST_PADDING : 0 });
-    if (settings.list !== "off") {
-      padForList();
-      desktop.addEventListener("change", padForList);
-    }
+    const unpad = settings.list !== "off" ? keepClearOfList(map) : () => {};
 
     // A deliberate global. It is the debugging surface for this prototype — open the
     // console on any page that embeds the block and you can drive the map by hand:
@@ -163,7 +150,7 @@ export default function App({ settings }: AppProps) {
     }
 
     return () => {
-      desktop.removeEventListener("change", padForList);
+      unpad();
       main.destroy();
     };
   }, [model, basemap, settings, main]);
@@ -466,16 +453,4 @@ function siteUrl(id: string | null): URL {
   if (id) url.searchParams.set("site", id);
   else url.searchParams.delete("site");
   return url;
-}
-
-/** The ids of the sites nearest `center`: at most NEAREST_SITES, none further than
- *  NEAREST_WITHIN_M, so a search in a part of the city with no sites does not frame
- *  half the city. */
-function nearestIds(features: Site[], center: [number, number]): string[] {
-  return features
-    .map((f) => ({ id: f.properties.id, m: metresBetween(center, f.geometry.coordinates) }))
-    .filter((s) => s.m <= NEAREST_WITHIN_M)
-    .sort((a, b) => a.m - b.m)
-    .slice(0, NEAREST_SITES)
-    .map((s) => s.id);
 }
