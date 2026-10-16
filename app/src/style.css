@@ -49,30 +49,25 @@
 }
 
 :root {
-  /* Neutral throughout. Blue is the only hue in the interface — on links, and on the
+  /* Neutral throughout. Blue is the only hue in the interface — on links, buttons and the
      selected row — so a coloured thing means "this goes somewhere" or "this is the one"
-     and nothing else competes with it. The map carries its own colour; the panel
-     around it does not. */
+     and nothing else competes with it. Amber appears only on the skip link. The map
+     carries its own colour; the panel around it does not. Every pair here clears WCAG AA:
+     4.5:1 for text, 3:1 for borders, icons and focus rings. */
   --ink:        #000000;   /* nyc-sys-color-text-base — 21:1 on white */
-  --ink-muted:  #454545;   /* 9.6:1 on white, 8.3:1 on --surface-2, 7.7:1 on --selected.
-                              Every muted thing in the card is small (the 14 px labels,
-                              the 13 px footer and stepper count), and small grey text is
-                              where contrast is actually spent. The design system's
-                              text-secondary, #555, is 7.5:1 on white but 6.4:1 on
-                              --surface-2 and 6.0:1 on --selected: AA, but under the 7:1
-                              AAA line at exactly the sizes that need it most. One step
-                              darker clears AAA on every surface here and still reads as
-                              secondary against --ink. */
+  --ink-muted:  #555555;   /* nyc-sys-color-text-secondary — 7.5:1 on white, 6.0:1 on
+                              --selected */
   --line:       #dddddd;   /* nyc-sys-color-border-base */
   --surface:    #ffffff;   /* nyc-sys-color-surface-base */
   --surface-2:  #eeeeee;   /* nyc-sys-color-surface-low */
   --selected:   #d1e9ff;   /* nyc-sys-color-surface-highlight */
-  --primary:    #103fef;   /* nyc-sys-color-primary */
-  --link:       #051adb;   /* nyc-sys-color-link — 9.7:1 on white */
+  --primary:    #103fef;   /* nyc-sys-color-primary — 7.1:1 on white */
+  --link:       #103fef;   /* the same as --primary */
   --link-hover: #050560;   /* nyc-sys-color-link-hover */
-  --hover:      #e7f0fa;   /* nyc-sys-color-surface-input-highlight */
+  --hover:      #f4f7ff;
+  --amber:      #ffb320;   /* the skip link — 11.7:1 under black text */
   --radius:     8px;
-  --radius-card: 16px;     /* nyc-sys-radius-base */
+  --radius-card: 12px;     /* nyc-sys-radius-sm */
   --radius-pill: 40px;     /* nyc-sys-radius-2xl */
   --tap:        44px;      /* minimum touch target, WCAG 2.2 SC 2.5.8 */
   --search-h:   44px;      /* the search box's one line: a full touch target */
@@ -128,11 +123,11 @@ body {
   align-items: center;
   min-height: var(--tap);
   padding: 0 14px;
-  border-radius: var(--radius);
-  background: var(--surface);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  color: var(--link);
+  border-radius: 6px;
+  background: var(--amber);
+  color: var(--ink);
   font-size: 1rem;
+  font-weight: 700;
   text-decoration: none;
   transition: top 0.12s ease;
 }
@@ -351,7 +346,10 @@ body {
   text-align: left;
   cursor: pointer;
 }
-.site-button:hover { background: var(--surface-2); }
+.site-button:hover { background: var(--hover); }
+.site-button:hover .name { text-decoration: underline; }
+/* Inside the row: the list scrolls, and a ring outside the row would be clipped. */
+.site-button:focus-visible { outline-offset: -4px; }
 .site-button .name { font-weight: 700; }
 .site-button .addr { font-size: 0.9375rem; color: var(--ink-muted); }
 .site-button .dist { font-size: 0.875rem; color: var(--ink-muted); }
@@ -381,7 +379,7 @@ body {
 }
 /* MapLibre's zoom buttons default to 29 px. They are standalone controls, so the WCAG
    2.2 SC 2.5.8 exception for targets inline in a block of text does not cover them. */
-.maplibregl-ctrl-group button { width: 36px; height: 36px; }
+.maplibregl-ctrl-group button { width: 40px; height: 40px; }
 
 .loading,
 .load-error {
@@ -412,7 +410,7 @@ body {
   border-radius: var(--radius-card);
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   overflow: hidden;
 }
 .site-dialog[open] {
@@ -471,13 +469,13 @@ body {
   display: grid;
   place-content: center;
   border: 0;
-  border-radius: var(--radius);
+  border-radius: 50%;
   background: var(--surface);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
   font: inherit;
   font-size: 1.25rem;
   line-height: 1;
-  color: var(--ink-muted);
+  color: var(--ink);
   cursor: pointer;
 }
 .card-close:hover { background: var(--surface-2); color: var(--ink); }
@@ -485,8 +483,8 @@ body {
 /* MapLibre's top-right margin is on the right; mirrored, so the zoom buttons sit 10 px
    in from the top-left corner exactly as Close does from the top-right. */
 .mini-map .maplibregl-ctrl-top-right .maplibregl-ctrl { margin: 10px 0 0 10px; }
-/* And the same box as Close: 44 px targets, the same corner radius and shadow, so the
-   two corners of the card's map read as one set of controls. */
+/* And the same white and shadow as Close, with 44 px targets, so the two corners of the
+   card's map read as one set of controls. */
 .mini-map .maplibregl-ctrl-group {
   border-radius: var(--radius);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -536,32 +534,32 @@ body {
 /* Call, website, open-in-maps: the row under the address, above everything descriptive.
    Stacked full-width rather than three across — at a 360 px card width a row would break
    every label onto two lines, and each of these is a 44 px touch target in its own right.
-   Selectors are `.card .action` so they outrank `.card a`, which would otherwise paint
-   these link-blue and undo the button. */
+   Selectors are `.card .action` so they outrank `.card a`, whose link colour would
+   otherwise win. */
 .actions {
   display: grid;
   gap: 8px;
   margin: 0 0 4px;
 }
+/* Blue outline and blue text on white, with 10px corners. */
 .card .action {
   display: flex;
   flex-direction: column;
   justify-content: center;
   min-height: var(--tap);
   padding: 5px 20px;
-  border: 2px solid var(--ink);
-  border-radius: var(--radius-pill);   /* the design system's buttons are pills */
+  border: 1.5px solid var(--primary);
+  border-radius: 10px;
   background: var(--surface);
-  color: var(--ink);
+  color: var(--primary);
   text-decoration: none;
 }
 .card .action:hover { background: var(--hover); }
-.card .action .action-label { font-size: 1rem; font-weight: 700; }
+.card .action .action-label { font-size: 1rem; font-weight: 600; }
 /* The number and the domain, kept visible and copyable: on a desktop `tel:` does nothing
    and the label alone would be a dead end. */
 .card .action .action-detail {
   font-size: 0.8125rem;
-  color: var(--ink-muted);
   overflow-wrap: anywhere;
 }
 
@@ -574,9 +572,9 @@ body {
 }
 
 /* The stepper: more than one record in the selected site's group.
-   Its own small box, floating over the top of the card's map between the zoom buttons
-   and Close — in the same white with the same border, so it reads as a control that
-   belongs with the card without being part of it. It sits on the map because it is
+   Its own small pill, floating over the top of the card's map between the zoom buttons
+   and Close — white and shadowed like them, so it reads as a control that belongs with
+   the card without being part of it. It sits on the map because it is
    about the map: more than one record at this pin. A count and two arrows; constant
    height whatever the stack depth. */
 .stepper {
@@ -590,17 +588,16 @@ body {
   justify-content: center;
   gap: 4px;
   padding: 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill);
   background: var(--surface);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
   white-space: nowrap;
 }
 .stepper[hidden] { display: none; }
 .stepper .step-count {
   margin: 0;
-  font-size: 0.8125rem;
-  font-weight: 700;
+  font-size: 0.875rem;
+  font-weight: 600;
   color: var(--ink);
 }
 .stepper .step {
