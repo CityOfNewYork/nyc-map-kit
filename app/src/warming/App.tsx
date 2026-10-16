@@ -7,7 +7,8 @@ import type { View } from "./logic/view.ts";
 import { LandingPage } from "./pages/LandingPage.tsx";
 import { MapPage } from "./pages/MapPage.tsx";
 
-// Sample data from the design prototype until the real source is agreed.
+// The warming centers listed in 311 article KA-03702, retrieved 2026-10-15. The file
+// names its source and retrieval date.
 const DATA_URL = "warming/centers.geojson";
 
 interface AppProps {
