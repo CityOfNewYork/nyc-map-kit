@@ -26,8 +26,8 @@ interface MapPageProps {
   onOpen: (button: HTMLElement, feature: Site) => void;
 }
 
-/** The map view's own part: the search box with the Filters button beside it, and the
- *  list. The map beside them is App's, shared with the landing view. */
+/** The map view's own part: the search box with the Filters button beside it, on a bar
+ *  above the map, then the list. The map is App's, shared with the landing view. */
 export function MapPage({
   model, shown, filters, onFilters, found, selectedId, onFound, onClear, onOpen,
 }: MapPageProps) {
@@ -46,7 +46,7 @@ export function MapPage({
   return (
     <>
       <h2 className="visually-hidden" id="map-heading" tabIndex={-1}>Map of warming centers</h2>
-      <div className="side">
+      <div className="toolbar">
         <div className="search-row">
           <Search onFound={onFound} onClear={onClear} />
           <button type="button" className="filters-button" ref={filterButton}
@@ -68,6 +68,8 @@ export function MapPage({
             )}
           </button>
         </div>
+      </div>
+      <div className="side">
         {filtering && (
           <FilterPanel id="filters" filters={filters} shown={shown.length}
                        onChange={onFilters} onClose={closeFilters} />

@@ -144,20 +144,45 @@
 .status.closed { color: #7a4a00; }
 .status svg { flex: none; }
 
-/* The card as a panel starts beside this list, which is wider than the kit's. App.tsx
-   works out where the panel ends from the same numbers. */
+/* The card as a panel starts beside this list, which is wider than the kit's, and below
+   the toolbar. App.tsx works out where the panel ends from the same numbers. */
 @media (min-width: 768px) {
-  .stage > .site-dialog.side-panel { left: calc(10px + 360px + 10px); }
+  .stage > .site-dialog.side-panel {
+    top: calc(var(--bar-h) + 10px);
+    left: calc(10px + 360px + 10px);
+  }
+}
+
+/* ------------------------------------------------------------------ toolbar ------ */
+
+/* The map view in two rows: a white bar across the top with the search box and the
+   Filters button, then the map, with the list floating over its left edge. The bar keeps
+   its height; what the search box has to say opens under it, over the map. */
+.stage {
+  --bar-h: calc(var(--search-h) + 20px);
+  grid-template-rows: var(--bar-h) minmax(0, 1fr);
+}
+.stage > .map,
+.stage > .side { grid-area: 2 / 1; }
+.toolbar {
+  position: relative;
+  z-index: 5;
+  grid-area: 1 / 1;
+  min-height: 0;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
 }
 
 /* ------------------------------------------------------------------ filters ------ */
 
-/* The search box with the round Filters button beside it: one toolbar. */
+/* The search box with the round Filters button beside it, as wide as the list below. */
 .search-row {
-  flex: none;
   display: flex;
   align-items: flex-start;
   gap: 8px;
+  width: 360px;
+  max-width: 100%;
 }
 .search-row .search { flex: 1; min-width: 0; }
 .filters-button {
@@ -276,14 +301,10 @@
 .list-empty { margin-top: 6px; font-size: 0.875rem; color: var(--ink); }
 
 @media (max-width: 767px) {
-  /* The toolbar takes the search box's place across the top of the map. */
-  .search-row {
-    position: relative;
-    z-index: 5;
-    grid-area: 1 / 1;
-    align-self: start;
-    margin: 10px calc(10px + 44px + 10px) 10px 10px;
-  }
+  /* style.css floats the search box over the map on a phone; here it is in the bar. */
+  .search-row { width: auto; }
+  /* The list's sheet stops under the bar at its tallest. */
+  .stage .panel { max-height: calc(100% - var(--bar-h)); }
   .search-row .search { margin: 0; }
   /* The filters fill the screen, as an app's settings would. */
   .filters-panel {
@@ -301,7 +322,7 @@
 /* Top right, left of the zoom buttons and level with them, on the same white card. */
 .map-key {
   position: absolute;
-  top: 10px;
+  top: calc(var(--bar-h) + 10px);
   right: calc(10px + 40px + 10px);
   z-index: 3;
   max-width: 240px;
@@ -330,15 +351,9 @@
 }
 .map-key .category-icon { width: 22px; height: 22px; }
 
-/* On a phone the search box has the top of the map, so the key sits bottom left, above
-   the sheet. */
+/* On a phone the zoom buttons are 44 px wide. */
 @media (max-width: 767px) {
-  .map-key {
-    top: auto;
-    right: auto;
-    bottom: calc(var(--sheet-h, 48px) + 10px);
-    left: 10px;
-  }
+  .map-key { right: calc(10px + 44px + 10px); }
 }
 
 /* ------------------------------------------------------------------ landing ------ */
