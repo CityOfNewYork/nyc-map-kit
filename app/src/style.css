@@ -210,25 +210,24 @@ body {
 
 /* ------------------------------------------------------------------ search ------- */
 
-/* The search box. Anything it has to say, and any choices, open under it and push the
-   list down rather than cover it. */
-.search {
-  flex: none;
-  border-radius: 4px;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
-  background: var(--surface);
-  overflow: hidden;
-}
+/* The search box: a white pill with a black outline, then Use my location and a black
+   search button inside its right end. Anything it has to say, and any choices, open under
+   it on white cards and push the list down rather than cover it. */
+.search { flex: none; }
 .search-bar {
   position: relative;
   display: flex;
   align-items: stretch;
   height: var(--search-h);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  overflow: hidden;
 }
 .search-input {
   flex: 1;
   min-width: 0;
-  padding: 0 4px 0 12px;
+  padding: 0 4px 0 16px;
   border: 0;
   background: none;
   font: inherit;
@@ -242,10 +241,10 @@ body {
    name. */
 .search-label {
   position: absolute;
-  left: 12px;
-  right: calc(var(--search-h) + 4px);
+  left: 16px;
+  right: calc(56px + 40px + 4px);
   top: 0;
-  line-height: var(--search-h);
+  line-height: calc(var(--search-h) - 4px);   /* inside the 2 px outline */
   font-size: 0.9375rem;
   color: var(--ink-muted);
   white-space: nowrap;
@@ -253,32 +252,50 @@ body {
   text-overflow: ellipsis;
   pointer-events: none;
 }
+/* With the clear button showing too, the hint stops before it. */
+.search-bar:has(.search-clear) .search-label { right: calc(56px + 40px + 40px + 4px); }
 .search-label.filled {
   width: 1px; height: 1px;
   clip-path: inset(50%);
 }
 .search-clear,
+.search-locate,
 .search-submit {
   flex: none;
   display: grid;
   place-items: center;
-  width: var(--search-h);
+  width: 40px;
   border: 0;
   background: none;
   color: var(--ink);
   cursor: pointer;
 }
 .search-clear { color: var(--ink-muted); }
-.search-submit { border-left: 1px solid var(--line); }
+.search-locate { color: var(--primary); }
+.search-submit {
+  width: 56px;
+  margin-left: 4px;
+  background: var(--ink);
+  color: var(--surface);
+}
 .search-clear:hover,
-.search-submit:hover { background: rgba(0, 0, 0, 0.05); }
+.search-locate:hover { background: var(--hover); }
+.search-submit:hover { background: #333333; }
 .search-clear:focus-visible,
-.search-submit:focus-visible { outline-offset: -4px; }
+.search-locate:focus-visible { outline-offset: -4px; }
+/* The black button needs the ring in white to show it. */
+.search-submit:focus-visible { outline-color: var(--surface); outline-offset: -5px; }
 
 .search-status:empty { display: none; }
+.search-status,
+.search-choices {
+  margin-top: 8px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
 .search-status {
-  padding: 8px 12px;
-  border-top: 1px solid var(--line);
+  padding: 8px 14px;
   font-size: 0.875rem;
   color: var(--ink-muted);
 }
@@ -286,13 +303,12 @@ body {
 .search-found .place-name { color: var(--ink); font-weight: 700; }
 
 .search-choices {
-  margin: 0;
   padding: 0;
   list-style: none;
   max-height: 50vh;
   overflow-y: auto;
 }
-.search-choices > li { border-top: 1px solid var(--line); }
+.search-choices > li + li { border-top: 1px solid var(--line); }
 .search-choice {
   display: flex;
   flex-direction: column;

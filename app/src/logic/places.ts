@@ -32,7 +32,8 @@ export interface PlacesDoc {
 
 /** What a search found: a place from places.json or a match from Geoclient. */
 export interface Found {
-  kind: "borough" | "nbhd" | "zip" | "address" | "intersection" | "landmark";
+  /** "location" is the reader's own, from the browser (see Search's Use my location). */
+  kind: "borough" | "nbhd" | "zip" | "address" | "intersection" | "landmark" | "location";
   /** The place's own name: "Harlem", "10027", "120 Broadway", "Yankee Stadium", or an
    *  intersection's first street. */
   name: string;

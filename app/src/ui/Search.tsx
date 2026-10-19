@@ -17,7 +17,9 @@ type Status =
   | { type: "choices"; matches: Found[] }
   | { type: "suggest"; suggestions: Suggestion[] }
   | { type: "none" }
-  | { type: "error" };
+  | { type: "error" }
+  | { type: "locating" }
+  | { type: "no-location" };
 
 interface SearchProps {
   /** A place was found, or chosen from several. */
@@ -39,6 +41,10 @@ interface SearchProps {
  * the result, or why there is none, without leaving the input. The hint in the empty box
  * is its <label>, laid over the input, not a placeholder: the translation proxy cannot
  * see attribute values (see App.tsx).
+ *
+ * Use my location asks the browser where the reader is and treats the answer as a place
+ * found, so the list orders itself nearest-first from there. The browser asks the reader's
+ * permission first; inside an iframe, the host page has to allow it (allow="geolocation").
  *
  * The search never hides a site. App re-orders the list nearest-first and frames the map.
  */
@@ -132,6 +138,30 @@ export function Search({ onFound, onClear }: SearchProps) {
     inputRef.current!.focus();
   }
 
+  /** Use my location: the browser's position as a place found. */
+  function locate() {
+    inflight.current?.abort();
+    if (!navigator.geolocation) {
+      settle({ type: "no-location" });
+      return;
+    }
+    setStatus({ type: "locating" });
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setValue("");
+        show({
+          kind: "location", name: "your location", cross: null, borough: null,
+          center: [position.coords.longitude, position.coords.latitude], bbox: null,
+        }, "location");
+      },
+      () => {
+        settle({ type: "no-location" });
+        track("map_search", { via: "location", result: "error" });
+      },
+      { timeout: 10_000, maximumAge: 60_000 },
+    );
+  }
+
   function clear() {
     inflight.current?.abort();
     setValue("");
@@ -168,6 +198,16 @@ export function Search({ onFound, onClear }: SearchProps) {
             <span className="visually-hidden">Clear the search</span>
           </button>
         )}
+        <button type="button" className="search-locate" onClick={locate}>
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22">
+            <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="12" cy="12" r="6.5" />
+              <circle cx="12" cy="12" r="2" fill="currentColor" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+            </g>
+          </svg>
+          <span className="visually-hidden">Use my location</span>
+        </button>
         <button type="submit" className="search-submit">
           <svg aria-hidden="true" viewBox="0 0 20 20" width="22" height="22">
             <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
@@ -242,6 +282,15 @@ function StatusLine({ status }: { status: Status }) {
         <p>
           <span>Address search is not working right now.</span>{" "}
           <span>Try a neighborhood, a borough or a ZIP code.</span>
+        </p>
+      );
+    case "locating":
+      return <p><span>Finding your location…</span></p>;
+    case "no-location":
+      return (
+        <p>
+          <span>We couldn't get your location.</span>{" "}
+          <span>Try typing an address instead.</span>
         </p>
       );
   }

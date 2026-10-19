@@ -211,6 +211,8 @@
 .hero .search-status {
   padding: 8px 20px 0;
   border-top: 0;
+  background: none;
+  box-shadow: none;
   color: var(--surface);
 }
 .hero .search-found .place-name { color: var(--surface); }
