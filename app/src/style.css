@@ -99,6 +99,15 @@ body {
   outline: 2px dashed var(--ink);
   outline-offset: 2px;
 }
+/* MapLibre's stylesheet takes the outline off its control buttons, with selectors more
+   specific than the rule above, and draws a blue glow instead. These are more specific
+   still: the same dashed ring as everything else, and no glow. */
+.maplibregl-ctrl.maplibregl-ctrl-group button:focus:focus-visible,
+.maplibregl-ctrl-attrib .maplibregl-ctrl-attrib-button:focus-visible {
+  outline: 2px dashed var(--ink);
+  outline-offset: 2px;
+  box-shadow: none;
+}
 
 /* Screen-reader-only text. Used instead of aria-label wherever the string is meant for
    a person, because the city's translation proxy rewrites text nodes and cannot see
