@@ -9,6 +9,37 @@
   src: url("/fonts/ClashGrotesk-Semibold.woff2") format("woff2");
 }
 
+/* The note above the page, with the switch between the card as a sidebar and as a pop-up
+   at its end, or under its text when the line has no room. */
+.prototype-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+.prototype-note p { margin: 0; }
+.card-mode {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-mode #card-mode-label { margin-right: 2px; font-weight: 600; }
+.card-mode button {
+  min-height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.card-mode button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--surface);
+}
+
 /* The top bar: the NYC logo followed by the page's name, then "Official website",
    white on black, and the official-site notice that opens under it. */
 .site-header {

@@ -16,9 +16,17 @@
 <body>
 <!-- Plain HTML outside React, so it is on screen at first paint, even if the map fails to
      load, and costs no layout shift. -->
-<p class="prototype-note"><strong>Prototype with sample data, not a City service.</strong>
+<div class="prototype-note">
+<p><strong>Prototype with sample data, not a City service.</strong>
 <span>These are not real warming centers, hours or phone numbers.</span>
 <span>To find a warming center, call 311.</span></p>
+<!-- Which way a center's card opens. main.tsx marks the current one and wires them. -->
+<div class="card-mode" role="group" aria-labelledby="card-mode-label">
+<span id="card-mode-label">Card</span>
+<button type="button" data-detail="side">Sidebar</button>
+<button type="button" data-detail="popup">Pop-up</button>
+</div>
+</div>
 <div id="root"></div>
 <script type="module" src="/src/warming/main.tsx"></script>
 </body>
