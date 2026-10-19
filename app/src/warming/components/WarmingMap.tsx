@@ -7,6 +7,7 @@ import type { Site, SiteCollection, SiteProperties } from "../../logic/types.ts"
 import { keepClearOfList } from "../../ui/layout.ts";
 import { useMapCore } from "../../ui/useMapCore.ts";
 import { CENTER_PINS } from "../logic/centers.ts";
+import { t } from "../../logic/i18n.ts";
 
 /** The list's width on a desktop: .side in warming.css. */
 const LIST_WIDTH = 360;
@@ -83,7 +84,7 @@ export function WarmingMap({
 
   return (
     <div className="map" id="map" tabIndex={-1} ref={containerRef}>
-      {failed && <p className="load-error"><span>The map could not load.</span></p>}
+      {failed && <p className="load-error"><span>{t("The map could not load.")}</span></p>}
     </div>
   );
 }

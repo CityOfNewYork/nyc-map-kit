@@ -18,6 +18,7 @@ import { viewFromUrl } from "./logic/view.ts";
 import type { View } from "./logic/view.ts";
 import { LandingPage } from "./pages/LandingPage.tsx";
 import { MapPage } from "./pages/MapPage.tsx";
+import { t } from "../logic/i18n.ts";
 
 // Sample centers: real sites mixed with invented ones, with made-up phone numbers, entry
 // instructions and dates (the file's description says which parts). centers.geojson is
@@ -178,11 +179,11 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
   return (
     <>
       {/* Outside .site-main, which is positioned, so style.css can park it off-screen. */}
-      {view === "map" && <a className="skip-link" href="#map">Skip the list and go to the map</a>}
+      {view === "map" && <a className="skip-link" href="#map">{t("Skip the list and go to the map")}</a>}
       <TopBar />
       <main className="site-main">
         {failed ? (
-          <p className="load-error"><span>The warming center data could not load.</span></p>
+          <p className="load-error"><span>{t("The warming center data could not load.")}</span></p>
         ) : (
           // One map for both views: the hero or the list changes around it, and the map
           // stays as the reader left it. Touching the map on the landing view opens the

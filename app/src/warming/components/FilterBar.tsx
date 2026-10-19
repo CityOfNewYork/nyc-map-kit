@@ -5,6 +5,7 @@ import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { CENTER_KINDS } from "../logic/centers.ts";
 import type { Filters } from "../logic/filters.ts";
 import { ClockIcon, PawIcon, WheelchairIcon } from "./FeatureIcons.tsx";
+import { t } from "../../logic/i18n.ts";
 
 interface FilterBarProps {
   filters: Filters;
@@ -29,16 +30,16 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
   }
 
   return (
-    <div className="filter-bar" role="group" aria-label="Filters">
-      <Dropdown label={<span>Location type</span>} on={filters.types.length > 0}>
+    <div className="filter-bar" role="group" aria-label={t("Filters")}>
+      <Dropdown label={<span>{t("Location type")}</span>} on={filters.types.length > 0}>
         <fieldset>
-          <legend className="visually-hidden">Location type</legend>
+          <legend className="visually-hidden">{t("Location type")}</legend>
           {[...CENTER_KINDS].map(([type, kind]) => (
             <label key={type} className="filter-check">
               <input type="checkbox" checked={filters.types.includes(type)}
                      onChange={(e) => toggleType(type, e.target.checked)} />
               <CategoryIcon color={kind.color} glyph={kind.glyph} />
-              <span>{kind.label}</span>
+              <span>{t(kind.label)}</span>
             </label>
           ))}
         </fieldset>
@@ -61,19 +62,19 @@ export function FilterToggles({ filters, set }: {
         <input type="checkbox" checked={filters.openNow}
                onChange={(e) => set({ openNow: e.target.checked }, "open", e.target.checked)} />
         <ClockIcon />
-        <span>Open now</span>
+        <span>{t("Open now")}</span>
       </label>
       <label className={filters.wheelchair ? "pill check-pill on" : "pill check-pill"}>
         <input type="checkbox" checked={filters.wheelchair}
                onChange={(e) => set({ wheelchair: e.target.checked }, "wheelchair", e.target.checked)} />
         <WheelchairIcon />
-        <span>Wheelchair accessible</span>
+        <span>{t("Wheelchair accessible")}</span>
       </label>
       <label className={filters.pets ? "pill check-pill on" : "pill check-pill"}>
         <input type="checkbox" checked={filters.pets}
                onChange={(e) => set({ pets: e.target.checked }, "pets", e.target.checked)} />
         <PawIcon />
-        <span>Pets allowed</span>
+        <span>{t("Pets allowed")}</span>
       </label>
     </>
   );
@@ -120,7 +121,7 @@ function Dropdown({ label, on, children }: { label: ReactNode; on: boolean; chil
       <div className="dropdown-panel" id={id} hidden={!open}>
         {children}
         <button type="button" className="dropdown-done" onClick={close}>
-          <span>Done</span>
+          <span>{t("Done")}</span>
         </button>
       </div>
     </div>

@@ -1,9 +1,10 @@
 import { clockTime } from "../logic/hours.ts";
 import type { OpenStatus } from "../logic/hours.ts";
+import { t } from "../../logic/i18n.ts";
 
 /** "Open 24 hours", "Open until 5 AM" or "Closed · Opens at 10 PM", with a check or a
  *  clock beside it so the colour is not the only sign. Each phrase is its own element,
- *  and the time its own, for the translation proxy (see App.tsx in ui/). */
+ *  the time inside it as its language writes one (see logic/i18n.ts). */
 export function OpenStatusLine({ status }: { status: OpenStatus }) {
   const open = status.state !== "closed";
   return (
@@ -21,14 +22,14 @@ export function OpenStatusLine({ status }: { status: OpenStatus }) {
         </svg>
       )}
       <span>
-        {status.state === "always" && <span>Open 24 hours</span>}
+        {status.state === "always" && <span>{t("Open 24 hours")}</span>}
         {status.state === "open" && (
-          <><span>Open until</span>{" "}<span>{clockTime(status.until)}</span></>
+          <span>{t("Open until {time}", { time: clockTime(status.until) })}</span>
         )}
         {status.state === "closed" && (
           <>
-            <span>Closed</span>{" "}<span aria-hidden="true">·</span>{" "}
-            <span>Opens at</span>{" "}<span>{clockTime(status.opens)}</span>
+            <span>{t("Closed")}</span>{" "}<span aria-hidden="true">·</span>{" "}
+            <span>{t("Opens at {time}", { time: clockTime(status.opens) })}</span>
           </>
         )}
       </span>

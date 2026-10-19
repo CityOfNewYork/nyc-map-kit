@@ -2,18 +2,23 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { resolveLang } from "../core/basemap-style.ts";
 import { basemapId } from "../core/basemaps/names.ts";
+import { chooseLanguage, loadLanguage, translateMarked } from "../logic/i18n.ts";
 import App from "./App.tsx";
 // After App, which brings MapLibre's stylesheet; the kit's base styles, then warming's own.
 import "../style.css";
 import "./warming.css";
 
 const params = new URLSearchParams(window.location.search);
-const lang = resolveLang(params.get("lang"));
+// The interface's language, from ?lang= (see logic/i18n.ts); the basemap's labels follow
+// it, by its bare subtag.
+const language = chooseLanguage(window.location.search, document.referrer);
+const lang = resolveLang(language);
 // The default basemap unless ?basemap= names another (see core/basemaps/names.ts).
 const basemap = basemapId(params.get("basemap"));
 // A center's card opens as a panel beside the list, or as a pop-up with ?detail=popup.
 const panel = params.get("detail") !== "popup";
-document.documentElement.lang = lang;
+await loadLanguage(language);
+translateMarked();
 
 // The note's Sidebar and Pop-up buttons load the page again with the card the other way,
 // keeping the rest of its address: the view, the open card and the filters.

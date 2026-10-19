@@ -2,6 +2,7 @@ import type { KeyboardEvent, MouseEvent, ReactNode, Ref, SyntheticEvent } from "
 import type { LngLat } from "../logic/places.ts";
 import type { Model, Site } from "../logic/types.ts";
 import { Card } from "./Card.tsx";
+import { number, t } from "../logic/i18n.ts";
 
 /** Which stepper arrow was pressed: towards the previous record in the group, or the next. */
 export type StepDirection = "prev" | "next";
@@ -84,7 +85,7 @@ export function SiteDialog(
             <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2.2"
                   strokeLinecap="round" />
           </svg>
-          <span className="visually-hidden">Close this site</span>
+          <span className="visually-hidden">{t("Close this site")}</span>
         </button>
       </div>
     </dialog>
@@ -120,15 +121,15 @@ function Stepper({ group, currentId, onStep }: StepperProps) {
       {show && (
         <>
           <ArrowButton dir="prev" path="M12.5 4.5 7 10l5.5 5.5"
-                       label="Previous site at this location" onClick={() => onStep(-1, "prev")} />
-          {/* Separate text nodes, never "1 of 2" as one string: the proxy translates the
-              words and leaves the numerals alone. */}
+                       label={t("Previous site at this location")} onClick={() => onStep(-1, "prev")} />
           <p className="step-count">
-            <span>{index + 1}</span>{" "}<span>of</span>{" "}<span>{group.length}</span>{" "}
-            <span>at this location</span>
+            <span>
+              {t("{index} of {count} at this location",
+                { index: number(index + 1), count: number(group.length) })}
+            </span>
           </p>
           <ArrowButton dir="next" path="M7.5 4.5 13 10l-5.5 5.5"
-                       label="Next site at this location" onClick={() => onStep(1, "next")} />
+                       label={t("Next site at this location")} onClick={() => onStep(1, "next")} />
         </>
       )}
     </div>

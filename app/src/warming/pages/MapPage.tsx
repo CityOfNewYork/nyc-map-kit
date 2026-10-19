@@ -14,6 +14,7 @@ import { useNycMinute } from "../components/useNycMinute.ts";
 import { centerKind, centerStatus } from "../logic/centers.ts";
 import { activeFilters, NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
+import { number, plural, t } from "../../logic/i18n.ts";
 
 interface MapPageProps {
   model: Model | null;
@@ -50,7 +51,7 @@ export function MapPage({
 
   return (
     <>
-      <h2 className="visually-hidden" id="map-heading" tabIndex={-1}>Map of warming centers</h2>
+      <h2 className="visually-hidden" id="map-heading" tabIndex={-1}>{t("Map of warming centers")}</h2>
       <div className="toolbar">
         <div className="search-row">
           <Search onFound={onFound} onClear={onClear} />
@@ -66,7 +67,7 @@ export function MapPage({
         )}
         <Panel model={listed} list="on" origin={found && found.center} selectedId={selectedId}
                onOpen={onOpen} intro={<CodeBlueNotice />}
-               label="Warming centers"
+               label={t("Warming centers")}
                summary={<ListCount total={model && model.features.length} shown={shown.length}
                                    filtered={active > 0} />}
                row={(feature) => centerRow(feature, minute)} marker={centerMarker}
@@ -87,10 +88,10 @@ function ListCount({ total, shown, filtered }: {
   total: number | null; shown: number; filtered: boolean;
 }) {
   return filtered ? (
-    <>
-      <span>Showing</span>{" "}<span>{shown}</span>{" "}<span>of</span>{" "}
-      <span>{total}</span>{" "}<span>locations</span>
-    </>
+    <span>
+      {plural(total ?? 0, "Showing {shown} of {n} location", "Showing {shown} of {n} locations",
+        { shown: number(shown) })}
+    </span>
   ) : <CenterCount count={total} />;
 }
 
@@ -114,14 +115,14 @@ function ListHead({ total, shown, filtered, found, onClearFilters }: {
       </p>
       {filtered && shown === 0 && (
         <p className="list-empty">
-          <span>No locations match your filters.</span>{" "}
+          <span>{t("No locations match your filters.")}</span>{" "}
           <button type="button" className="filters-clear" onClick={onClearFilters}>
-            <span>Clear filters</span>
+            <span>{t("Clear filters")}</span>
           </button>
         </p>
       )}
       <div className="list-closest" role="status">
-        {found && <p><span>Closest to</span>{" "}<PlaceName place={found} inline /></p>}
+        {found && <p><span>{t("Closest to")}</span>{" "}<PlaceName place={found} inline /></p>}
       </div>
     </>
   );
@@ -137,7 +138,7 @@ function centerRow(feature: Site, minute: number) {
   return (
     <>
       <span className="name">{p.org}</span>
-      {kind && <span className="type">{kind.label}</span>}
+      {kind && <span className="type">{t(kind.label)}</span>}
       {status && <OpenStatusLine status={status} />}
       <span className="addr">{p.address}</span>
     </>
@@ -150,14 +151,8 @@ function centerMarker(feature: Site) {
   return kind && <CategoryIcon color={kind.color} glyph={kind.glyph} />;
 }
 
-/** "26 locations". The singular and the plural are each their own text node, as in the
- *  block's counts (see SiteCounts in ui/App.tsx). */
+/** "26 locations", in the form the language gives that number. Nothing until the data
+ *  is in. */
 function CenterCount({ count }: { count: number | null | undefined }) {
-  return (
-    <>
-      <span>{count ?? undefined}</span>{" "}
-      <span hidden={count === 1}>locations</span>{" "}
-      <span hidden={count !== 1}>location</span>
-    </>
-  );
+  return count == null ? null : <span>{plural(count, "{n} location", "{n} locations")}</span>;
 }

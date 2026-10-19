@@ -1,3 +1,5 @@
+import { t } from "../../logic/i18n.ts";
+
 /**
  * The notice at the top of the list that a Code Blue is in effect. Shown always for now:
  * nothing yet says when one is.
@@ -12,9 +14,9 @@ export function CodeBlueNotice() {
         </g>
       </svg>
       <p>
-        <span>Code Blue is in effect.</span>{" "}
-        <span>Warming centers are open to anyone who needs them.</span>{" "}
-        <strong>In an emergency, call 911.</strong>
+        <span>{t("Code Blue is in effect.")}</span>{" "}
+        <span>{t("Warming centers are open to anyone who needs them.")}</span>{" "}
+        <strong>{t("In an emergency, call 911.")}</strong>
       </p>
     </div>
   );

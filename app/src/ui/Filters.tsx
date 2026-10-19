@@ -1,5 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode, Ref, SyntheticEvent } from "react";
+import { number, plural, t } from "../logic/i18n.ts";
 
 interface FiltersButtonProps {
   ref: Ref<HTMLButtonElement>;
@@ -23,11 +24,11 @@ export function FiltersButton({ ref, controls, open, active, onClick }: FiltersB
           <circle cx="10" cy="17" r="2" />
         </g>
       </svg>
-      <span className="visually-hidden">Filters</span>
+      <span className="visually-hidden">{t("Filters")}</span>
       {active > 0 && (
         <span className="filters-count">
-          <span>{active}</span>
-          <span className="visually-hidden">on</span>
+          <span aria-hidden="true">{number(active)}</span>
+          <span className="visually-hidden">{plural(active, "{n} filter on", "{n} filters on")}</span>
         </span>
       )}
     </button>
@@ -84,13 +85,13 @@ export function FiltersPanel({ id, shown, onClear, onClose, children }: FiltersP
     <dialog className="filters-panel" id={id} ref={panel} aria-labelledby={`${id}-title`}
             onKeyDown={onKeyDown} onCancel={onCancel}>
       <div className="filters-head">
-        <h3 id={`${id}-title`} ref={heading} tabIndex={-1}>Filters</h3>
+        <h3 id={`${id}-title`} ref={heading} tabIndex={-1}>{t("Filters")}</h3>
         <button type="button" className="filters-close" onClick={onClose}>
           <svg aria-hidden="true" viewBox="0 0 20 20" width="18" height="18">
             <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2.2"
                   strokeLinecap="round" />
           </svg>
-          <span className="visually-hidden">Close the filters</span>
+          <span className="visually-hidden">{t("Close the filters")}</span>
         </button>
       </div>
 
@@ -98,14 +99,10 @@ export function FiltersPanel({ id, shown, onClear, onClose, children }: FiltersP
 
       <div className="filters-foot">
         <button type="button" className="filters-clear" onClick={onClear}>
-          <span>Clear filters</span>
+          <span>{t("Clear filters")}</span>
         </button>
-        {/* The singular and the plural are each their own text node (see SiteCounts in
-            ui/App.tsx). */}
         <button type="button" className="filters-show" onClick={onClose}>
-          <span>Show</span>{" "}<span>{shown}</span>{" "}
-          <span hidden={shown === 1}>locations</span>
-          <span hidden={shown !== 1}>location</span>
+          <span>{plural(shown, "Show {n} location", "Show {n} locations")}</span>
         </button>
       </div>
     </dialog>
@@ -136,7 +133,8 @@ export function FilterDisclosure({ label, chosen, children }: FilterDisclosurePr
         <span>{label}</span>
         {chosen > 0 && (
           <span className="filter-chosen">
-            <span>{chosen}</span>{" "}<span className="visually-hidden">chosen</span>
+            <span aria-hidden="true">{number(chosen)}</span>
+            <span className="visually-hidden">{plural(chosen, "{n} chosen", "{n} chosen")}</span>
           </span>
         )}
         <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14">

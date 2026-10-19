@@ -15,15 +15,15 @@
 
 <body>
 <!-- Plain HTML outside React, so it is on screen at first paint, even if the map fails to
-     load, and costs no layout shift. -->
+     load, and costs no layout shift. main.tsx translates each data-t element's text. -->
 <div class="prototype-note">
-<p><strong>Prototype only.</strong>
-<span>To find a warming center, call 311.</span></p>
+<p><strong data-t>Prototype only.</strong>
+<span data-t>To find a warming center, call 311.</span></p>
 <!-- Which way a center's card opens. main.tsx marks the current one and wires them. -->
 <div class="card-mode" role="group" aria-labelledby="card-mode-label">
-<span id="card-mode-label">Card</span>
-<button type="button" data-detail="side">Sidebar</button>
-<button type="button" data-detail="popup">Pop-up</button>
+<span id="card-mode-label" data-t>Card</span>
+<button type="button" data-detail="side" data-t>Sidebar</button>
+<button type="button" data-detail="popup" data-t>Pop-up</button>
 </div>
 </div>
 <div id="root"></div>

@@ -5,6 +5,7 @@ import { geocode } from "../logic/geocode.ts";
 import type { Suggestion } from "../logic/geocode.ts";
 import { placeMatcher } from "../logic/places.ts";
 import type { Found, PlacesDoc } from "../logic/places.ts";
+import { t } from "../logic/i18n.ts";
 
 /** Geoclient's subscription key, from VITE_GEOCLIENT_KEY at build time. Without one the
  *  box still finds boroughs, neighborhoods and ZIP codes, and says that is all it finds. */
@@ -186,8 +187,8 @@ export function Search({ onFound, onClear }: SearchProps) {
                aria-describedby="search-status" />
         <label htmlFor="search-input" className={value ? "search-label filled" : "search-label"}>
           {GEOCLIENT_KEY
-            ? <span>Address, neighborhood or ZIP code</span>
-            : <span>Neighborhood, borough or ZIP code</span>}
+            ? <span>{t("Address, neighborhood or ZIP code")}</span>
+            : <span>{t("Neighborhood, borough or ZIP code")}</span>}
         </label>
         {(value || status.type !== "idle") && (
           <button type="button" className="search-clear" onClick={clear}>
@@ -195,7 +196,7 @@ export function Search({ onFound, onClear }: SearchProps) {
               <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2"
                     strokeLinecap="round" />
             </svg>
-            <span className="visually-hidden">Clear the search</span>
+            <span className="visually-hidden">{t("Clear the search")}</span>
           </button>
         )}
         <button type="button" className="search-locate" onClick={locate}>
@@ -206,14 +207,14 @@ export function Search({ onFound, onClear }: SearchProps) {
               <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
             </g>
           </svg>
-          <span className="visually-hidden">Use my location</span>
+          <span className="visually-hidden">{t("Use my location")}</span>
         </button>
         <button type="submit" className="search-submit">
           <svg aria-hidden="true" viewBox="0 0 20 20" width="22" height="22">
             <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
             <path d="M13 13l4 4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
           </svg>
-          <span className="visually-hidden">Search</span>
+          <span className="visually-hidden">{t("Search")}</span>
         </button>
       </div>
 
@@ -256,41 +257,41 @@ function StatusLine({ status }: { status: Status }) {
     case "idle":
       return null;
     case "searching":
-      return <p><span>Searching…</span></p>;
+      return <p><span>{t("Searching…")}</span></p>;
     case "found":
       return (
         <p className="search-found">
-          <span>Closest to</span>{" "}
+          <span>{t("Closest to")}</span>{" "}
           <PlaceName place={status.place} inline />
         </p>
       );
     case "choices":
-      return <p><span>Which one do you mean?</span></p>;
+      return <p><span>{t("Which one do you mean?")}</span></p>;
     case "suggest":
-      return <p><span>Did you mean:</span></p>;
+      return <p><span>{t("Did you mean:")}</span></p>;
     case "none":
       return (
         <p>
-          <span>No match in New York City.</span>{" "}
+          <span>{t("No match in New York City.")}</span>{" "}
           {GEOCLIENT_KEY
-            ? <span>Try an address, an intersection, a neighborhood or a ZIP code.</span>
-            : <span>Try a neighborhood, a borough or a ZIP code.</span>}
+            ? <span>{t("Try an address, an intersection, a neighborhood or a ZIP code.")}</span>
+            : <span>{t("Try a neighborhood, a borough or a ZIP code.")}</span>}
         </p>
       );
     case "error":
       return (
         <p>
-          <span>Address search is not working right now.</span>{" "}
-          <span>Try a neighborhood, a borough or a ZIP code.</span>
+          <span>{t("Address search is not working right now.")}</span>{" "}
+          <span>{t("Try a neighborhood, a borough or a ZIP code.")}</span>
         </p>
       );
     case "locating":
-      return <p><span>Finding your location…</span></p>;
+      return <p><span>{t("Finding your location…")}</span></p>;
     case "no-location":
       return (
         <p>
-          <span>We couldn't get your location.</span>{" "}
-          <span>Try typing an address instead.</span>
+          <span>{t("We couldn't get your location.")}</span>{" "}
+          <span>{t("Try typing an address instead.")}</span>
         </p>
       );
   }
@@ -300,10 +301,10 @@ function StatusLine({ status }: { status: Status }) {
  *  between an intersection's streets, the borough after a comma. */
 export function PlaceName({ place, inline = false }: { place: Found; inline?: boolean }) {
   const name = place.kind === "zip" ? (
-    <span className="place-name"><span>ZIP code</span> <span>{place.name}</span></span>
+    <span className="place-name"><span>{t("ZIP code")}</span> <span>{place.name}</span></span>
   ) : place.kind === "intersection" ? (
     <span className="place-name">
-      <span>{place.name}</span> <span>and</span> <span>{place.cross}</span>
+      <span>{place.name}</span> <span>{t("and")}</span> <span>{place.cross}</span>
     </span>
   ) : (
     <span className="place-name"><span>{place.name}</span></span>

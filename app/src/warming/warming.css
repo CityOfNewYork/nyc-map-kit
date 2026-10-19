@@ -80,6 +80,43 @@
   cursor: pointer;
 }
 .official-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+/* The language the page is in, at the bar's far end, and the list of the others. */
+.language-menu { position: relative; margin-inline-start: auto; }
+.language-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--surface);
+  font: inherit;
+  cursor: pointer;
+}
+.language-list {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + 8px);
+  z-index: 70;
+  min-width: 200px;
+  margin: 0;
+  padding: 6px 0;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  list-style: none;
+}
+.language-list[hidden] { display: none; }
+.language-list a {
+  display: block;
+  padding: 8px 16px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.language-list a:hover { background: var(--hover); }
+.language-list a[aria-current="true"] { font-weight: 700; }
+.language-list a:focus-visible { outline-color: var(--ink); outline-offset: -4px; }
 .official-notice {
   padding: 12px 20px 14px;
   border-top: 1px solid #333333;
@@ -456,7 +493,14 @@
   .hero .search { z-index: auto; margin: 0; }
   .nyc-logo { height: 20px; }
   .site-title { font-size: 1.125rem; }
-  .official-toggle { font-size: 0.875rem; }
+  /* "Official website" takes a thin line of its own above the logo, as nyc.gov's header
+     does on a phone, and a long title is cut short rather than widen the page. */
+  .header-bar { flex-wrap: wrap; row-gap: 0; height: auto; min-height: 48px; }
+  .official-toggle { order: -1; flex-basis: 100%; padding: 6px 0 0; font-size: 0.8125rem; }
+  .site-header h1 { min-width: 0; padding: 10px 0; }
+  .site-title { overflow: hidden; text-overflow: ellipsis; }
+  /* Only the translate symbol on a phone, where the bar has no room for the name. */
+  .language-current { display: none; }
   .official-notice { padding: 10px 14px 12px; }
   .hero-inner { padding: 28px 16px; }
 
@@ -464,3 +508,7 @@
   .landing .map .maplibregl-ctrl-bottom-left,
   .landing .map .maplibregl-ctrl-bottom-right { bottom: 0; }
 }
+
+/* Right to left: the toolbar, map key and notice keep the map area's layout (see
+   style.css) and run their text right to left. */
+[dir="rtl"] .stage :is(.filter-bar, .map-key, .notice) { direction: rtl; }

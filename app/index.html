@@ -32,10 +32,11 @@
 
 <body>
 <!-- Plain HTML outside React, so it is on screen at first paint, even if the map fails to
-     load, and costs no layout shift. It travels with every frame that embeds the block. -->
-<p class="prototype-note"><strong>Prototype, not a City service.</strong>
-<span>For current information see the City's</span>
-<a href="https://www.nyc.gov/main/services/snap-benefits/abawd" target="_top">ABAWD volunteering page</a><span>.</span></p>
+     load, and costs no layout shift. It travels with every frame that embeds the block.
+     main.tsx translates each data-t element's text. -->
+<p class="prototype-note"><strong data-t>Prototype, not a City service.</strong>
+<span data-t>For current information see the City's</span>
+<a href="https://www.nyc.gov/main/services/snap-benefits/abawd" target="_top" data-t>ABAWD volunteering page</a><span>.</span></p>
 <div id="root"></div>
 <script type="module" src="/src/main.tsx"></script>
 </body>

@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { resolveLang } from "./core/basemap-style.ts";
+import { chooseLanguage, loadLanguage, translateMarked } from "./logic/i18n.ts";
 import { readSettings } from "./logic/params.ts";
 import App from "./ui/App.tsx";
 // After the components, which bring map-core and with it MapLibre's stylesheet, so these
@@ -8,11 +9,13 @@ import App from "./ui/App.tsx";
 import "./style.css";
 
 const params = readSettings(window.location.search, document.baseURI, window.location.origin);
-const settings = { ...params, lang: resolveLang(params.lang) };
+// The interface's language: ?lang=, or in an embed the host page's (see logic/i18n.ts).
+// The basemap's labels follow it, by its bare subtag.
+const language = chooseLanguage(window.location.search, document.referrer);
+const settings = { ...params, lang: resolveLang(language) };
 
-// The proxy reads <html lang> to decide what it is translating from, and
-// basemap-style.ts reads it to pick the basemap's label language.
-document.documentElement.lang = settings.lang;
+await loadLanguage(language);
+translateMarked();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

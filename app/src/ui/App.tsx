@@ -8,21 +8,18 @@
  *
  * TWO RULES THIS FILE AND ITS COMPONENTS KEEP:
  *
- * 1. LANGUAGE. nyc.gov is translated by a proxy that rewrites DOM text nodes. So every
- *    visible string is a text node inside its own element, and a label is never glued to
- *    a value to make one string — <span>Phone</span> next to <span>{number}</span>,
- *    never `"Phone: " + number`. Screen-reader-only copy is a visually-hidden <span>,
- *    not an aria-label, because the proxy cannot see attribute values. There are no
- *    string files and no i18n library; the only language logic in the block is the
- *    basemap's, in core/basemap-style.ts.
+ * 1. LANGUAGE. Every visible string, screen-reader copy included, goes through `t` or
+ *    `plural` (logic/i18n.ts), whole: a phrase with a number or a name in it is one
+ *    template, "Show {n} locations", never words glued around a value, because each
+ *    language orders them its own way. The interface's words are in src/i18n/; the data's
+ *    own text, such as names, addresses and descriptions, is shown as it comes.
  *
- *    The same rule keeps React and a translator out of each other's way. A translator
- *    working in the browser (Chrome's, or a proxy's script for text that changes after
- *    load) swaps text nodes for elements of its own. When a string is the ONLY child of
- *    its element, React changes it by replacing the element's whole content, so a swapped
- *    node cannot be left behind showing the previous value. Text sitting next to other
- *    children — `<p>Hours: {hours}</p>` — is edited in place, and is what goes stale or
- *    crashes under a translator. Keep each changing string alone in its own element.
+ *    Each changing string sits alone in its own element. A translator working in the
+ *    browser (Chrome's, say) swaps text nodes for elements of its own. When a string is
+ *    the ONLY child of its element, React changes it by replacing the element's whole
+ *    content, so a swapped node cannot be left behind showing the previous value. Text
+ *    sitting next to other children — `<p>Hours: {hours}</p>` — is edited in place, and
+ *    is what goes stale or crashes under a translator.
  *
  * 2. ACCESSIBILITY. The list is the text alternative to the map. Every site the map
  *    draws is reachable from it by keyboard, selection moves focus to the card, and
@@ -48,6 +45,7 @@ import { Search } from "./Search.tsx";
 import { SiteDialog } from "./SiteDialog.tsx";
 import { useMapCore } from "./useMapCore.ts";
 import { useSiteCard } from "./useSiteCard.ts";
+import { plural, t } from "../logic/i18n.ts";
 
 /** The heading until config.json or `?title=` names the map. */
 const DEFAULT_TITLE = "SNAP volunteer opportunities";
@@ -221,7 +219,7 @@ export default function App({ settings }: AppProps) {
         This is the standard escape hatch: invisible until it takes focus, first in the tab
         order, and it lands on the map container.
       */}
-      <a className="skip-link" href="#map">Skip the list and go to the map</a>
+      <a className="skip-link" href="#map">{t("Skip the list and go to the map")}</a>
 
       <div className="stage" id="stage" data-list={model ? settings.list : "on"}>
         {/* The search box and the Filters button above the list, one column on a desktop.
@@ -237,7 +235,7 @@ export default function App({ settings }: AppProps) {
           {filtering && model && (
             <FiltersPanel id="filters" shown={shown.length} onClose={closeFilters}
                           onClear={clearTypes}>
-              <FilterDisclosure label="Organization type" chosen={types.length}>
+              <FilterDisclosure label={t("Organization type")} chosen={types.length}>
                 {orgTypes(model.features).map(({ type }) => (
                   <label key={type} className="filter-check">
                     <input type="checkbox" checked={types.includes(type)}
@@ -250,15 +248,15 @@ export default function App({ settings }: AppProps) {
           )}
           <Panel model={listed} list={settings.list} origin={found && found.center}
                  selectedId={feature && feature.properties.id} onOpen={card.openFromList}
-                 label="Volunteer sites" summary={<SiteCounts sites={listed && shown} />}
+                 label={t("Volunteer sites")} summary={<SiteCounts sites={listed && shown} />}
                  row={siteRow} />
         </div>
         {/* map-core fills this div; React only puts the loading and error notes in it. */}
         <div className="map" id="map" tabIndex={-1} ref={containerRef}>
           {failed ? (
-            <p className="load-error" id="loading"><span>The map could not load its data.</span></p>
+            <p className="load-error" id="loading"><span>{t("The map could not load its data.")}</span></p>
           ) : !basemap && (
-            <p className="loading" id="loading"><span>Loading the map…</span></p>
+            <p className="loading" id="loading"><span>{t("Loading the map…")}</span></p>
           )}
         </div>
       </div>
@@ -307,26 +305,20 @@ async function loadData(settings: Settings): Promise<Model> {
 // ------------------------------------------------------------------------- the list
 
 /**
- * "75 organizations · 185 sites", or as many as the filter leaves, on the phone sheet's
- * handle. Both the singular and the plural noun are rendered and one is hidden. Building
- * "1 site" / "2 sites" in code would hand the translation proxy a single text node
- * containing a number, and a language whose plural rules are not English's cannot be
- * served from it. Two complete alternatives, each its own text node, translate correctly
- * on their own. The spaces between the spans are the ones the reader sees.
+ * "75 organizations · 185 sites", or as many as the filter leaves: the list's top line.
+ * Each count in the form its language gives that number (see logic/i18n.ts).
  */
 function SiteCounts({ sites }: { sites: Site[] | null }) {
   const orgCount = sites ? new Set(sites.map((f) => f.properties.org_id)).size : undefined;
   const siteCount = sites ? sites.length : undefined;
   return (
-    <>
-      <span id="sheet-orgs">{orgCount}</span>{" "}
-      <span hidden={orgCount === 1}>organizations</span>{" "}
-      <span hidden={orgCount !== 1}>organization</span>{" "}
-      <span aria-hidden="true">·</span>{" "}
-      <span id="sheet-sites">{siteCount}</span>{" "}
-      <span hidden={siteCount === 1}>sites</span>{" "}
-      <span hidden={siteCount !== 1}>site</span>
-    </>
+    orgCount !== undefined && siteCount !== undefined && (
+      <>
+        <span id="sheet-orgs">{plural(orgCount, "{n} organization", "{n} organizations")}</span>
+        {" "}<span aria-hidden="true">·</span>{" "}
+        <span id="sheet-sites">{plural(siteCount, "{n} site", "{n} sites")}</span>
+      </>
+    )
   );
 }
 

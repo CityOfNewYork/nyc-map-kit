@@ -3,11 +3,9 @@
  * warm tint, and positron's look, which the other basemaps are brought to.
  *
  * WHY THIS FILE EXISTS
- * Basemap labels are drawn by the GPU onto a canvas, not laid out as HTML. The city's
- * translation proxy rewrites DOM text nodes, so it cannot see them and cannot translate
- * them. Every other string in this app is a real text node and the proxy handles it; the
- * basemap is the one place the app has to switch language itself. That is all the
- * language logic in the block — there are no string files anywhere.
+ * Basemap labels are drawn by the GPU onto a canvas, not laid out as HTML, and their
+ * words come from the tiles rather than from the interface's own (logic/i18n.ts). So
+ * the basemap switches language here, by which of the tiles' name fields it reads.
  *
  * Vector tiles from OpenMapTiles carry a name field per language (`name:es`, `name:zh`,
  * `name:ru`, …) alongside `name` (local) and `name:latin`. The style ships with a
@@ -30,10 +28,9 @@ import CITY_LINE from "./city-line.json";
 const NAME_FIELDS = ["name", "name:latin", "name:nonlatin", "name_en", "name_int"];
 
 /**
- * Resolve the display language, in priority order:
- *   1. an explicit `?lang=` URL parameter (the host page can force one)
- *   2. `<html lang>` — which is what the translation proxy sets when it serves a
- *      translated page, so the basemap follows the page without being told
+ * Resolve the label language, in priority order:
+ *   1. `explicit`, the interface's language (logic/i18n.ts's chooseLanguage)
+ *   2. `<html lang>`
  *   3. English
  * Returns a bare subtag ("es", not "es-419") because that is how OpenMapTiles keys its
  * name fields.

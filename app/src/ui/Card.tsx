@@ -7,6 +7,7 @@ import {
 } from "../logic/card.ts";
 import type { CardAction, CardField } from "../logic/card.ts";
 import { metresBetween } from "../logic/data.ts";
+import { number, t } from "../logic/i18n.ts";
 import type { LngLat } from "../logic/places.ts";
 import type { FactIcon, Model, Site } from "../logic/types.ts";
 import { siteUrl } from "./useSiteCard.ts";
@@ -59,8 +60,10 @@ export function Card({ feature, model, lang, origin = null, meta, status, hours 
           {status}
           {miles !== null && (
             <span className="card-distance">
-              <span>{miles.toFixed(1)}</span>{" "}<span aria-hidden="true">mi</span>
-              <span className="visually-hidden">miles</span>{" "}<span>away</span>
+              <span aria-hidden="true">{t("{miles} mi away", { miles: number(miles, 1) })}</span>
+              <span className="visually-hidden">
+                {t("{miles} miles away", { miles: number(miles, 1) })}
+              </span>
             </span>
           )}
         </div>
@@ -70,10 +73,10 @@ export function Card({ feature, model, lang, origin = null, meta, status, hours 
                directions={mapsLink(config, feature, org)} />
 
       <dl className="card-facts">
-        <Fact icon="pin" label="Address"><span>{p.address}</span></Fact>
-        {hours && <Fact icon="clock" label="Hours">{hours}</Fact>}
+        <Fact icon="pin" label={t("Address")}><span>{p.address}</span></Fact>
+        {hours && <Fact icon="clock" label={t("Hours")}>{hours}</Fact>}
         {facts.map((fact) => (
-          <Fact key={fact.key} icon={fact.icon} label={fact.label}>
+          <Fact key={fact.key} icon={fact.icon} label={t(fact.label)}>
             <FieldValue field={fact} feature={feature} />
           </Fact>
         ))}
@@ -81,7 +84,7 @@ export function Card({ feature, model, lang, origin = null, meta, status, hours 
 
       {sections.map((section) => (
         <section key={section.key} className="card-section">
-          <h3>{section.label}</h3>
+          <h3>{t(section.label)}</h3>
           <FieldValue field={section} feature={feature} block />
         </section>
       ))}
@@ -120,14 +123,14 @@ function Buttons({ feature, actions, directions }: {
           {action.as === "tel" ? (
             <>
               <Icon name="phone" size={20} />
-              <span className="visually-hidden">{action.label}</span>{" "}
+              <span className="visually-hidden">{t(action.label)}</span>{" "}
               <span className="phone">{action.detail}</span>
             </>
           ) : (
             <>
               <Icon name="globe" size={20} />
-              <span>{action.label}</span>
-              {action.external && <span className="visually-hidden">(opens in a new tab)</span>}
+              <span>{t(action.label)}</span>
+              {action.external && <span className="visually-hidden">{t("(opens in a new tab)")}</span>}
             </>
           )}
         </a>
@@ -136,8 +139,8 @@ function Buttons({ feature, actions, directions }: {
         <a className="card-button" href={directions} target="_blank" rel="noopener"
            onClick={() => track("map_open_in_maps_click", { org_id: p.org_id, site_id: p.id })}>
           <Icon name="directions" size={20} />
-          <span>Directions</span>
-          <span className="visually-hidden">(opens in a new tab)</span>
+          <span>{t("Directions")}</span>
+          <span className="visually-hidden">{t("(opens in a new tab)")}</span>
         </a>
       )}
     </div>
@@ -171,7 +174,7 @@ function FieldValue({ field, feature, block = false }: {
       <a href={hrefFor(value)} target="_blank" rel="noopener"
          onClick={() => track("map_action_click", { org_id: p.org_id, site_id: p.id, action: field.key })}>
         <span>{displayUrl(value)}</span>
-        <span className="visually-hidden">(opens in a new tab)</span>
+        <span className="visually-hidden">{t("(opens in a new tab)")}</span>
       </a>
     );
   }
@@ -197,12 +200,13 @@ function Updated({ date, lang }: { date: string; lang: string }) {
     <p className={stale ? "card-updated stale" : "card-updated"}>
       {stale && <Icon name="warning" size={14} />}
       <span>
-        <span>Updated</span>{" "}
-        <time dateTime={date}>
-          {new Intl.DateTimeFormat(lang, { month: "short", day: "numeric", year: "numeric" })
-            .format(day)}
-        </time>
-        {stale && <>{" — "}<span>This info may be out of date. Call before you go.</span></>}
+        <span>
+          {t("Updated {date}", {
+            date: new Intl.DateTimeFormat(lang, { month: "short", day: "numeric", year: "numeric" })
+              .format(day),
+          })}
+        </span>
+        {stale && <>{" — "}<span>{t("This info may be out of date. Call before you go.")}</span></>}
       </span>
     </p>
   );
@@ -225,14 +229,14 @@ function CopyLink({ id }: { id: string }) {
     <>
       <button type="button" className="copy-link" onClick={copy}>
         <Icon name="link" size={16} />
-        {result === "copied" ? <span>Link copied</span>
-          : result === "failed" ? <span>Could not copy the link</span>
-          : <span>Copy link</span>}
+        {result === "copied" ? <span>{t("Link copied")}</span>
+          : result === "failed" ? <span>{t("Could not copy the link")}</span>
+          : <span>{t("Copy link")}</span>}
       </button>
       {/* The same outcome for a screen reader, which does not hear a button's label change. */}
       <span className="visually-hidden" role="status">
-        {result === "copied" && <span>Link copied</span>}
-        {result === "failed" && <span>Could not copy the link</span>}
+        {result === "copied" && <span>{t("Link copied")}</span>}
+        {result === "failed" && <span>{t("Could not copy the link")}</span>}
       </span>
     </>
   );

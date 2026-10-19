@@ -5,6 +5,7 @@ import { CENTER_KINDS } from "../logic/centers.ts";
 import { NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
 import { FilterToggles } from "./FilterBar.tsx";
+import { t } from "../../logic/i18n.ts";
 
 interface FilterPanelProps {
   id: string;
@@ -36,13 +37,13 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
 
   return (
     <FiltersPanel id={id} shown={shown} onClear={clear} onClose={onClose}>
-      <FilterDisclosure label="Location type" chosen={filters.types.length}>
+      <FilterDisclosure label={t("Location type")} chosen={filters.types.length}>
         {[...CENTER_KINDS].map(([type, kind]) => (
           <label key={type} className="filter-check">
             <input type="checkbox" checked={filters.types.includes(type)}
                    onChange={(e) => toggleType(type, e.target.checked)} />
             <CategoryIcon color={kind.color} glyph={kind.glyph} />
-            <span>{kind.label}</span>
+            <span>{t(kind.label)}</span>
           </label>
         ))}
       </FilterDisclosure>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent, ReactNode } from "react";
 import { compareSites, metresBetween } from "../logic/data.ts";
+import { number, t } from "../logic/i18n.ts";
 import type { Settings } from "../logic/params.ts";
 import type { LngLat } from "../logic/places.ts";
 import type { Model, Site } from "../logic/types.ts";
@@ -134,7 +135,7 @@ export function Panel({
         <span className="chev" aria-hidden="true">
           {(desktop ? shut : step === "full") ? "▼" : "▲"}
         </span>
-        <span className="visually-hidden">Show or hide the list</span>
+        <span className="visually-hidden">{t("Show or hide the list")}</span>
       </button>
 
       {header && <div className="list-head">{header}</div>}
@@ -175,10 +176,10 @@ export function Panel({
                 )}
                 {metres != null && (
                   <span className="dist">
-                    <span>{miles(metres)}</span>{" "}
-                    <span aria-hidden="true">mi</span>
-                    <span className="visually-hidden">miles</span>{" "}
-                    <span>away</span>
+                    <span aria-hidden="true">{t("{miles} mi away", { miles: miles(metres) })}</span>
+                    <span className="visually-hidden">
+                      {t("{miles} miles away", { miles: miles(metres) })}
+                    </span>
                   </span>
                 )}
               </>
@@ -207,5 +208,5 @@ export function Panel({
 
 /** One decimal place; never "0.0", which would read as "here". */
 function miles(metres: number): string {
-  return Math.max(0.1, metres / METRES_PER_MILE).toFixed(1);
+  return number(Math.max(0.1, metres / METRES_PER_MILE), 1);
 }

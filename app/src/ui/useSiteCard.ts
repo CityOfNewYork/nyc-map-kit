@@ -33,6 +33,7 @@ import { track } from "../logic/analytics.ts";
 import { coincidentWith } from "../logic/data.ts";
 import type { Model, Site, SiteProperties } from "../logic/types.ts";
 import type { StepDirection } from "./SiteDialog.tsx";
+import { t } from "../logic/i18n.ts";
 
 /** Street level, a little closer than the main map's: the card's map answers "where is
  *  this" for one place, not "what is near me". */
@@ -268,18 +269,10 @@ export function useSiteCard({ model, style, categories = null, panel = false }: 
   };
 }
 
-/**
- * Announce a selection through the one live region map-core owns. Built as DOM nodes,
- * each string in its own element, because the region sits inside the map's container,
- * outside anything React renders — and the translation proxy has to reach it too.
- */
+/** Announce a selection through the one live region map-core owns. */
 function announceSelected(map: MapCore<SiteProperties> | null, p: SiteProperties) {
   if (!map) return;
-  const span = (text: string) =>
-    Object.assign(document.createElement("span"), { textContent: text });
-  const line = document.createElement("p");
-  line.append(span("Selected"), ": ", span(p.org), ", ", span(p.address));
-  map.announce(line);
+  map.announce(t("Selected: {name}, {address}", { name: p.org, address: p.address }));
 }
 
 /** This page's address with ?site=<id>, or without it for null. */

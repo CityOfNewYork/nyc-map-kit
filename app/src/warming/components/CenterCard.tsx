@@ -7,6 +7,7 @@ import { clockTime, minutesOf } from "../logic/hours.ts";
 import { PawIcon, WheelchairIcon } from "./FeatureIcons.tsx";
 import { OpenStatusLine } from "./OpenStatusLine.tsx";
 import { useNycMinute } from "./useNycMinute.ts";
+import { t } from "../../logic/i18n.ts";
 
 interface CenterCardProps {
   feature: Site;
@@ -34,14 +35,14 @@ export function CenterCard({ feature, model, origin, lang }: CenterCardProps) {
               {kind && (
                 <span className="card-meta-item">
                   <CategoryIcon color={kind.color} glyph={kind.glyph} />
-                  <span>{kind.label}</span>
+                  <span>{t(kind.label)}</span>
                 </span>
               )}
               {details.wheelchair && (
-                <span className="card-meta-item"><WheelchairIcon /><span>Wheelchair accessible</span></span>
+                <span className="card-meta-item"><WheelchairIcon /><span>{t("Wheelchair accessible")}</span></span>
               )}
               {details.pets && (
-                <span className="card-meta-item"><PawIcon /><span>Pets allowed</span></span>
+                <span className="card-meta-item"><PawIcon /><span>{t("Pets allowed")}</span></span>
               )}
             </>
           )}
@@ -56,10 +57,8 @@ function Hours({ opens, closes }: { opens?: string; closes?: string }) {
   const from = minutesOf(opens);
   const to = minutesOf(closes);
   if (from === null || to === null) return null;
-  if (to - from === 24 * 60 || from === to) return <span>Open 24 hours, 7 days a week</span>;
-  return (
-    <>
-      <span>{clockTime(from)}</span> – <span>{clockTime(to)}</span>,{" "}<span>every day</span>
-    </>
-  );
+  if (to - from === 24 * 60 || from === to) {
+    return <span>{t("Open 24 hours, 7 days a week")}</span>;
+  }
+  return <span>{t("{from} – {to}, every day", { from: clockTime(from), to: clockTime(to) })}</span>;
 }

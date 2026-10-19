@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import type { Found } from "../../logic/places.ts";
 import { Search } from "../../ui/Search.tsx";
+import { t } from "../../logic/i18n.ts";
 
 interface LandingPageProps {
   /** The hero is folding away on the way to the map view. */
@@ -27,21 +28,23 @@ export function LandingPage({ leaving, onOpenMap, onFound }: LandingPageProps) {
   return (
     <section className="hero" ref={heroRef} aria-labelledby="landing-title">
       <div className="hero-inner">
-        <h2 id="landing-title">Find a warming center near you</h2>
+        <h2 id="landing-title">{t("Find a warming center near you")}</h2>
         <p>
-          During periods of extreme cold, warming centers may be activated across all
-          boroughs, using both fixed sites and warming vehicles. New Yorkers who see
-          individuals they believe to be experiencing homelessness and in need should
-          request{" "}
+          <span>
+            {t("During periods of extreme cold, warming centers may be activated across all boroughs, using both fixed sites and warming vehicles.")}
+          </span>{" "}
+          <span>
+            {t("New Yorkers who see individuals they believe to be experiencing homelessness and in need should request")}
+          </span>{" "}
           <a href="https://portal.311.nyc.gov/" target="_blank" rel="noopener">
-            homeless outreach assistance
-            <span className="visually-hidden"> (opens in a new tab)</span>
+            <span>{t("homeless outreach assistance")}</span>
+            <span className="visually-hidden">{" "}{t("(opens in a new tab)")}</span>
           </a>.
         </p>
         <div className="hero-actions">
           <Search onFound={onFound} onClear={() => {}} />
           <button type="button" className="hero-map-link" onClick={onOpenMap}>
-            <span>See full map</span> <span aria-hidden="true">→</span>
+            <span>{t("See full map")}</span> <span aria-hidden="true">→</span>
           </button>
         </div>
       </div>

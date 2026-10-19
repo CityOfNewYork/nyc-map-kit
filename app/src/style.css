@@ -250,8 +250,8 @@ body {
    name. */
 .search-label {
   position: absolute;
-  left: 16px;
-  right: calc(56px + 40px + 4px);
+  inset-inline-start: 16px;
+  inset-inline-end: calc(56px + 40px + 4px);
   top: 0;
   line-height: calc(var(--search-h) - 4px);   /* inside the 2 px outline */
   font-size: 0.9375rem;
@@ -262,7 +262,9 @@ body {
   pointer-events: none;
 }
 /* With the clear button showing too, the hint stops before it. */
-.search-bar:has(.search-clear) .search-label { right: calc(56px + 40px + 40px + 4px); }
+.search-bar:has(.search-clear) .search-label {
+  inset-inline-end: calc(56px + 40px + 40px + 4px);
+}
 .search-label.filled {
   width: 1px; height: 1px;
   clip-path: inset(50%);
@@ -1063,6 +1065,24 @@ body {
   .panel.shut { flex: none; }
   .panel.shut > :not(.sheet-handle) { display: none; }
   .panel.shut .sheet-handle { border-bottom: 0; }
+}
+
+/* ------------------------------------------------------------------ right to left - */
+
+/* In Arabic, Urdu or Yiddish the page reads right to left, but the map area keeps its
+   layout: the list over the map's left edge, the controls on its right, as the map's own
+   padding expects (ui/layout.ts). The text inside its panels and cards still runs right
+   to left. */
+[dir="rtl"] .stage { direction: ltr; }
+[dir="rtl"] .stage :is(.panel, .site-dialog, .filters-panel, .search, .search-status,
+  .search-choices) { direction: rtl; }
+[dir="rtl"] .search-bar {
+  background: linear-gradient(to right, var(--ink) 28px, var(--surface) 28px);
+}
+/* The data's own text, such as names and addresses, takes its direction from itself, so
+   an English address keeps its house number in front in a right-to-left list. */
+.site-button :is(.name, .addr), #card-title, .card-facts dd, .card-section :is(p, li) {
+  unicode-bidi: plaintext;
 }
 
 /* ------------------------------------------------------------------ motion ------- */
