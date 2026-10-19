@@ -104,14 +104,15 @@
 .side { width: 360px; }
 .site-marker .category-icon { width: 26px; height: 26px; }
 
-/* Above the rows: the count, then the place they are ordered from after a search. */
+/* Under the count: the place the rows are ordered from after a search, or that no
+   center matches the filters. Nothing to show, it takes no room. */
 .list-head {
-  padding: 12px 16px 10px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--line);
   color: var(--ink-muted);
 }
+.list-head:not(:has(.list-empty, .list-closest p)) { padding: 0; border-bottom: 0; }
 .list-head p { margin: 0; }
-.list-count { font-size: 0.875rem; font-weight: 600; }
 .list-closest { font-size: 0.8125rem; }
 
 /* On a desktop the list's header names the place, so the search box does not. Only the

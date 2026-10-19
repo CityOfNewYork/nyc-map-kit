@@ -66,7 +66,9 @@ export function MapPage({
         )}
         <Panel model={listed} list="on" origin={found && found.center} selectedId={selectedId}
                onOpen={onOpen} intro={<CodeBlueNotice />}
-               label="Warming centers" summary={<CenterCount count={listed && shown.length} />}
+               label="Warming centers"
+               summary={<ListCount total={model && model.features.length} shown={shown.length}
+                                   filtered={active > 0} />}
                row={(feature) => centerRow(feature, minute)} marker={centerMarker}
                header={(
                  <ListHead total={model && model.features.length} shown={shown.length}
@@ -79,14 +81,27 @@ export function MapPage({
   );
 }
 
+/** How many centers there are, or with filters on how many of how many: the list's top
+ *  line, which hides and shows the list (see ui/Panel.tsx). */
+function ListCount({ total, shown, filtered }: {
+  total: number | null; shown: number; filtered: boolean;
+}) {
+  return filtered ? (
+    <>
+      <span>Showing</span>{" "}<span>{shown}</span>{" "}<span>of</span>{" "}
+      <span>{total}</span>{" "}<span>locations</span>
+    </>
+  ) : <CenterCount count={total} />;
+}
+
 /**
- * Above the rows, on a desktop: how many centers there are, or with filters on how many
- * of how many, and after a search the place they are ordered from. The count is a live
- * region, so a screen reader hears what a filter left. The place line stands in for the
- * search box's own (see warming.css), so it is a live region too, and a screen reader
- * hears it without leaving the input. On a phone the sheet's handle carries the count and
- * the search box keeps its line, so this is hidden. The Code Blue notice is the list's
- * intro, at the top of the rows and scrolling away with them.
+ * Above the rows, on a desktop, under the count: after a search, the place they are
+ * ordered from. The count is repeated here as a live region the eye does not see, so a
+ * screen reader hears what a filter left. The place line stands in for the search box's
+ * own (see warming.css), so it is a live region too, and a screen reader hears it without
+ * leaving the input. On a phone the search box keeps its line, so this is hidden. The
+ * Code Blue notice is the list's intro, at the top of the rows and scrolling away with
+ * them.
  */
 function ListHead({ total, shown, filtered, found, onClearFilters }: {
   total: number | null; shown: number; filtered: boolean; found: Found | null;
@@ -94,13 +109,8 @@ function ListHead({ total, shown, filtered, found, onClearFilters }: {
 }) {
   return (
     <>
-      <p className="list-count" role="status">
-        {filtered ? (
-          <>
-            <span>Showing</span>{" "}<span>{shown}</span>{" "}<span>of</span>{" "}
-            <span>{total}</span>{" "}<span>locations</span>
-          </>
-        ) : <CenterCount count={total} />}
+      <p className="visually-hidden" role="status">
+        <ListCount total={total} shown={shown} filtered={filtered} />
       </p>
       {filtered && shown === 0 && (
         <p className="list-empty">

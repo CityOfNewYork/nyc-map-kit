@@ -1039,9 +1039,30 @@ body {
   }
 }
 
-/* The sheet handle only exists on phones. */
+/* On a desktop the handle is the list's top line: what it holds, and a chevron that hides
+   the list under it or shows it again. */
 @media (min-width: 768px) {
-  .sheet-handle { display: none; }
+  .sheet-handle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: none;
+    font: inherit;
+    color: var(--ink-muted);
+    text-align: left;
+    cursor: pointer;
+  }
+  .sheet-handle:hover { background: var(--hover); }
+  .sheet-handle:focus-visible { outline-offset: -4px; }
+  .sheet-handle .counts { flex: 1; font-size: 0.875rem; font-weight: 600; }
+  .panel.shut { flex: none; }
+  .panel.shut > :not(.sheet-handle) { display: none; }
+  .panel.shut .sheet-handle { border-bottom: 0; }
 }
 
 /* ------------------------------------------------------------------ motion ------- */

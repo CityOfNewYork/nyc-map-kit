@@ -12,6 +12,8 @@ const SHEET_HEIGHTS = { collapsed: "48px", half: "45dvh", full: "85dvh" };
 type SheetStep = keyof typeof SHEET_HEIGHTS;
 const NEXT_STEP: Record<SheetStep, SheetStep> =
   { collapsed: "half", half: "full", full: "collapsed" };
+/** Wider than this the list is a panel, not a sheet (see style.css). */
+const DESKTOP = "(min-width: 768px)";
 
 interface PanelProps {
   model: Model | null;
@@ -56,6 +58,16 @@ export function Panel({
 }: PanelProps) {
   const [step, setStep] = useState<SheetStep>("collapsed");
   const [dragging, setDragging] = useState(false);
+  // On a desktop the handle is the panel's top line, and hides the list under it or shows
+  // it again; on a phone it steps the sheet's height.
+  const [desktop, setDesktop] = useState(() => matchMedia(DESKTOP).matches);
+  const [shut, setShut] = useState(false);
+  useEffect(() => {
+    const query = matchMedia(DESKTOP);
+    const onChange = () => setDesktop(query.matches);
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
   const panelRef = useRef<HTMLElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ y: number; h: number } | null>(null);
@@ -85,7 +97,7 @@ export function Panel({
   // While dragging, the height is set directly on the element rather than through state,
   // so the sheet follows the finger without a render per pointer move.
   function onPointerDown(e: PointerEvent<HTMLButtonElement>) {
-    if (!model) return;
+    if (!model || desktop) return;
     drag.current = { y: e.clientY, h: panelRef.current!.getBoundingClientRect().height };
     e.currentTarget.setPointerCapture(e.pointerId);
     setDragging(true);
@@ -109,16 +121,20 @@ export function Panel({
   }
 
   return (
-    <nav className={dragging ? "panel dragging" : "panel"} id="panel" ref={panelRef}
-         aria-label={label}>
+    <nav className={["panel", dragging && "dragging", desktop && shut && "shut"]
+                      .filter(Boolean).join(" ")}
+         id="panel" ref={panelRef} aria-label={label}>
       <button className="sheet-handle" id="sheet-handle" type="button"
-              aria-expanded={step !== "collapsed"} aria-controls="site-list"
-              onClick={() => model && setStep((s) => NEXT_STEP[s])}
+              aria-expanded={desktop ? !shut : step !== "collapsed"} aria-controls="site-list"
+              onClick={() => model && (desktop
+                ? setShut((s) => !s) : setStep((s) => NEXT_STEP[s]))}
               onPointerDown={onPointerDown} onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}>
         <span className="counts">{summary}</span>
-        <span className="chev" aria-hidden="true">{step === "full" ? "▼" : "▲"}</span>
-        <span className="visually-hidden">Show the list</span>
+        <span className="chev" aria-hidden="true">
+          {(desktop ? shut : step === "full") ? "▼" : "▲"}
+        </span>
+        <span className="visually-hidden">Show or hide the list</span>
       </button>
 
       {header && <div className="list-head">{header}</div>}
