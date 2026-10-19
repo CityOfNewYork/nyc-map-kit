@@ -28,6 +28,26 @@
 
 /* ------------------------------------------------------------------ list --------- */
 
+/* Above the rows: the count, then the place they are ordered from after a search. */
+.list-head {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-muted);
+}
+.list-head p { margin: 0; }
+.list-count { font-size: 0.875rem; font-weight: 600; }
+.list-closest { font-size: 0.8125rem; }
+
+/* On a desktop the list's header names the place, so the search box does not. Only the
+   line goes: its live region stays in place, empty, for what the search says next. */
+@media (min-width: 768px) {
+  .stage .search-found { display: none; }
+  .stage .search-status:has(> .search-found) { padding: 0; border-top: 0; }
+}
+@media (max-width: 767px) {
+  .list-head { display: none; }
+}
+
 /* The kind of center, between its name and its address. */
 .site-button .type {
   font-size: 0.8125rem;

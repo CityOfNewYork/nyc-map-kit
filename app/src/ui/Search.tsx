@@ -220,7 +220,7 @@ function StatusLine({ status }: { status: Status }) {
     case "found":
       return (
         <p className="search-found">
-          <span>Sites nearest</span>{" "}
+          <span>Closest to</span>{" "}
           <PlaceName place={status.place} inline />
         </p>
       );
@@ -249,7 +249,7 @@ function StatusLine({ status }: { status: Status }) {
 
 /** A found place's name, each part its own element: "ZIP code" next to "10027", "and"
  *  between an intersection's streets, the borough after a comma. */
-function PlaceName({ place, inline = false }: { place: Found; inline?: boolean }) {
+export function PlaceName({ place, inline = false }: { place: Found; inline?: boolean }) {
   const name = place.kind === "zip" ? (
     <span className="place-name"><span>ZIP code</span> <span>{place.name}</span></span>
   ) : place.kind === "intersection" ? (

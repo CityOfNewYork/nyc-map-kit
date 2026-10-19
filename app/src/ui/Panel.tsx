@@ -27,6 +27,8 @@ interface PanelProps {
   summary: ReactNode;
   /** A row's lines above the distance. The site's name and address unless given. */
   row?: (feature: Site) => ReactNode;
+  /** Shown above the rows, such as a count of the sites. Nothing unless given. */
+  header?: ReactNode;
 }
 
 /**
@@ -42,7 +44,9 @@ interface PanelProps {
  * `model` is null until the data has loaded; until then the panel shows its frame and
  * nothing in it responds.
  */
-export function Panel({ model, list, selectedId, origin, onOpen, label, summary, row }: PanelProps) {
+export function Panel({
+  model, list, selectedId, origin, onOpen, label, summary, row, header,
+}: PanelProps) {
   const [step, setStep] = useState<SheetStep>("collapsed");
   const [dragging, setDragging] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
@@ -109,6 +113,8 @@ export function Panel({ model, list, selectedId, origin, onOpen, label, summary,
         <span className="chev" aria-hidden="true">{step === "full" ? "▼" : "▲"}</span>
         <span className="visually-hidden">Show the list</span>
       </button>
+
+      {header && <div className="list-head">{header}</div>}
 
       {/*
         One row per site. Not per organization.
