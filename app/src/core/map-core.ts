@@ -23,8 +23,8 @@
  *     focusPoint,                    // optional () => [x, y]: where a selected pin lands,
  *                                    // in container pixels. Default: the container's centre.
  *     categories,                    // optional: pins coloured by one property (PinCategories)
- *     counts,                        // optional: the property holding how many sites share a
- *                                    // pin's spot; above 1, the pin carries the number
+ *     counts,                        // optional: true puts on each pin how many sites are
+ *                                    // drawn on its exact coordinates, where above 1
  *     zoomButtons,                   // optional: false leaves out the + and − buttons
  *   });
  *
@@ -123,10 +123,11 @@ export interface MapCoreOptions<P extends PointProperties> {
   data?: FeatureCollection<Point, P>;
   cluster?: boolean;
   categories?: PinCategories | null;
-  /** The property holding how many sites share a pin's spot, such as "here". Where it is
-   *  above 1 the pin carries the number at the top right of its head. The client counts:
-   *  what shares a spot is the data's business (see OVERLAPPING PINS above). */
-  counts?: string | null;
+  /** Each pin carries, at the top right of its head, how many sites the data puts on its
+   *  exact coordinates, where that is more than one. Sites merely close by are not
+   *  counted: their pins come apart as the reader zooms in (see OVERLAPPING PINS above),
+   *  and a number on one of two would mislead. */
+  counts?: boolean;
   onSelect?: (feature: Feature<Point, P> | null, info: SelectInfo) => void;
   onClusterExpand?: (count: number) => void;
   focusPoint?: (() => [number, number] | null) | null;
@@ -194,6 +195,8 @@ const GLYPH = { stroke: 2.5, span: 1.2 };
  *  the head's top-right edge, with the number in white. `pad` is the room it takes beyond
  *  the pin on the left, right and top; the left keeps the tip centred under the anchor. */
 const BADGE = { radius: 7, stroke: 1.5, font: "700 10px 'Noto Sans', sans-serif", pad: 6 };
+/** The property the core adds to a drawn pin that shares its spot: how many do. */
+const HERE = "_here";
 
 /** One pin as ImageData, in `fill`, optionally ringed in `halo`, with `glyph` (SVG path
  *  data on a 24-unit square) stroked in white in its head, or else the hole, and `count`
@@ -330,7 +333,7 @@ export function createMap<P extends PointProperties>(
     data = EMPTY,
     cluster = false,
     categories = null,
-    counts = null,
+    counts = false,
     onSelect = () => {},
     onClusterExpand = () => {},
     focusPoint = null,
@@ -375,11 +378,38 @@ export function createMap<P extends PointProperties>(
   const pending: (() => void)[] = [];   // work queued before the style finishes loading
 
   const byId = new Map<string, Feature<Point, P>>();
+  // With `counts`, how many sites share each shared spot, by id. Every site at a spot
+  // carries the count: they stack exactly at every zoom, and MapLibre does not promise
+  // which of them it draws on top.
+  const hereById = new Map<string, number>();
   function indexData(fc: FeatureCollection<Point, P>): void {
     byId.clear();
-    for (const f of (fc && fc.features) || []) byId.set(f.properties.id, f);
+    hereById.clear();
+    const features = (fc && fc.features) || [];
+    for (const f of features) byId.set(f.properties.id, f);
+    if (!counts) return;
+    const atSpot = new Map<string, string[]>();
+    for (const f of features) {
+      const spot = f.geometry.coordinates.join();
+      atSpot.set(spot, [...(atSpot.get(spot) ?? []), f.properties.id]);
+    }
+    for (const ids of atSpot.values()) {
+      if (ids.length > 1) for (const id of ids) hereById.set(id, ids.length);
+    }
   }
   indexData(currentData);
+
+  /** `features` as the map draws them: each with its count, where it has one, under a
+   *  property of the core's own, so the client's features are never changed. */
+  function drawn(features: Feature<Point, P>[]): FeatureCollection<Point, P> {
+    return {
+      type: "FeatureCollection",
+      features: hereById.size ? features.map((f) => {
+        const here = hereById.get(f.properties.id);
+        return here ? { ...f, properties: { ...f.properties, [HERE]: here } } : f;
+      }) : features,
+    };
+  }
 
   function whenReady(fn: () => void): void {
     if (ready) fn();
@@ -423,7 +453,7 @@ export function createMap<P extends PointProperties>(
         PIN_IMAGE[state]];
     }
     if (!counts) return id;
-    const count: ExpressionSpecification = ["to-number", ["get", counts], 1];
+    const count: ExpressionSpecification = ["to-number", ["get", HERE], 1];
     return ["case", [">", count, 1], ["concat", id, "+", ["to-string", count]], id];
   }
 
@@ -500,8 +530,7 @@ export function createMap<P extends PointProperties>(
    * a list must be visible even if that point is inside a cluster.
    */
   function subset(ids: string[]): FeatureCollection<Point, P> {
-    const features = ids.map((id) => byId.get(id)).filter(Boolean) as Feature<Point, P>[];
-    return { type: "FeatureCollection", features };
+    return drawn(ids.map((id) => byId.get(id)).filter(Boolean) as Feature<Point, P>[]);
   }
 
   function repaint() {
@@ -549,7 +578,7 @@ export function createMap<P extends PointProperties>(
 
     map.addSource("sites", {
       type: "geojson",
-      data: currentData,
+      data: drawn(currentData.features),
       cluster,
       clusterRadius: CLUSTER_RADIUS,
       // Deliberately below maxZoom: past this zoom every point draws on its own and a
@@ -747,7 +776,7 @@ export function createMap<P extends PointProperties>(
       currentData = geojson || EMPTY;
       indexData(currentData);
       whenReady(() => {
-        map.getSource<GeoJSONSource>("sites")!.setData(currentData);
+        map.getSource<GeoJSONSource>("sites")!.setData(drawn(currentData.features));
         if (selectedId && !byId.has(selectedId)) selectedId = null;
         repaint();
       });

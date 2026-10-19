@@ -48,8 +48,7 @@ export function WarmingMap({
       .then((style) => {
         if (cancelled) return;
         const created = create({
-          style: structuredClone(style), data, categories: CENTER_PINS, counts: "here",
-          focusPoint,
+          style: structuredClone(style), data, categories: CENTER_PINS, counts: true, focusPoint,
           onSelect: (feature, info) => select(feature, info),
         });
         // Only the reader's own input carries an originalEvent. A wheel zoom's movestart
@@ -71,24 +70,9 @@ export function WarmingMap({
     };
   }, [lang, basemap, data, focusPoint, create, destroy]);
 
-  // Its own effect, so a filter changes the pins without making the map again. Centers on
-  // the very same coordinates are counted among those drawn, so a filter that hides one
-  // changes the count. Each of them carries it: they stack exactly at every zoom, and the
-  // map does not promise which one it draws on top. Centers merely close by share the
-  // card's stepper (logic/data.ts) but no number: their pins come apart as the reader
-  // zooms in, and a number on one of two would mislead.
+  // Its own effect, so a filter changes the pins without making the map again.
   useEffect(() => {
-    if (!map || !shown) return;
-    const atSpot = new Map<string, Site[]>();
-    for (const f of shown) {
-      const spot = f.geometry.coordinates.join();
-      atSpot.set(spot, [...(atSpot.get(spot) ?? []), f]);
-    }
-    const features = shown.map((f) => {
-      const here = atSpot.get(f.geometry.coordinates.join())!.length;
-      return here > 1 ? { ...f, properties: { ...f.properties, here } } : f;
-    });
-    map.setData({ type: "FeatureCollection", features });
+    if (map && shown) map.setData({ type: "FeatureCollection", features: shown });
   }, [map, shown]);
 
   // Its own effect, so the list arriving or leaving changes the padding, not the map.

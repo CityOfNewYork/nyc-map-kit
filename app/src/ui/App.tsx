@@ -103,6 +103,7 @@ export default function App({ settings }: AppProps) {
       map = main.create({
         style: structuredClone(basemap),
         data: model.data,
+        counts: true,
         onSelect: (feature, info) => onMapSelect(feature, info),
         onClusterExpand: () => {},
       });
