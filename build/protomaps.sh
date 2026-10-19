@@ -7,9 +7,16 @@
 # lets a reader pan to (MAX_BOUNDS in app/src/core/map-core.ts). Outside the city line
 # the tiles then keep only land, water, parks and roads (build/protomaps-outside.py),
 # which brings the file from about 150 MB to about 95 MB. A reader's browser fetches only the
-# tiles on screen, by range request. The file is too large for git and is not committed:
-# CI runs this before each deploy, so every deploy carries the newest daily build of
-# OpenStreetMap. Prints the name of the build it cut from.
+# tiles on screen, by range request. Prints the name of the build it cut from.
+#
+# The file is too large for git. A deploy downloads one pinned cut (BASEMAP_URL in
+# .github/workflows/pages.yml), so the basemap changes only when someone means it to.
+# To move to a newer build: run this, look the map over, attach the file to a release
+# named for the build, and set BASEMAP_URL and BASEMAP_SHA256 to it:
+#
+#     cp app/public/nyc.pmtiles nyc-YYYYMMDD.pmtiles
+#     gh release create basemap-YYYYMMDD nyc-YYYYMMDD.pmtiles --notes "…"
+#     shasum -a 256 nyc-YYYYMMDD.pmtiles
 #
 # Needs the pmtiles CLI on PATH, a single binary from
 # https://github.com/protomaps/go-pmtiles/releases. Protomaps keeps a week of daily builds.

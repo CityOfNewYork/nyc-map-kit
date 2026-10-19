@@ -33,19 +33,19 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
-      # The Protomaps basemap is too large for git, so each deploy cuts it fresh from
-      # Protomaps' daily build (build/protomaps.sh). Pull requests build without it.
-      - name: Cut the Protomaps basemap
+      # The Protomaps basemap is too large for git. Each deploy downloads one pinned file,
+      # cut by build/protomaps.sh and kept at BASEMAP_URL; the checksum makes sure it is
+      # that file. A newer basemap is cut on purpose and the two lines below updated (see
+      # build/protomaps.sh). Pull requests build without it.
+      - name: Download the Protomaps basemap
         if: github.ref == 'refs/heads/main'
         env:
-          PMTILES_CLI: https://github.com/protomaps/go-pmtiles/releases/download/v1.31.2/go-pmtiles_1.31.2_Linux_x86_64.tar.gz
-          PMTILES_CLI_SHA256: 3ed7dbf4ec2e6dfe5e25b6f70d1ffc932729f93c86db353bf514dd71010a312f
+          BASEMAP_URL: https://github.com/CityOfNewYork/nyc-map-kit/releases/download/basemap-20261019/nyc-20261019.pmtiles
+          BASEMAP_SHA256: 11cdd7a0424208ae70e5e2975435a9c5d1e80e9ed445b1dca3d1c8c96c4d1e9b
         run: |
-          curl -fsSL "$PMTILES_CLI" -o "$RUNNER_TEMP/pmtiles.tar.gz"
-          echo "$PMTILES_CLI_SHA256  $RUNNER_TEMP/pmtiles.tar.gz" | sha256sum -c -
-          tar -xzf "$RUNNER_TEMP/pmtiles.tar.gz" -C "$RUNNER_TEMP" pmtiles
-          build_name=$(PATH="$RUNNER_TEMP:$PATH" build/protomaps.sh)
-          echo "Protomaps basemap cut from daily build $build_name" >> "$GITHUB_STEP_SUMMARY"
+          curl -fsSL --retry 3 "$BASEMAP_URL" -o app/public/nyc.pmtiles
+          echo "$BASEMAP_SHA256  app/public/nyc.pmtiles" | sha256sum -c -
+          echo "Protomaps basemap: $BASEMAP_URL" >> "$GITHUB_STEP_SUMMARY"
       # Clash Grotesk may be self-hosted but not committed (build/clash-grotesk.sh). Pull
       # requests build without it, and the warming hero's heading falls back to Noto Sans.
       - name: Fetch Clash Grotesk
