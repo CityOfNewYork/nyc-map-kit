@@ -234,6 +234,11 @@
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
 }
 .dropdown-panel[hidden] { display: none; }
+/* Fades in and drops a few pixels as it opens, as the kit's panels rise (style.css). */
+.dropdown-panel { transition: opacity 0.12s ease, transform 0.12s ease; }
+@starting-style {
+  .dropdown-panel { opacity: 0; transform: translateY(-4px); }
+}
 .dropdown-panel fieldset { display: grid; gap: 4px; margin: 0; padding: 0; border: 0; }
 .dropdown-done {
   justify-self: end;

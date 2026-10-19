@@ -1040,6 +1040,38 @@ body {
   .sheet-handle { display: none; }
 }
 
+/* ------------------------------------------------------------------ motion ------- */
+
+/* What opens over or into the page fades in and rises a few pixels as it appears, and a
+   backdrop fades in under it. Closing stays instant. A browser without @starting-style
+   shows them at once; reduced motion turns it off (below). */
+.site-dialog[open],
+.filters-panel[open],
+.filter-disclosure fieldset {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+@starting-style {
+  .site-dialog[open],
+  .filters-panel[open],
+  .filter-disclosure fieldset {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.site-dialog::backdrop,
+.filters-panel::backdrop {
+  transition: background-color 0.18s ease, -webkit-backdrop-filter 0.18s ease,
+    backdrop-filter 0.18s ease;
+}
+@starting-style {
+  .site-dialog[open]::backdrop,
+  .filters-panel[open]::backdrop {
+    background-color: transparent;
+    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: blur(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
