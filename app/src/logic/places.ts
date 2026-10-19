@@ -10,6 +10,10 @@
  * the query is an address, and the caller sends it to Geoclient instead. When a query
  * names more than one place, the most specific wins: "Harlem, Manhattan" is Harlem, and
  * "10027 Manhattan" is the ZIP code.
+ *
+ * Failing that, words that all appear in one neighborhood's name, and in no other's, name
+ * it: "Lefferts Garden" is Prospect Lefferts Gardens. A plural counts as its singular. Words
+ * that fit several names, such as "Park", match none, and the query goes to Geoclient.
  */
 
 /** Longitude and latitude. */
@@ -62,6 +66,20 @@ export function placeMatcher(doc: PlacesDoc): (query: string) => Found | null {
   const boroughKeys = longestFirst(Object.keys(doc.boroughs));
   const nbhdKeys = longestFirst(Object.keys(doc.nbhds));
 
+  // Each neighborhood's words, singular, for a query that names only part of one.
+  const singular = (w: string) => (w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w);
+  const nbhdWords = nbhdKeys.map((k) => ({ k, words: new Set(k.split(" ").map(singular)) }));
+
+  /** The one neighborhood, in `borough` if given, whose name holds every one of `words`;
+   *  null when none does or more than one. */
+  function partly(words: string[], borough: string | null): string | null {
+    if (!words.length || words.some((w) => /\d/.test(w))) return null;
+    const hits = nbhdWords.filter(({ k, words: name }) =>
+      words.every((w) => name.has(singular(w)))
+      && (!borough || doc.nbhds[k].b === doc.boroughs[borough].d));
+    return hits.length === 1 ? hits[0].k : null;
+  }
+
   /** Take the first key found as whole words in `s`; return it and what is left. */
   function take(s: string, keys: string[]): [string | null, string] {
     for (const k of keys) {
@@ -80,7 +98,9 @@ export function placeMatcher(doc: PlacesDoc): (query: string) => Found | null {
     const words = s.split(" ").filter((w) => w && !FILLER.has(w));
     const zips = words.filter((w) => /^\d{5}$/.test(w));
     if (words.length !== zips.length || zips.some((z) => !doc.zips[z]) || zips.length > 1) {
-      return null;
+      const named = nbhdKey || zips.length ? null : partly(words, boroughKey);
+      if (!named) return null;
+      nbhdKey = named;
     }
 
     if (nbhdKey) {
