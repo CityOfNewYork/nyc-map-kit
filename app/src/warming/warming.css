@@ -26,9 +26,12 @@
 }
 .landing .map { grid-area: 2 / 1; }
 
+/* Folds away on the way to the map view (see LandingPage.tsx). */
 .hero {
+  overflow: hidden;
   background: var(--link-hover);
   color: var(--surface);
+  transition: height 0.3s ease-in-out;
 }
 .hero-inner {
   max-width: 1120px;
