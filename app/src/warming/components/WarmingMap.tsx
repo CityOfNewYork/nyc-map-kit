@@ -73,9 +73,10 @@ export function WarmingMap({
 
   // Its own effect, so a filter changes the pins without making the map again. Centers on
   // the very same coordinates are counted among those drawn, so a filter that hides one
-  // changes the count. The count goes on the last of them, which the map draws on top.
-  // Centers merely close by share the card's stepper (logic/data.ts) but no number: their
-  // pins come apart as the reader zooms in, and a number on one of two would mislead.
+  // changes the count. Each of them carries it: they stack exactly at every zoom, and the
+  // map does not promise which one it draws on top. Centers merely close by share the
+  // card's stepper (logic/data.ts) but no number: their pins come apart as the reader
+  // zooms in, and a number on one of two would mislead.
   useEffect(() => {
     if (!map || !shown) return;
     const atSpot = new Map<string, Site[]>();
@@ -84,10 +85,8 @@ export function WarmingMap({
       atSpot.set(spot, [...(atSpot.get(spot) ?? []), f]);
     }
     const features = shown.map((f) => {
-      const group = atSpot.get(f.geometry.coordinates.join())!;
-      const here = group.length;
-      return here > 1 && group[here - 1] === f
-        ? { ...f, properties: { ...f.properties, here } } : f;
+      const here = atSpot.get(f.geometry.coordinates.join())!.length;
+      return here > 1 ? { ...f, properties: { ...f.properties, here } } : f;
     });
     map.setData({ type: "FeatureCollection", features });
   }, [map, shown]);
