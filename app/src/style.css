@@ -86,6 +86,10 @@ body {
   font-size: 16px;
   font-weight: 400;
   line-height: 1.5;
+  /* Grayscale antialiasing on macOS, which otherwise draws text heavier, most of all light
+     text on a dark background. Other systems ignore both. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   color: var(--ink);
   background: var(--surface);
   /* iOS Safari zooms the whole page when a control's text is under 16px; the map does
