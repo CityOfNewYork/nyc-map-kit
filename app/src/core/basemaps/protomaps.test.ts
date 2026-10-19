@@ -60,8 +60,9 @@ describe("the Protomaps basemap", () => {
     expect(layer("borough_label")?.maxzoom).toBe(13);
   });
 
-  test("names only villages and hamlets of the localities", () => {
-    expect(filter("places_locality")).toContainEqual(["in", "kind_detail", "village", "hamlet"]);
+  test("names no localities, and leaves Nolan Park out of the neighbourhoods", () => {
+    expect(ids).not.toContain("places_locality");
+    expect(filter("places_subplace")).toContainEqual(["!in", "name", "Nolan Park"]);
   });
 
   test("greys the land outside the city under the water, with no test in the browser", () => {

@@ -223,24 +223,29 @@ function positronRoads(style: StyleSpecification) {
   }
 }
 
-/** Of the places Protomaps files as localities, the city holds only New York itself and
- *  hamlets such as Todt Hill; only villages and hamlets are named. */
-const VILLAGES = ["village", "hamlet"];
+/** Places the tiles file as neighbourhoods that are parts of a park: Nolan Park is a
+ *  section of Governors Island's historic district, as are the island's hamlets. */
+const NOT_NEIGHBOURHOODS = ["Nolan Park"];
 /** Below this zoom the boroughs are named; from it, the neighbourhoods the tiles carry. */
 const NEIGHBOURHOOD_ZOOM = 13;
 /** Islands whose name repeats a borough's. */
 const ISLANDS_NAMED_FOR_BOROUGHS = ["Manhattan", "Staten Island", "Manhattan Island"];
-/** Points of interest that name a park; Protomaps files playgrounds as parks too.
- *  Community gardens, which Protomaps keeps apart as `garden`, are not named: in the
- *  Lower East Side they more than double the labels at z14. Each park carries the
- *  zoom Protomaps would name it from, z15 for most; the big parks are named from it,
- *  and every park from PARK_NAME_ZOOM, as positron names them. */
-const PARK_KINDS = ["park"];
+/** Points of interest named in the parks' green: parks, which include playgrounds in
+ *  Protomaps, and cemeteries, such as Green-Wood. Community gardens, which Protomaps
+ *  keeps apart as `garden`, are not named: in the Lower East Side they more than double
+ *  the labels at z14. Each carries the zoom Protomaps would name it from, z15 for most
+ *  parks; the big ones are named from it, and every one from PARK_NAME_ZOOM, as positron
+ *  names parks. */
+const PARK_KINDS = ["park", "cemetery"];
 const PARK_NAME_ZOOM = 14;
-/** Positron's label sizes: neighbourhoods small, and villages smaller than the boroughs.
- *  Protomaps sizes places by population. */
-const POSITRON_SUBPLACE_SIZE = ["interpolate", ["linear"], ["zoom"], 8, 9, 12, 10];
-const POSITRON_TOWN_SIZE = ["interpolate", ["exponential", 1.2], ["zoom"], 7, 12, 11, 14];
+/** Protomaps grades cemeteries by size on a scale that stops at z13, where its parks'
+ *  goes on down: Green-Wood would be named a zoom after Prospect Park, which is about its
+ *  size. A cemetery is named this many zooms before the tiles say, so Green-Wood is
+ *  named from z12 as Prospect Park is. */
+const CEMETERY_HEAD_START = 1;
+/** Neighbourhood names, about as big as a borough's name at the map's opening zoom on a
+ *  desktop (see addBoroughLabels). Protomaps sizes places by population. */
+const NEIGHBOURHOOD_SIZE = 15;
 /** Positron names major roads from this zoom; Protomaps from z11. */
 const POSITRON_ROAD_NAME_ZOOM = 12.2;
 
@@ -250,51 +255,49 @@ const POSITRON_ROAD_NAME_ZOOM = 12.2;
  *   1. The tiles' own borough labels (neighbourhoods of kind `suburb`), the islands named
  *      after boroughs, and "New York" are dropped. The block draws the boroughs itself,
  *      translated and anchored on open ground, until NEIGHBOURHOOD_ZOOM.
- *   2. Of the localities, only villages and hamlets are named. The
- *      other things OpenStreetMap files as places, such as named localities and farms
- *      ("Clinton Hill Historic District", a rooftop farm), are left out, as positron
- *      leaves them out. Outside the city nothing is named: the file holds no labels
- *      there but the highways' and the water's (build/protomaps-outside.py).
- *   3. Neighbourhood and town names are set as positron sets them: neighbourhoods small,
- *      in Noto Sans Italic, and every place with positron's narrow collision margin.
- *      Protomaps pads neighbourhood names by up to 20 px, which at street level leaves
- *      no room for the park names below them.
+ *   2. No localities are named. Within the city OpenStreetMap files as localities New
+ *      York itself, hamlets that are Todt Hill again or sections of Governors Island,
+ *      and things that are not places to live, such as "Clinton Hill Historic District",
+ *      an interchange and a rooftop farm. Nolan Park, another section of Governors
+ *      Island, is filed as a neighbourhood and left out too. Outside the city nothing
+ *      is named: the file holds no labels there but the highways' and the water's
+ *      (build/protomaps-outside.py).
+ *   3. Neighbourhoods are named at NEIGHBOURHOOD_SIZE in Noto Sans Italic, with
+ *      positron's narrow collision margin. Protomaps pads neighbourhood names by up to
+ *      20 px, which at street level leaves no room for the park names below them.
  *   4. House numbers and one-way arrows are dropped, as positron and quietNycDetail leave
  *      them out.
- *   5. Parks are named in the green italic the other basemaps use, above the street names
- *      and below the place names. Protomaps names more streets than positron, so below
- *      the street names, as the other basemaps put them, few park names find room.
+ *   5. Parks and cemeteries are named in the green italic the other basemaps use for
+ *      parks, above the street names and below the place names. Protomaps names more
+ *      streets than positron, so below the street names, as the other basemaps put
+ *      them, few park names find room.
  *
  * Protomaps writes its filters in the legacy syntax, so the clauses added are legacy too.
  */
 function placeLabels(style: StyleSpecification, lang: string) {
   const subplace = layer(style, "places_subplace");
   if (subplace?.type === "symbol") {
-    subplace.filter = and(subplace.filter, ["!=", "kind_detail", "suburb"]);
+    subplace.filter = and(subplace.filter, ["!=", "kind_detail", "suburb"],
+      ["!in", "name", ...NOT_NEIGHBOURHOODS]);
     subplace.minzoom = NEIGHBOURHOOD_ZOOM;
     const { "text-padding": _, ...layout } = subplace.layout ?? {};
     subplace.layout = { ...layout, "text-font": ["Noto Sans Italic"],
-      "text-size": POSITRON_SUBPLACE_SIZE as ExpressionSpecification, "text-max-width": 9 };
+      "text-size": NEIGHBOURHOOD_SIZE, "text-max-width": 9 };
   }
   const roadNames = layer(style, "roads_labels_major");
   if (roadNames) roadNames.minzoom = POSITRON_ROAD_NAME_ZOOM;
-  style.layers = style.layers.filter((l) => l.id !== "address_label" && l.id !== "roads_oneway");
+  style.layers = style.layers.filter((l) =>
+    l.id !== "address_label" && l.id !== "roads_oneway" && l.id !== "places_locality");
   const islands = layer(style, "earth_label_islands");
   if (islands?.type === "symbol") {
     islands.filter = and(islands.filter, ["!in", "name", ...ISLANDS_NAMED_FOR_BOROUGHS]);
   }
 
-  const locality = layer(style, "places_locality");
-  if (locality?.type === "symbol") {
-    const { "text-padding": _, ...layout } = locality.layout ?? {};
-    locality.layout = { ...layout, "text-size": POSITRON_TOWN_SIZE as ExpressionSpecification };
-    locality.filter = and(locality.filter, ["in", "kind_detail", ...VILLAGES]);
-  }
-
   const parkNames: LayerSpecification = {
     id: "park_name", type: "symbol", source: SOURCE, "source-layer": "pois",
     filter: ["all", ["in", ["get", "kind"], ["literal", PARK_KINDS]],
-      [">=", ["zoom"], ["min", ["get", "min_zoom"], PARK_NAME_ZOOM]]],
+      [">=", ["zoom"], ["min", ["-", ["get", "min_zoom"],
+        ["case", ["==", ["get", "kind"], "cemetery"], CEMETERY_HEAD_START, 0]], PARK_NAME_ZOOM]]],
     layout: {
       "text-field": nameExpression(lang),
       "text-font": ["Noto Sans Italic"],
