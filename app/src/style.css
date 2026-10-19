@@ -442,11 +442,12 @@ body {
    every width — only the box changes size. The dialog is a transparent column: the
    stepper, when there is one, then 10 px below it the white box — the small map, then
    the card, which scrolls inside whatever height is left. The map and Close stay put
-   while the text scrolls under them. */
+   while the text scrolls under them. At least 48 px of map shows above and below, 24 px
+   on a phone, so even a long card reads as a card over the map. */
 .site-dialog {
   width: min(480px, calc(100% - 32px));
   max-width: none;
-  max-height: calc(100% - 32px);
+  max-height: calc(100% - 96px);
   padding: 0;
   border: 0;
   background: transparent;
@@ -830,7 +831,7 @@ body {
   /* Inset from the screen's edges, so it still reads as a card over the map. */
   .site-dialog {
     width: calc(100% - 24px);
-    max-height: calc(100% - 32px);
+    max-height: calc(100% - 48px);
   }
   .mini-map { height: 170px; }
 
