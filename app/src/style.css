@@ -226,7 +226,10 @@ body {
   height: var(--search-h);
   border: 2px solid var(--ink);
   border-radius: var(--radius-pill);
-  background: var(--surface);
+  /* Black under the search button's rounded end: where the outline's inner edge and the
+     button's clipped corner meet, each partly covers the same pixels, and white there
+     shows through as a thin light arc. */
+  background: linear-gradient(to left, var(--ink) 28px, var(--surface) 28px);
   overflow: hidden;
 }
 .search-input {
