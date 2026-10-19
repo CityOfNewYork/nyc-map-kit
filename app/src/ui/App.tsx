@@ -265,7 +265,7 @@ export default function App({ settings }: AppProps) {
 
       <SiteDialog ref={dialogElement} miniMapElement={miniMapElement}
                   feature={feature} group={card.group}
-                  model={model} lang={settings.lang}
+                  model={model} lang={settings.lang} origin={found && found.center}
                   onStep={card.step} onClose={card.close} />
     </>
   );

@@ -1,4 +1,5 @@
 import type { KeyboardEvent, MouseEvent, ReactNode, Ref, SyntheticEvent } from "react";
+import type { LngLat } from "../logic/places.ts";
 import type { Model, Site } from "../logic/types.ts";
 import { Card } from "./Card.tsx";
 
@@ -13,6 +14,9 @@ interface SiteDialogProps {
   group: Site[];
   model: Model | null;
   lang: string;
+  /** Where the reader searched for, or null: the block's own Card says how far away the
+   *  site is from it. */
+  origin?: LngLat | null;
   onStep: (delta: number, dir: StepDirection) => void;
   onClose: () => void;
   /** The card's content for a site. It must include the heading, id "card-title", that
@@ -41,7 +45,8 @@ interface SiteDialogProps {
  */
 export function SiteDialog(
   {
-    ref, miniMapElement, feature, group, model, lang, onStep, onClose, card, panel = false,
+    ref, miniMapElement, feature, group, model, lang, origin = null, onStep, onClose, card,
+    panel = false,
   }: SiteDialogProps,
 ) {
   // Escape arrives as `cancel`. Taken over so it closes through history like every other
@@ -71,7 +76,8 @@ export function SiteDialog(
       <div className="card-box">
         <div className="mini-map" id="mini-map" ref={miniMapElement} />
         <article className="card" id="card" aria-labelledby="card-title" hidden={!feature}>
-          {feature && (card ? card(feature) : <Card feature={feature} model={model!} lang={lang} />)}
+          {feature && (card ? card(feature)
+            : <Card feature={feature} model={model!} lang={lang} origin={origin} />)}
         </article>
         <button className="card-close" id="card-close" type="button" onClick={onClose}>
           <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20">
