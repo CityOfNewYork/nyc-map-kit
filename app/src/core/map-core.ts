@@ -23,6 +23,8 @@
  *     focusPoint,                    // optional () => [x, y]: where a selected pin lands,
  *                                    // in container pixels. Default: the container's centre.
  *     categories,                    // optional: pins coloured by one property (PinCategories)
+ *     counts,                        // optional: the property holding how many sites share a
+ *                                    // pin's spot; above 1, the pin carries the number
  *     zoomButtons,                   // optional: false leaves out the + and − buttons
  *   });
  *
@@ -121,6 +123,10 @@ export interface MapCoreOptions<P extends PointProperties> {
   data?: FeatureCollection<Point, P>;
   cluster?: boolean;
   categories?: PinCategories | null;
+  /** The property holding how many sites share a pin's spot, such as "here". Where it is
+   *  above 1 the pin carries the number at the top right of its head. The client counts:
+   *  what shares a spot is the data's business (see OVERLAPPING PINS above). */
+  counts?: string | null;
   onSelect?: (feature: Feature<Point, P> | null, info: SelectInfo) => void;
   onClusterExpand?: (count: number) => void;
   focusPoint?: (() => [number, number] | null) | null;
@@ -184,17 +190,25 @@ const PIN_DPR = 2;
  *  square spans. */
 const GLYPH = { stroke: 2.5, span: 1.2 };
 
+/** The count on a pin that shares its spot: a black circle ringed in white, centred on
+ *  the head's top-right edge, with the number in white. `pad` is the room it takes beyond
+ *  the pin on the left, right and top; the left keeps the tip centred under the anchor. */
+const BADGE = { radius: 7, stroke: 1.5, font: "700 10px 'Noto Sans', sans-serif", pad: 6 };
+
 /** One pin as ImageData, in `fill`, optionally ringed in `halo`, with `glyph` (SVG path
- *  data on a 24-unit square) stroked in white in its head, or else the hole. The ring is
- *  drawn inside the same canvas — the pin shrinks to make room — so every state shares
- *  one geometry and the tip still lands on the coordinate. */
-function pinImage(fill: string, halo: string | null, glyph?: string): ImageData {
+ *  data on a 24-unit square) stroked in white in its head, or else the hole, and `count`
+ *  in a badge when it is above 1. The ring is drawn inside the same canvas — the pin
+ *  shrinks to make room — so every state shares one geometry and the tip still lands on
+ *  the coordinate. */
+function pinImage(fill: string, halo: string | null, glyph?: string, count = 1): ImageData {
   const { width: w, height: h, stroke, hole, halo: haloWidth } = PIN_SHAPE;
+  const pad = count > 1 ? BADGE.pad : 0;
   const canvas = document.createElement("canvas");
-  canvas.width = Math.ceil(w * PIN_DPR);
-  canvas.height = Math.ceil(h * PIN_DPR);
+  canvas.width = Math.ceil((w + 2 * pad) * PIN_DPR);
+  canvas.height = Math.ceil((h + pad) * PIN_DPR);
   const ctx = canvas.getContext("2d")!;
   ctx.scale(PIN_DPR, PIN_DPR);
+  ctx.translate(pad, pad);
 
   const inset = halo ? haloWidth : 0;
   const r = (w - stroke) / 2 - inset;
@@ -222,17 +236,36 @@ function pinImage(fill: string, halo: string | null, glyph?: string): ImageData 
 
   if (glyph) {
     const size = r * GLYPH.span;
+    ctx.save();
     ctx.translate(cx - size / 2, cy - size / 2);
     ctx.scale(size / 24, size / 24);
     ctx.lineWidth = GLYPH.stroke;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.stroke(new Path2D(glyph));
+    ctx.restore();
   } else {
     ctx.beginPath();
     ctx.arc(cx, cy, r * hole, 0, Math.PI * 2);
     ctx.fillStyle = PIN.stroke;
     ctx.fill();
+  }
+
+  if (count > 1) {
+    const bx = cx + r * Math.SQRT1_2;
+    const by = cy - r * Math.SQRT1_2;
+    ctx.beginPath();
+    ctx.arc(bx, by, BADGE.radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#000000";
+    ctx.fill();
+    ctx.lineWidth = BADGE.stroke;
+    ctx.strokeStyle = PIN.stroke;
+    ctx.stroke();
+    ctx.fillStyle = PIN.stroke;
+    ctx.font = BADGE.font;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(count), bx, by + 0.5);
   }
 
   return ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -297,6 +330,7 @@ export function createMap<P extends PointProperties>(
     data = EMPTY,
     cluster = false,
     categories = null,
+    counts = null,
     onSelect = () => {},
     onClusterExpand = () => {},
     focusPoint = null,
@@ -377,14 +411,39 @@ export function createMap<P extends PointProperties>(
   const isSelected = (): ExpressionSpecification =>
     ["==", ["get", "id"], selectedId ?? NO_SELECTION];
 
-  /** The image for a pin in `state`: its category's, where it has one listed. */
+  /** The image for a pin in `state`: its category's, where it has one listed, and with
+   *  its count, where it shares its spot. A counted image is drawn the first time the map
+   *  asks for it (see styleimagemissing below), so only the counts in use are made. */
   const categoryValues = categories ? Object.keys(categories.values) : [];
   function pinIcon(state: keyof typeof PIN_IMAGE): ExpressionSpecification | string {
-    if (!categories || !categoryValues.length) return PIN_IMAGE[state];
-    const value: ExpressionSpecification = ["to-string", ["get", categories.field]];
-    return ["match", value, categoryValues, ["concat", PIN_IMAGE[state], ":", value],
-      PIN_IMAGE[state]];
+    let id: ExpressionSpecification | string = PIN_IMAGE[state];
+    if (categories && categoryValues.length) {
+      const value: ExpressionSpecification = ["to-string", ["get", categories.field]];
+      id = ["match", value, categoryValues, ["concat", PIN_IMAGE[state], ":", value],
+        PIN_IMAGE[state]];
+    }
+    if (!counts) return id;
+    const count: ExpressionSpecification = ["to-number", ["get", counts], 1];
+    return ["case", [">", count, 1], ["concat", id, "+", ["to-string", count]], id];
   }
+
+  /** A pin image by its id: a state's, a category's, and either with a count. */
+  function imageFor(id: string): ImageData | null {
+    const match = /^pin-(base|dimmed|selected)(?::(.+?))?(?:\+(\d+))?$/.exec(id);
+    if (!match) return null;
+    const state = match[1] as keyof typeof PIN_IMAGE;
+    const count = match[3] ? Number(match[3]) : 1;
+    const category = match[2] && categories ? categories.values[match[2]] : null;
+    if (!category) {
+      return pinImage(PIN[state], state === "selected" ? PIN.halo : null, undefined, count);
+    }
+    return pinImage(shades(category.color)[state], state === "selected" ? PIN.categoryHalo : null,
+      category.glyph, count);
+  }
+  map.on("styleimagemissing", (e) => {
+    const image = imageFor(e.id);
+    if (image && !map.hasImage(e.id)) map.addImage(e.id, image, { pixelRatio: PIN_DPR });
+  });
 
   // State is carried by which pin image is drawn and how big, rather than by a fill
   // colour: an icon's colour is baked into its image, so the three states are three
@@ -461,19 +520,9 @@ export function createMap<P extends PointProperties>(
   // ------------------------------------------------------------------ layers
   map.on("load", () => {
     if (destroyed) return;
-    for (const [state, id] of Object.entries(PIN_IMAGE) as [keyof typeof PIN_IMAGE, string][]) {
-      const halo = state === "selected" ? PIN.halo : null;
-      if (!map.hasImage(id)) {
-        map.addImage(id, pinImage(PIN[state], halo), { pixelRatio: PIN_DPR });
-      }
-      for (const value of categoryValues) {
-        const { color, glyph } = categories!.values[value];
-        const categoryId = `${id}:${value}`;
-        if (!map.hasImage(categoryId)) {
-          const ring = state === "selected" ? PIN.categoryHalo : null;
-          map.addImage(categoryId, pinImage(shades(color)[state], ring, glyph),
-            { pixelRatio: PIN_DPR });
-        }
+    for (const id of Object.values(PIN_IMAGE)) {
+      for (const each of [id, ...categoryValues.map((value) => `${id}:${value}`)]) {
+        if (!map.hasImage(each)) map.addImage(each, imageFor(each)!, { pixelRatio: PIN_DPR });
       }
     }
 

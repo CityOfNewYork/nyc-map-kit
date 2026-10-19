@@ -62,6 +62,9 @@ export interface SiteProperties {
   org_type?: string;
   /** A hand-corrected Google Maps query from data/overrides.json; absent on most sites. */
   maps_query?: string;
+  /** How many sites the map draws at this one's spot, where the client counts them (see
+   *  map-core's `counts`). */
+  here?: number;
 }
 
 export type Site = Feature<Point, SiteProperties>;

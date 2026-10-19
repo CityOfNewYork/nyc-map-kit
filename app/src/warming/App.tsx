@@ -209,7 +209,8 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
                                       origin={found && found.center} lang={lang} />
                         )} />
             <WarmingMap key="map" lang={lang} basemap={basemap} data={model && model.data}
-                        shown={shown} padForList={view === "map"} onReady={onMapReady}
+                        shown={shown} together={model?.atCoord}
+                        padForList={view === "map"} onReady={onMapReady}
                         onSelect={onMapSelect}
                         focusPoint={panel ? panelFocusPoint : undefined}
                         onInteract={view === "landing" ? () => leaveLanding() : undefined} />

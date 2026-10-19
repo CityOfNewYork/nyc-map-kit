@@ -3,6 +3,7 @@ import { loadBasemap } from "../../core/basemaps/index.ts";
 import type { BasemapId } from "../../core/basemaps/names.ts";
 import type { StyleSpecification } from "maplibre-gl";
 import type { MapCore, SelectInfo } from "../../core/map-core.ts";
+import { coincidentWith } from "../../logic/data.ts";
 import type { Site, SiteCollection, SiteProperties } from "../../logic/types.ts";
 import { keepClearOfList } from "../../ui/layout.ts";
 import { useMapCore } from "../../ui/useMapCore.ts";
@@ -17,6 +18,9 @@ interface WarmingMapProps {
   data: SiteCollection | null;
   /** The centers to draw, when only some of `data` should show. */
   shown?: Site[];
+  /** Each center's group of centers at its spot (see logic/data.ts). A pin whose group
+   *  has others drawn too carries how many. */
+  together?: Map<string, Site[]>;
   /** Keep the camera's centre clear of the list. It can change while the map is showing. */
   padForList?: boolean;
   /** The map exists, drawn in `style`. */
@@ -30,7 +34,8 @@ interface WarmingMapProps {
 }
 
 export function WarmingMap({
-  lang, basemap, data, shown, padForList = false, onReady, onSelect, focusPoint, onInteract,
+  lang, basemap, data, shown, together, padForList = false, onReady, onSelect, focusPoint,
+  onInteract,
 }: WarmingMapProps) {
   const { containerRef, create, destroy } = useMapCore<SiteProperties>();
   const [map, setMap] = useState<MapCore<SiteProperties> | null>(null);
@@ -48,7 +53,8 @@ export function WarmingMap({
       .then((style) => {
         if (cancelled) return;
         const created = create({
-          style: structuredClone(style), data, categories: CENTER_PINS, focusPoint,
+          style: structuredClone(style), data, categories: CENTER_PINS, counts: "here",
+          focusPoint,
           onSelect: (feature, info) => select(feature, info),
         });
         // Only the reader's own input carries an originalEvent. A wheel zoom's movestart
@@ -70,10 +76,22 @@ export function WarmingMap({
     };
   }, [lang, basemap, data, focusPoint, create, destroy]);
 
-  // Its own effect, so a filter changes the pins without making the map again.
+  // Its own effect, so a filter changes the pins without making the map again. Centers at
+  // one spot are counted among those drawn, so a filter that hides one changes the count.
+  // The count goes on the group's last pin, which the map draws on top; the group's pins
+  // can sit metres apart, and one number reads as one spot where several would not.
   useEffect(() => {
-    if (map && shown) map.setData({ type: "FeatureCollection", features: shown });
-  }, [map, shown]);
+    if (!map || !shown) return;
+    const drawn = new Set(shown.map((f) => f.properties.id));
+    const features = shown.map((f) => {
+      const group = together
+        ? coincidentWith(together, f).filter((o) => drawn.has(o.properties.id)) : [f];
+      const here = group.length;
+      return here > 1 && group[here - 1] === f
+        ? { ...f, properties: { ...f.properties, here } } : f;
+    });
+    map.setData({ type: "FeatureCollection", features });
+  }, [map, shown, together]);
 
   // Its own effect, so the list arriving or leaving changes the padding, not the map.
   useEffect(() => {
