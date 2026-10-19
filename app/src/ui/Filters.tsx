@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import type { KeyboardEvent, ReactNode, Ref } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
+import type { KeyboardEvent, ReactNode, Ref, SyntheticEvent } from "react";
 
 interface FiltersButtonProps {
   ref: Ref<HTMLButtonElement>;
@@ -49,23 +49,40 @@ interface FiltersPanelProps {
 /**
  * The panel the Filters button opens: a heading and a close button, the filters, then
  * Clear filters and "Show n locations", which closes the panel on the result. Each change
- * applies at once, to the list and the map together. Under the search box on a desktop,
- * the whole screen on a phone. Escape closes it too.
+ * applies at once, to the list and the map together. Escape closes it too.
+ *
+ * On a desktop it opens under the search box, in the column, with the map still in use.
+ * On a phone it is a modal card over the blurred map, as the site card is: showModal()
+ * keeps keyboard and screen-reader focus inside it until it closes.
  */
 export function FiltersPanel({ id, shown, onClear, onClose, children }: FiltersPanelProps) {
+  const panel = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => heading.current?.focus(), []);
 
-  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+  // A layout effect, so it is open before the browser first paints it.
+  useLayoutEffect(() => {
+    const dialog = panel.current!;
+    if (matchMedia("(min-width: 768px)").matches) dialog.show();
+    else dialog.showModal();
+    heading.current?.focus();
+    return () => dialog.close();
+  }, []);
+
+  function onKeyDown(e: KeyboardEvent<HTMLDialogElement>) {
     if (e.key === "Escape") {
       e.preventDefault();
       onClose();
     }
   }
+  // The browser's own close of a modal dialog, which some keep for a back gesture.
+  function onCancel(e: SyntheticEvent<HTMLDialogElement>) {
+    e.preventDefault();
+    onClose();
+  }
 
   return (
-    <div className="filters-panel" id={id} role="group" aria-labelledby={`${id}-title`}
-         onKeyDown={onKeyDown}>
+    <dialog className="filters-panel" id={id} ref={panel} aria-labelledby={`${id}-title`}
+            onKeyDown={onKeyDown} onCancel={onCancel}>
       <div className="filters-head">
         <h3 id={`${id}-title`} ref={heading} tabIndex={-1}>Filters</h3>
         <button type="button" className="filters-close" onClick={onClose}>
@@ -91,6 +108,46 @@ export function FiltersPanel({ id, shown, onClear, onClose, children }: FiltersP
           <span hidden={shown !== 1}>location</span>
         </button>
       </div>
+    </dialog>
+  );
+}
+
+interface FilterDisclosureProps {
+  /** The filter's name: "Location type". */
+  label: string;
+  /** How many of its options are checked, shown on the button when any are. */
+  chosen: number;
+  /** Its options: checkboxes, say. */
+  children: ReactNode;
+}
+
+/**
+ * A filter with several options, in the panel: one button that shows or hides them. A
+ * keyboard user tabs from filter to filter, and into a filter's options only after
+ * opening it; a screen reader hears the filter's name as the group's.
+ */
+export function FilterDisclosure({ label, chosen, children }: FilterDisclosureProps) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <div className="filter-disclosure">
+      <button type="button" aria-expanded={open} aria-controls={id}
+              onClick={() => setOpen((o) => !o)}>
+        <span>{label}</span>
+        {chosen > 0 && (
+          <span className="filter-chosen">
+            <span>{chosen}</span>{" "}<span className="visually-hidden">chosen</span>
+          </span>
+        )}
+        <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14">
+          <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <fieldset id={id} hidden={!open}>
+        <legend className="visually-hidden">{label}</legend>
+        {children}
+      </fieldset>
     </div>
   );
 }

@@ -41,7 +41,7 @@ import type { Found } from "../logic/places.ts";
 import type {
   Config, Model, OrgsDoc, Site, SiteCollection, SiteProperties,
 } from "../logic/types.ts";
-import { FiltersButton, FiltersPanel } from "./Filters.tsx";
+import { FilterDisclosure, FiltersButton, FiltersPanel } from "./Filters.tsx";
 import { keepClearOfList } from "./layout.ts";
 import { Panel } from "./Panel.tsx";
 import { Search } from "./Search.tsx";
@@ -237,8 +237,7 @@ export default function App({ settings }: AppProps) {
           {filtering && model && (
             <FiltersPanel id="filters" shown={shown.length} onClose={closeFilters}
                           onClear={clearTypes}>
-              <fieldset>
-                <legend>Organization type</legend>
+              <FilterDisclosure label="Organization type" chosen={types.length}>
                 {orgTypes(model.features).map(({ type }) => (
                   <label key={type} className="filter-check">
                     <input type="checkbox" checked={types.includes(type)}
@@ -246,7 +245,7 @@ export default function App({ settings }: AppProps) {
                     <span>{type}</span>
                   </label>
                 ))}
-              </fieldset>
+              </FilterDisclosure>
             </FiltersPanel>
           )}
           <Panel model={listed} list={settings.list} origin={found && found.center}

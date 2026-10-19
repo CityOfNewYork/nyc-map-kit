@@ -1,6 +1,6 @@
 import { track } from "../../logic/analytics.ts";
 import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
-import { FiltersPanel } from "../../ui/Filters.tsx";
+import { FilterDisclosure, FiltersPanel } from "../../ui/Filters.tsx";
 import { CENTER_KINDS } from "../logic/centers.ts";
 import { NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
@@ -36,8 +36,7 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
 
   return (
     <FiltersPanel id={id} shown={shown} onClear={clear} onClose={onClose}>
-      <fieldset>
-        <legend>Location type</legend>
+      <FilterDisclosure label="Location type" chosen={filters.types.length}>
         {[...CENTER_KINDS].map(([type, kind]) => (
           <label key={type} className="filter-check">
             <input type="checkbox" checked={filters.types.includes(type)}
@@ -46,7 +45,7 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
             <span>{kind.label}</span>
           </label>
         ))}
-      </fieldset>
+      </FilterDisclosure>
 
       <div className="filter-toggles">
         <FilterToggles filters={filters} set={set} />
