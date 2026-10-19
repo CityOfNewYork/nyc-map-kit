@@ -205,20 +205,32 @@ describe("the NYC basemap steps", () => {
   });
 });
 
+/** How long to wait for OTI's style before skipping, well inside the test's own limit. */
+const STYLE_WAIT_MS = 15_000;
+
 /**
  * Against OTI's live style, on purpose: what this guards against is OTI re-releasing
  * the basemap with layers renamed, which no copy checked in here would show. If the
- * style cannot be fetched at all it skips rather than fails, so an ArcGIS outage does
- * not block a deploy.
+ * style cannot be fetched, or takes longer than STYLE_WAIT_MS, it skips rather than
+ * fails, so an ArcGIS outage or a slow answer does not block a deploy.
  */
 test("every NYC basemap rule matches a layer in OTI's live style", async (ctx) => {
   let style: StyleSpecification;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    style = await loadEsriStyle(NYC_BASEMAP_STYLE);
+    style = await Promise.race([
+      loadEsriStyle(NYC_BASEMAP_STYLE),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`no answer in ${STYLE_WAIT_MS} ms`)),
+          STYLE_WAIT_MS);
+      }),
+    ]);
   } catch (err) {
     console.warn(`[test] OTI's NYC basemap style could not be fetched: ${err}`);
     ctx.skip();
     return;
+  } finally {
+    clearTimeout(timer);
   }
   expect(unmatched(styleNyc(style))).toEqual([]);
-});
+}, STYLE_WAIT_MS + 5_000);
