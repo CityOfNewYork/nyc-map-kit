@@ -399,28 +399,29 @@ export function createMap<P extends PointProperties>(
    * Pin size, as a multiple of the drawn image, interpolated over zoom.
    *
    * Unclustered points need this. At city zoom 185 full-size pins are a single red mass;
-   * at street zoom small ones are hard to hit. The city's child care finder solves it the
-   * same way — a size visual variable running ~6px at city scale to ~29px at street
-   * scale — so the curve here is theirs, flattened at the low end: their smallest pin is
-   * decorative, ours has to stay clickable, and a 44px touch target is the floor that
-   * sets.
+   * at street zoom small ones are hard to hit. From z15 in, the pins are the size of the
+   * city's child care finder's (about 35 px tall at z15). Below that they shrink less than
+   * its do, because that map groups sites into counted circles at city zoom and this one
+   * does not: at z10–11 a pin is still about 24 px tall, big enough to tap and for the
+   * glyph in its head to read.
    *
    * The zoom interpolation has to be the OUTER expression: MapLibre only accepts `zoom`
    * at the top level of a layout property, so the per-state multiplier goes inside each
    * stop rather than wrapping the whole thing.
    */
+  const SIZE_STOPS: [zoom: number, size: number][] = [[9, 0.65], [12, 0.85], [15, 1.15], [18, 1.3]];
+  function sizeCurve(at: (size: number) => number | ExpressionSpecification): ExpressionSpecification {
+    return ["interpolate", ["linear"], ["zoom"], ...SIZE_STOPS.flatMap(([z, k]) => [z, at(k)])];
+  }
   function sitesSize(): ExpressionSpecification {
     const state: number | ExpressionSpecification =
       highlighted.length ? 0.72 : ["case", isSelected(), 1.25, 1];
-    const at = (k: number): ExpressionSpecification => ["*", k, state];
-    return ["interpolate", ["linear"], ["zoom"],
-      9, at(0.55), 12, at(0.75), 15, at(1), 18, at(1.15)];
+    return sizeCurve((k) => ["*", k, state]);
   }
 
   /** The same curve for the layers that are always drawn at one state. */
   function fixedSize(factor: number): ExpressionSpecification {
-    return ["interpolate", ["linear"], ["zoom"],
-      9, 0.55 * factor, 12, 0.75 * factor, 15, 1 * factor, 18, 1.15 * factor];
+    return sizeCurve((k) => k * factor);
   }
   function sitesOpacity(): number {
     return highlighted.length ? 0.55 : 1;
