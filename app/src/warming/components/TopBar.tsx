@@ -1,9 +1,14 @@
 import { useState } from "react";
 
+/** The NYC logo, without the registration mark as the design system has it at this size
+ *  (designsystem.nyc.gov/brand/logo.html). NYC is a trademark and service mark of the
+ *  City of New York. */
+const NYC_LOGO = "M430.8,60.7l9.2-8.6v-26.1L412.5,0h-91.6l-27.5,26.1V8.7L284.2,0h-36.7l-9.2,8.7v17.4l-18.3,17.4-18.3-17.4V8.7L192.5,0h-36.7l-9.2,8.7L137.5,0h-36.7l-9.2,8.7v34.8L45.8,0H9.2L0,8.7v121.6l9.2,8.7h36.7l9.2-8.7v-34.7l45.8,43.4h36.7l9.2-8.7V60.8l45.8,43.4v26.1l9.2,8.7h36.6l9.2-8.7v-26.1l45.8-43.4v52.1l27.5,26.1h91.6l27.5-26.1v-26.1l-9.2-8.7h-45.9v8.7h-36.6v-34.8h36.6v8.6h45.9Z";
+
 /**
- * The bar across the top of the page: the NYC wordmark, which is the page's heading for a
- * screen reader ("NYC Warming Centers"), and "Official website", which opens the line
- * every nyc.gov page carries to say it is the City's.
+ * The bar across the top of the page: the NYC logo followed by "Warming Centers", the
+ * page's heading, and "Official website", which opens the line every nyc.gov page carries
+ * to say it is the City's.
  */
 export function TopBar() {
   const [open, setOpen] = useState(false);
@@ -11,8 +16,11 @@ export function TopBar() {
     <header className="site-header">
       <div className="header-bar">
         <h1>
-          <span className="nyc-logo" aria-hidden="true">NYC</span>
-          <span className="visually-hidden">NYC Warming Centers</span>
+          <svg className="nyc-logo" aria-hidden="true" viewBox="0 0 440 139">
+            <path d={NYC_LOGO} fill="currentColor" />
+          </svg>
+          <span className="visually-hidden">NYC</span>{" "}
+          <span className="site-title">Warming Centers</span>
         </h1>
         <button type="button" className="official-toggle" aria-expanded={open}
                 aria-controls="official-notice" onClick={() => setOpen((o) => !o)}>

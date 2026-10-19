@@ -9,8 +9,8 @@
   src: url("/fonts/ClashGrotesk-Semibold.woff2") format("woff2");
 }
 
-/* The top bar: the NYC wordmark and "Official website", white on black, and the
-   official-site notice that opens under it. */
+/* The top bar: the NYC logo followed by the page's name, then "Official website",
+   white on black, and the official-site notice that opens under it. */
 .site-header {
   background: var(--ink);
   color: var(--surface);
@@ -22,12 +22,19 @@
   height: 54px;
   padding: 0 20px;
 }
-.site-header h1 { margin: 0; line-height: 1; }
-.nyc-logo {
-  font-size: 30px;
-  font-weight: 900;
-  letter-spacing: -1.5px;
+.site-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  line-height: 1;
 }
+.site-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.nyc-logo { display: block; width: auto; height: 26px; }
 .official-toggle {
   display: inline-flex;
   align-items: center;
@@ -426,7 +433,8 @@
   .header-bar { gap: 14px; height: 48px; padding: 0 14px; }
   /* style.css floats the search box over the map on a phone; the hero's sits in the hero. */
   .hero .search { z-index: auto; margin: 0; }
-  .nyc-logo { font-size: 24px; }
+  .nyc-logo { height: 20px; }
+  .site-title { font-size: 1.125rem; }
   .official-toggle { font-size: 0.875rem; }
   .official-notice { padding: 10px 14px 12px; }
   .hero-inner { padding: 28px 16px; }
