@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PointerEvent } from "react";
+import type { PointerEvent, ReactNode } from "react";
 import { compareSites, metresBetween } from "../logic/data.ts";
 import type { Settings } from "../logic/params.ts";
 import type { LngLat } from "../logic/places.ts";
@@ -21,6 +21,12 @@ interface PanelProps {
   origin: LngLat | null;
   /** A row was chosen: the button that was pressed, and its site. */
   onOpen: (button: HTMLElement, feature: Site) => void;
+  /** The list's name to a screen reader: "Volunteer sites". */
+  label: string;
+  /** What the phone sheet's handle says about the list, such as how many sites it holds. */
+  summary: ReactNode;
+  /** A row's lines above the distance. The site's name and address unless given. */
+  row?: (feature: Site) => ReactNode;
 }
 
 /**
@@ -36,7 +42,7 @@ interface PanelProps {
  * `model` is null until the data has loaded; until then the panel shows its frame and
  * nothing in it responds.
  */
-export function Panel({ model, list, selectedId, origin, onOpen }: PanelProps) {
+export function Panel({ model, list, selectedId, origin, onOpen, label, summary, row }: PanelProps) {
   const [step, setStep] = useState<SheetStep>("collapsed");
   const [dragging, setDragging] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
@@ -91,34 +97,17 @@ export function Panel({ model, list, selectedId, origin, onOpen }: PanelProps) {
     setStep(frac < 0.2 ? "collapsed" : frac < 0.65 ? "half" : "full");
   }
 
-  const orgCount = model ? model.orgs.length : undefined;
-  const siteCount = model ? model.features.length : undefined;
-
   return (
     <nav className={dragging ? "panel dragging" : "panel"} id="panel" ref={panelRef}
-         aria-label="Volunteer sites">
+         aria-label={label}>
       <button className="sheet-handle" id="sheet-handle" type="button"
               aria-expanded={step !== "collapsed"} aria-controls="site-list"
               onClick={() => model && setStep((s) => NEXT_STEP[s])}
               onPointerDown={onPointerDown} onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}>
-        {/* Both the singular and the plural noun are rendered and one is hidden. Building
-            "1 site" / "2 sites" in code would hand the translation proxy a single text
-            node containing a number, and a language whose plural rules are not English's
-            cannot be served from it. Two complete alternatives, each its own text node,
-            translate correctly on their own. The spaces between the spans are the ones
-            the reader sees. */}
-        <span className="counts">
-          <span id="sheet-orgs">{orgCount}</span>{" "}
-          <span hidden={orgCount === 1}>organizations</span>{" "}
-          <span hidden={orgCount !== 1}>organization</span>{" "}
-          <span aria-hidden="true">·</span>{" "}
-          <span id="sheet-sites">{siteCount}</span>{" "}
-          <span hidden={siteCount === 1}>sites</span>{" "}
-          <span hidden={siteCount !== 1}>site</span>
-        </span>
+        <span className="counts">{summary}</span>
         <span className="chev" aria-hidden="true">{step === "full" ? "▼" : "▲"}</span>
-        <span className="visually-hidden">Show the list of sites</span>
+        <span className="visually-hidden">Show the list</span>
       </button>
 
       {/*
@@ -134,11 +123,13 @@ export function Panel({ model, list, selectedId, origin, onOpen }: PanelProps) {
         card, the same card the pin opens. The cost is 60 consecutive rows reading "Acacia
         Housing and Preservation", which is why the address is a second line rather than a
         tooltip — it is what makes each row its own place. The borough is already inside
-        the address string, so a row is two lines, not three.
+        the address string, so a row is two lines, not three. An app can give its rows
+        other lines through `row`; the distance always comes last.
 
         Sorted north to south, borough by borough — see `compareSites` in logic/data.ts —
         or, after a search, nearest first. The distance is straight-line, in its own
-        elements: the number, then "mi" for the eye and "miles" for a screen reader.
+        elements: the number, then "mi" for the eye and "miles" for a screen reader, then
+        "away".
       */}
       <ul className="site-list" id="site-list" ref={listRef}>
         {sites.map(({ feature, metres }) => {
@@ -148,13 +139,18 @@ export function Panel({ model, list, selectedId, origin, onOpen }: PanelProps) {
               <button type="button" className="site-button" data-site-id={p.id}
                       aria-current={p.id === selectedId ? "true" : undefined}
                       onClick={(e) => onOpen(e.currentTarget, feature)}>
-                <span className="name">{p.org}</span>
-                <span className="addr">{p.address}</span>
+                {row ? row(feature) : (
+                  <>
+                    <span className="name">{p.org}</span>
+                    <span className="addr">{p.address}</span>
+                  </>
+                )}
                 {metres != null && (
                   <span className="dist">
                     <span>{miles(metres)}</span>{" "}
                     <span aria-hidden="true">mi</span>
-                    <span className="visually-hidden">miles</span>
+                    <span className="visually-hidden">miles</span>{" "}
+                    <span>away</span>
                   </span>
                 )}
               </button>

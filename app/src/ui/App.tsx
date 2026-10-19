@@ -378,7 +378,8 @@ export default function App({ settings }: AppProps) {
         <div className="side">
           <Search onFound={setFound} onClear={() => setFound(null)} />
           <Panel model={model} list={settings.list} origin={found && found.center}
-                 selectedId={feature && feature.properties.id} onOpen={openFromList} />
+                 selectedId={feature && feature.properties.id} onOpen={openFromList}
+                 label="Volunteer sites" summary={<SiteCounts model={model} />} />
         </div>
         {/* map-core fills this div; React only puts the loading and error notes in it. */}
         <div className="map" id="map" tabIndex={-1} ref={main.containerRef}>
@@ -430,6 +431,32 @@ async function loadData(settings: Settings): Promise<Model> {
   }
   const cfg = config || {};
   return { config: cfg, data, ...prepareData(cfg, data, orgsDoc) };
+}
+
+// ------------------------------------------------------------------------- the list
+
+/**
+ * "75 organizations · 185 sites", on the phone sheet's handle. Both the singular and the
+ * plural noun are rendered and one is hidden. Building "1 site" / "2 sites" in code would
+ * hand the translation proxy a single text node containing a number, and a language whose
+ * plural rules are not English's cannot be served from it. Two complete alternatives,
+ * each its own text node, translate correctly on their own. The spaces between the spans
+ * are the ones the reader sees.
+ */
+function SiteCounts({ model }: { model: Model | null }) {
+  const orgCount = model ? model.orgs.length : undefined;
+  const siteCount = model ? model.features.length : undefined;
+  return (
+    <>
+      <span id="sheet-orgs">{orgCount}</span>{" "}
+      <span hidden={orgCount === 1}>organizations</span>{" "}
+      <span hidden={orgCount !== 1}>organization</span>{" "}
+      <span aria-hidden="true">·</span>{" "}
+      <span id="sheet-sites">{siteCount}</span>{" "}
+      <span hidden={siteCount === 1}>sites</span>{" "}
+      <span hidden={siteCount !== 1}>site</span>
+    </>
+  );
 }
 
 // ------------------------------------------------------------------------ live region

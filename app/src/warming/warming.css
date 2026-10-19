@@ -26,6 +26,15 @@
   min-height: 0;
 }
 
+/* ------------------------------------------------------------------ list --------- */
+
+/* The kind of center, between its name and its address. */
+.site-button .type {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
 /* ------------------------------------------------------------------ landing ------ */
 
 .landing {
