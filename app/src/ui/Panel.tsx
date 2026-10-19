@@ -36,12 +36,13 @@ interface PanelProps {
 /**
  * The list of sites: a panel floating over the map on a desktop, a bottom sheet on a phone.
  *
- * The list is a TEXT ALTERNATIVE to the map, not a finder: no filters, and nothing ever
- * hidden. It exists so that everything the map shows is reachable without a pointer and
- * without sight. After a search (ui/Search.tsx) it is ordered nearest-first from the
- * place found, with each site's distance; otherwise north to south. Focus order is title
- * -> search -> list -> map controls, which is why it sits before the map in the DOM. The
- * card is a modal and takes focus when it opens.
+ * The list is a TEXT ALTERNATIVE to the map, not a finder: it holds every site the map
+ * draws, and an app that filters the map filters this list the same way. It exists so
+ * that everything the map shows is reachable without a pointer and without sight. After
+ * a search (ui/Search.tsx) it is ordered nearest-first from the place found, with each
+ * site's distance; otherwise north to south. Focus order is title -> search -> list ->
+ * map controls, which is why it sits before the map in the DOM. The card is a modal and
+ * takes focus when it opens.
  *
  * `model` is null until the data has loaded; until then the panel shows its frame and
  * nothing in it responds.

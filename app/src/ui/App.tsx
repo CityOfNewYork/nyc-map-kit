@@ -29,17 +29,19 @@
  *    closing the card puts focus back where it came from. A search re-orders the list;
  *    it never removes a site from it.
  */
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
 import { loadBasemap } from "../core/basemaps/index.ts";
 import type { MapCore, SelectInfo } from "../core/map-core.ts";
 import { track } from "../logic/analytics.ts";
 import { nearestIds, prepareData } from "../logic/data.ts";
+import { ofTypes, orgTypes, typesFromUrl, withTypes } from "../logic/filters.ts";
 import type { Settings } from "../logic/params.ts";
 import type { Found } from "../logic/places.ts";
 import type {
   Config, Model, OrgsDoc, Site, SiteCollection, SiteProperties,
 } from "../logic/types.ts";
+import { FiltersButton, FiltersPanel } from "./Filters.tsx";
 import { keepClearOfList } from "./layout.ts";
 import { Panel } from "./Panel.tsx";
 import { Search } from "./Search.tsx";
@@ -59,6 +61,14 @@ export default function App({ settings }: AppProps) {
   const [basemap, setBasemap] = useState<StyleSpecification | null>(null);   // once fetched
   const [failed, setFailed] = useState(false);
   const [found, setFound] = useState<Found | null>(null);   // what the search box found
+  // The organization types to show; none means all. In the address, so a link carries it.
+  const [types, setTypes] = useState(() => typesFromUrl(window.location.search));
+  const [filtering, setFiltering] = useState(false);
+  const filterButton = useRef<HTMLButtonElement>(null);
+
+  // The sites the filter leaves: the list and the map show these, and only these.
+  const shown = useMemo(() => (model ? ofTypes(model.features, types) : []), [model, types]);
+  const listed = model && { ...model, features: shown };
 
   const main = useMapCore<SiteProperties>();
   const { containerRef } = main;
@@ -146,6 +156,12 @@ export default function App({ settings }: AppProps) {
     };
   }, [model, basemap, settings, main, attach, selectingFromUrl]);
 
+  // Its own effect, so a filter changes the pins without making the map again.
+  useEffect(() => {
+    const map = main.mapRef.current;
+    if (map && basemap) map.setData({ type: "FeatureCollection", features: shown });
+  }, [shown, basemap, main]);
+
   // A search result: mark it and frame it with the sites nearest it. A neighborhood or
   // ZIP code is marked at its centre too — that is the point the list's distances are
   // measured from, so the reader can see where "nearest" means. An effect rather
@@ -158,9 +174,26 @@ export default function App({ settings }: AppProps) {
       map.showPlace(null);
       return;
     }
-    map.showPlace({ center: found.center, bbox: found.bbox },
-                  nearestIds(model.features, found.center));
-  }, [found, model, basemap, main]);
+    map.showPlace({ center: found.center, bbox: found.bbox }, nearestIds(shown, found.center));
+  }, [found, model, shown, basemap, main]);
+
+  /** New types: shown at once, and written into the address so a copied link carries them. */
+  function changeTypes(next: string[]) {
+    setTypes(next);
+    history.replaceState(history.state, "", withTypes(new URL(window.location.href), next));
+  }
+  function toggleType(type: string, on: boolean) {
+    changeTypes(on ? [...types, type] : types.filter((t) => t !== type));
+    track("map_filter", { filter: "type", value: `${type}:${on}` });
+  }
+  function clearTypes() {
+    changeTypes([]);
+    track("map_filter", { filter: "clear" });
+  }
+  function closeFilters() {
+    setFiltering(false);
+    filterButton.current?.focus();
+  }
 
   // ------------------------------------------------------------------------- render
 
@@ -191,13 +224,35 @@ export default function App({ settings }: AppProps) {
       <a className="skip-link" href="#map">Skip the list and go to the map</a>
 
       <div className="stage" id="stage" data-list={model ? settings.list : "on"}>
-        {/* The search box above the list, one column on a desktop. On a phone the list is
-            a bottom sheet and this wrapper drops out of the layout (see style.css). */}
+        {/* The search box and the Filters button above the list, one column on a desktop.
+            On a phone the list is a bottom sheet and this wrapper drops out of the layout
+            (see style.css). */}
         <div className="side">
-          <Search onFound={setFound} onClear={() => setFound(null)} />
-          <Panel model={model} list={settings.list} origin={found && found.center}
+          <div className="search-row">
+            <Search onFound={setFound} onClear={() => setFound(null)} />
+            <FiltersButton ref={filterButton} controls="filters" open={filtering}
+                           active={types.length ? 1 : 0}
+                           onClick={() => (filtering ? closeFilters() : setFiltering(true))} />
+          </div>
+          {filtering && model && (
+            <FiltersPanel id="filters" shown={shown.length} onClose={closeFilters}
+                          onClear={clearTypes}>
+              <fieldset>
+                <legend>Organization type</legend>
+                {orgTypes(model.features).map(({ type }) => (
+                  <label key={type} className="filter-check">
+                    <input type="checkbox" checked={types.includes(type)}
+                           onChange={(e) => toggleType(type, e.target.checked)} />
+                    <span>{type}</span>
+                  </label>
+                ))}
+              </fieldset>
+            </FiltersPanel>
+          )}
+          <Panel model={listed} list={settings.list} origin={found && found.center}
                  selectedId={feature && feature.properties.id} onOpen={card.openFromList}
-                 label="Volunteer sites" summary={<SiteCounts model={model} />} />
+                 label="Volunteer sites" summary={<SiteCounts sites={listed && shown} />}
+                 row={siteRow} />
         </div>
         {/* map-core fills this div; React only puts the loading and error notes in it. */}
         <div className="map" id="map" tabIndex={-1} ref={containerRef}>
@@ -253,16 +308,16 @@ async function loadData(settings: Settings): Promise<Model> {
 // ------------------------------------------------------------------------- the list
 
 /**
- * "75 organizations · 185 sites", on the phone sheet's handle. Both the singular and the
- * plural noun are rendered and one is hidden. Building "1 site" / "2 sites" in code would
- * hand the translation proxy a single text node containing a number, and a language whose
- * plural rules are not English's cannot be served from it. Two complete alternatives,
- * each its own text node, translate correctly on their own. The spaces between the spans
- * are the ones the reader sees.
+ * "75 organizations · 185 sites", or as many as the filter leaves, on the phone sheet's
+ * handle. Both the singular and the plural noun are rendered and one is hidden. Building
+ * "1 site" / "2 sites" in code would hand the translation proxy a single text node
+ * containing a number, and a language whose plural rules are not English's cannot be
+ * served from it. Two complete alternatives, each its own text node, translate correctly
+ * on their own. The spaces between the spans are the ones the reader sees.
  */
-function SiteCounts({ model }: { model: Model | null }) {
-  const orgCount = model ? model.orgs.length : undefined;
-  const siteCount = model ? model.features.length : undefined;
+function SiteCounts({ sites }: { sites: Site[] | null }) {
+  const orgCount = sites ? new Set(sites.map((f) => f.properties.org_id)).size : undefined;
+  const siteCount = sites ? sites.length : undefined;
   return (
     <>
       <span id="sheet-orgs">{orgCount}</span>{" "}
@@ -272,6 +327,18 @@ function SiteCounts({ model }: { model: Model | null }) {
       <span id="sheet-sites">{siteCount}</span>{" "}
       <span hidden={siteCount === 1}>sites</span>{" "}
       <span hidden={siteCount !== 1}>site</span>
+    </>
+  );
+}
+
+/** A row's lines: the organization's name, its type, and the site's address. */
+function siteRow(feature: Site) {
+  const p = feature.properties;
+  return (
+    <>
+      <span className="name">{p.org}</span>
+      {p.org_type && <span className="type">{p.org_type}</span>}
+      <span className="addr">{p.address}</span>
     </>
   );
 }
