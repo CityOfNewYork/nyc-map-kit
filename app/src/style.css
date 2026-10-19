@@ -228,6 +228,7 @@ body {
 .search-input {
   flex: 1;
   min-width: 0;
+  width: 0;                /* not the default 20 characters, which set a floor on the page's width */
   padding: 0 4px 0 16px;
   border: 0;
   background: none;
