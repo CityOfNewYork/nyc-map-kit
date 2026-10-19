@@ -3,7 +3,6 @@ import { loadBasemap } from "../../core/basemaps/index.ts";
 import type { BasemapId } from "../../core/basemaps/names.ts";
 import type { StyleSpecification } from "maplibre-gl";
 import type { MapCore, SelectInfo } from "../../core/map-core.ts";
-import { coincidentWith } from "../../logic/data.ts";
 import type { Site, SiteCollection, SiteProperties } from "../../logic/types.ts";
 import { keepClearOfList } from "../../ui/layout.ts";
 import { useMapCore } from "../../ui/useMapCore.ts";
@@ -18,9 +17,6 @@ interface WarmingMapProps {
   data: SiteCollection | null;
   /** The centers to draw, when only some of `data` should show. */
   shown?: Site[];
-  /** Each center's group of centers at its spot (see logic/data.ts). A pin whose group
-   *  has others drawn too carries how many. */
-  together?: Map<string, Site[]>;
   /** Keep the camera's centre clear of the list. It can change while the map is showing. */
   padForList?: boolean;
   /** The map exists, drawn in `style`. */
@@ -34,8 +30,7 @@ interface WarmingMapProps {
 }
 
 export function WarmingMap({
-  lang, basemap, data, shown, together, padForList = false, onReady, onSelect, focusPoint,
-  onInteract,
+  lang, basemap, data, shown, padForList = false, onReady, onSelect, focusPoint, onInteract,
 }: WarmingMapProps) {
   const { containerRef, create, destroy } = useMapCore<SiteProperties>();
   const [map, setMap] = useState<MapCore<SiteProperties> | null>(null);
@@ -76,22 +71,26 @@ export function WarmingMap({
     };
   }, [lang, basemap, data, focusPoint, create, destroy]);
 
-  // Its own effect, so a filter changes the pins without making the map again. Centers at
-  // one spot are counted among those drawn, so a filter that hides one changes the count.
-  // The count goes on the group's last pin, which the map draws on top; the group's pins
-  // can sit metres apart, and one number reads as one spot where several would not.
+  // Its own effect, so a filter changes the pins without making the map again. Centers on
+  // the very same coordinates are counted among those drawn, so a filter that hides one
+  // changes the count. The count goes on the last of them, which the map draws on top.
+  // Centers merely close by share the card's stepper (logic/data.ts) but no number: their
+  // pins come apart as the reader zooms in, and a number on one of two would mislead.
   useEffect(() => {
     if (!map || !shown) return;
-    const drawn = new Set(shown.map((f) => f.properties.id));
+    const atSpot = new Map<string, Site[]>();
+    for (const f of shown) {
+      const spot = f.geometry.coordinates.join();
+      atSpot.set(spot, [...(atSpot.get(spot) ?? []), f]);
+    }
     const features = shown.map((f) => {
-      const group = together
-        ? coincidentWith(together, f).filter((o) => drawn.has(o.properties.id)) : [f];
+      const group = atSpot.get(f.geometry.coordinates.join())!;
       const here = group.length;
       return here > 1 && group[here - 1] === f
         ? { ...f, properties: { ...f.properties, here } } : f;
     });
     map.setData({ type: "FeatureCollection", features });
-  }, [map, shown, together]);
+  }, [map, shown]);
 
   // Its own effect, so the list arriving or leaving changes the padding, not the map.
   useEffect(() => {
