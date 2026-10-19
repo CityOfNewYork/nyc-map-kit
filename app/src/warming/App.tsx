@@ -8,6 +8,7 @@ import type { Model, Site, SiteCollection, SiteProperties } from "../logic/types
 import { SiteDialog } from "../ui/SiteDialog.tsx";
 import { useSiteCard } from "../ui/useSiteCard.ts";
 import { CenterCard } from "./components/CenterCard.tsx";
+import { TopBar } from "./components/TopBar.tsx";
 import { useNycMinute } from "./components/useNycMinute.ts";
 import { WarmingMap } from "./components/WarmingMap.tsx";
 import { CENTER_CONFIG, CENTER_PINS } from "./logic/centers.ts";
@@ -178,9 +179,7 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
     <>
       {/* Outside .site-main, which is positioned, so style.css can park it off-screen. */}
       {view === "map" && <a className="skip-link" href="#map">Skip the list and go to the map</a>}
-      <header className="site-header">
-        <h1>NYC Warming Centers</h1>
-      </header>
+      <TopBar />
       <main className="site-main">
         {failed ? (
           <p className="load-error"><span>The warming center data could not load.</span></p>
