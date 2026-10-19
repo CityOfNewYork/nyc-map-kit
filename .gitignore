@@ -6,6 +6,9 @@ node_modules/
 data/*.pmtiles
 # The Protomaps basemap, cut by build/protomaps.sh (about 150 MB)
 app/public/*.pmtiles
+# Clash Grotesk, fetched by build/clash-grotesk.sh; its license allows self-hosting, not
+# redistribution
+app/public/fonts/ClashGrotesk-*.woff2
 
 # Raw source exports carry organization contact emails; the sanitized CSV is the committed source
 data/*.kml

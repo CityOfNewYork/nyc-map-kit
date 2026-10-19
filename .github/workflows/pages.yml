@@ -46,6 +46,11 @@ jobs:
           tar -xzf "$RUNNER_TEMP/pmtiles.tar.gz" -C "$RUNNER_TEMP" pmtiles
           build_name=$(PATH="$RUNNER_TEMP:$PATH" build/protomaps.sh)
           echo "Protomaps basemap cut from daily build $build_name" >> "$GITHUB_STEP_SUMMARY"
+      # Clash Grotesk may be self-hosted but not committed (build/clash-grotesk.sh). Pull
+      # requests build without it, and the warming hero's heading falls back to Noto Sans.
+      - name: Fetch Clash Grotesk
+        if: github.ref == 'refs/heads/main'
+        run: build/clash-grotesk.sh
       # The Geoclient key for the search box. It ends up in the published bundle, readable
       # by anyone; the secret only keeps it out of git. Without it the search box still
       # finds neighborhoods, boroughs and ZIP codes.

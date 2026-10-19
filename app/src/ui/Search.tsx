@@ -169,9 +169,9 @@ export function Search({ onFound, onClear }: SearchProps) {
           </button>
         )}
         <button type="submit" className="search-submit">
-          <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20">
-            <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="2" />
-            <path d="M12.5 12.5L17 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <svg aria-hidden="true" viewBox="0 0 20 20" width="22" height="22">
+            <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" strokeWidth="2.2" />
+            <path d="M13 13l4 4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
           </svg>
           <span className="visually-hidden">Search</span>
         </button>

@@ -1,5 +1,14 @@
 /* Warming-specific layout on top of the kit's style.css. */
 
+/* The hero's heading face. Not in git: build/clash-grotesk.sh fetches the file, and CI
+   runs it before each deploy. Without it the heading falls back to Noto Sans. */
+@font-face {
+  font-family: "Clash Grotesk";
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/ClashGrotesk-Semibold.woff2") format("woff2");
+}
+
 .site-header {
   padding: 12px 16px;
   background: var(--ink);
@@ -40,8 +49,9 @@
 }
 .hero h2 {
   margin: 0;
+  font-family: "Clash Grotesk", var(--font);
   font-size: clamp(2rem, 1rem + 3vw, 3.25rem);
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.5px;
 }
@@ -49,6 +59,7 @@
   max-width: 760px;
   margin: 14px 0 0;
   font-size: 1.125rem;
+  font-weight: 400;
 }
 .hero a {
   color: var(--surface);
@@ -76,8 +87,10 @@
   background: none;
   overflow: visible;
 }
+/* A grey outline around the whole bar, button included. */
 .hero .search-bar {
   height: 54px;
+  border: 2px solid var(--ink-muted);
   border-radius: var(--radius-pill);
   background: var(--surface);
   overflow: hidden;
@@ -88,7 +101,7 @@
 }
 .hero .search-label {
   left: 20px;
-  line-height: 54px;
+  line-height: 50px;   /* the bar's height inside its outline */
   font-size: 1.125rem;
 }
 .hero .search-submit {
