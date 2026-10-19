@@ -353,6 +353,8 @@
 }
 .filter-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--primary); }
 .filter-check .category-icon { width: 20px; height: 20px; }
+/* Open now, wheelchair access and pets, as the bar shows them, wrapping as they need. */
+.filter-toggles { display: flex; flex-wrap: wrap; gap: 8px; }
 .filters-foot {
   display: flex;
   align-items: center;

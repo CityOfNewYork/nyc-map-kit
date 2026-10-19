@@ -4,7 +4,7 @@ import { track } from "../../logic/analytics.ts";
 import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { CENTER_KINDS } from "../logic/centers.ts";
 import type { Filters } from "../logic/filters.ts";
-import { PawIcon, WheelchairIcon } from "./FeatureIcons.tsx";
+import { ClockIcon, PawIcon, WheelchairIcon } from "./FeatureIcons.tsx";
 
 interface FilterBarProps {
   filters: Filters;
@@ -44,9 +44,23 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         </fieldset>
       </Dropdown>
 
+      <FilterToggles filters={filters} set={set} />
+    </div>
+  );
+}
+
+/** Open now, wheelchair access and pets: each a toggle with its icon, tinted while it is
+ *  on. The bar and FilterPanel both show them. */
+export function FilterToggles({ filters, set }: {
+  filters: Filters;
+  set: (next: Partial<Filters>, filter: string, value: boolean) => void;
+}) {
+  return (
+    <>
       <label className={filters.openNow ? "pill check-pill on" : "pill check-pill"}>
         <input type="checkbox" checked={filters.openNow}
                onChange={(e) => set({ openNow: e.target.checked }, "open", e.target.checked)} />
+        <ClockIcon />
         <span>Open now</span>
       </label>
       <label className={filters.wheelchair ? "pill check-pill on" : "pill check-pill"}>
@@ -61,7 +75,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         <PawIcon />
         <span>Pets allowed</span>
       </label>
-    </div>
+    </>
   );
 }
 

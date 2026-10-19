@@ -5,6 +5,7 @@ import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { CENTER_KINDS } from "../logic/centers.ts";
 import { NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
+import { FilterToggles } from "./FilterBar.tsx";
 
 interface FilterPanelProps {
   id: string;
@@ -18,9 +19,10 @@ interface FilterPanelProps {
 
 /**
  * The filters, opened from the Filters button beside the search box: the kinds of center,
- * open now, wheelchair access and pets. Each change applies at once, to the list and the
- * map together; "Show n locations" closes the panel on the result. Under the search box
- * on a desktop, the whole screen on a phone. Escape closes it too.
+ * then open now, wheelchair access and pets as the same toggles the bar shows. Each
+ * change applies at once, to the list and the map together; "Show n locations" closes
+ * the panel on the result. Under the search box on a desktop, the whole screen on a
+ * phone. Escape closes it too.
  */
 export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPanelProps) {
   const heading = useRef<HTMLHeadingElement>(null);
@@ -67,28 +69,9 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
         ))}
       </fieldset>
 
-      <fieldset>
-        <legend>When</legend>
-        <label className="filter-check">
-          <input type="checkbox" checked={filters.openNow}
-                 onChange={(e) => set({ openNow: e.target.checked }, "open", e.target.checked)} />
-          <span>Open now</span>
-        </label>
-      </fieldset>
-
-      <fieldset>
-        <legend>Features</legend>
-        <label className="filter-check">
-          <input type="checkbox" checked={filters.wheelchair}
-                 onChange={(e) => set({ wheelchair: e.target.checked }, "wheelchair", e.target.checked)} />
-          <span>Wheelchair accessible</span>
-        </label>
-        <label className="filter-check">
-          <input type="checkbox" checked={filters.pets}
-                 onChange={(e) => set({ pets: e.target.checked }, "pets", e.target.checked)} />
-          <span>Pets allowed</span>
-        </label>
-      </fieldset>
+      <div className="filter-toggles">
+        <FilterToggles filters={filters} set={set} />
+      </div>
 
       <div className="filters-foot">
         <button type="button" className="filters-clear"
