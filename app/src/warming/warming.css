@@ -121,8 +121,25 @@
   .stage .search-status:has(> .search-found) { padding: 0; border-top: 0; }
 }
 @media (max-width: 767px) {
-  .list-head { display: none; }
+  .list-head { padding: 12px 14px 0; border-bottom: 0; }
+  .list-head > :not(.notice) { display: none; }
 }
+
+/* That a Code Blue is in effect: pale blue, with the snowflake in the primary blue. */
+.notice {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 1px solid #b5dbff;
+  border-radius: 10px;
+  background: #e9f4ff;
+  color: var(--ink);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+.notice svg { flex: none; color: var(--primary); }
+.notice p { margin: 0; }
 
 /* The kind of center, between its name and its address. */
 .site-button .type {

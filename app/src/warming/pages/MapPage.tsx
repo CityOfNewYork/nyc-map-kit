@@ -4,6 +4,7 @@ import type { Model, Site } from "../../logic/types.ts";
 import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { Panel } from "../../ui/Panel.tsx";
 import { PlaceName, Search } from "../../ui/Search.tsx";
+import { CodeBlueNotice } from "../components/CodeBlueNotice.tsx";
 import { FilterPanel } from "../components/FilterPanel.tsx";
 import { MapKey } from "../components/MapKey.tsx";
 import { OpenStatusLine } from "../components/OpenStatusLine.tsx";
@@ -90,12 +91,13 @@ export function MapPage({
 }
 
 /**
- * Above the rows on a desktop: how many centers there are, or with filters on how many of
- * how many, and after a search the place they are ordered from. The count is a live
- * region, so a screen reader hears what a filter left. On a desktop the place line stands
- * in for the search box's own (see warming.css), so it is a live region too, and a screen
- * reader hears it without leaving the input. On a phone the sheet's handle carries the
- * count and the search box keeps its line, so this one is hidden.
+ * Above the rows: the Code Blue notice, then on a desktop how many centers there are, or
+ * with filters on how many of how many, and after a search the place they are ordered
+ * from. The count is a live region, so a screen reader hears what a filter left. On a
+ * desktop the place line stands in for the search box's own (see warming.css), so it is a
+ * live region too, and a screen reader hears it without leaving the input. On a phone the
+ * sheet's handle carries the count and the search box keeps its line, so only the notice
+ * shows.
  */
 function ListHead({ total, shown, filtered, found, onClearFilters }: {
   total: number | null; shown: number; filtered: boolean; found: Found | null;
@@ -103,6 +105,7 @@ function ListHead({ total, shown, filtered, found, onClearFilters }: {
 }) {
   return (
     <>
+      <CodeBlueNotice />
       <p className="list-count" role="status">
         {filtered ? (
           <>
