@@ -144,14 +144,15 @@ body {
 
 /* ------------------------------------------------------------------ frame -------- */
 
-/* The strip above the block that says what it is (see index.html): one line on a desktop,
-   two on a phone. */
+/* The strip above the block that says what it is (see index.html and warming.html): one
+   line on a desktop, more on a phone. Light orange (the design system's orange 90), so it
+   stands out from the page; black text on it is 16.7:1, the link 5.6:1. */
 .prototype-note {
   flex: none;
   margin: 0;
   padding: 6px 12px;
-  border-bottom: 1px solid #d9c79a;
-  background: #fbf7ec;
+  border-bottom: 1px solid #fba95b;
+  background: #ffe0c2;
   font-size: 0.875rem;
   line-height: 1.45;
 }
