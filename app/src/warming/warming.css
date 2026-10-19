@@ -79,6 +79,152 @@
   .stage > .site-dialog.side-panel { left: calc(10px + 360px + 10px); }
 }
 
+/* ------------------------------------------------------------------ filters ------ */
+
+/* The search box with the round Filters button beside it: one toolbar. */
+.search-row {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.search-row .search { flex: 1; min-width: 0; }
+.filters-button {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--search-h);
+  height: var(--search-h);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.filters-button:hover { background: var(--hover); }
+.filters-button[aria-expanded="true"] { background: var(--selected); }
+/* How many filters are on, as a badge on the button's corner. */
+.filters-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--surface);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* The filters: a card under the toolbar, pushing the list down. */
+.filters-panel {
+  flex: none;
+  display: grid;
+  gap: 14px;
+  padding: 14px 16px 16px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+.filters-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.filters-head h3 { margin: 0; font-size: 1.125rem; }
+.filters-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+}
+.filters-panel fieldset {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.filters-panel legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  cursor: pointer;
+}
+.filter-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--primary); }
+.filter-check .category-icon { width: 20px; height: 20px; }
+.filters-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.filters-clear {
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.filters-show {
+  min-height: var(--tap);
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--surface);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.filters-show:hover { background: var(--link-hover); }
+.filters-show:focus-visible { outline-color: var(--ink); }
+.list-empty { margin-top: 6px; font-size: 0.875rem; color: var(--ink); }
+
+@media (max-width: 767px) {
+  /* The toolbar takes the search box's place across the top of the map. */
+  .search-row {
+    position: relative;
+    z-index: 5;
+    grid-area: 1 / 1;
+    align-self: start;
+    margin: 10px calc(10px + 44px + 10px) 10px 10px;
+  }
+  .search-row .search { margin: 0; }
+  /* The filters fill the screen, as an app's settings would. */
+  .filters-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    align-content: start;
+    overflow-y: auto;
+    border-radius: 0;
+  }
+}
+
 /* ------------------------------------------------------------------ map key ------ */
 
 /* Top right, left of the zoom buttons and level with them, on the same white card. */

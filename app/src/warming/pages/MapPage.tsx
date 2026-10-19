@@ -1,15 +1,23 @@
+import { useRef, useState } from "react";
 import type { Found } from "../../logic/places.ts";
 import type { Model, Site } from "../../logic/types.ts";
 import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { Panel } from "../../ui/Panel.tsx";
 import { PlaceName, Search } from "../../ui/Search.tsx";
+import { FilterPanel } from "../components/FilterPanel.tsx";
 import { MapKey } from "../components/MapKey.tsx";
 import { OpenStatusLine } from "../components/OpenStatusLine.tsx";
 import { useNycMinute } from "../components/useNycMinute.ts";
 import { centerKind, centerStatus } from "../logic/centers.ts";
+import { activeFilters, NO_FILTERS } from "../logic/filters.ts";
+import type { Filters } from "../logic/filters.ts";
 
 interface MapPageProps {
   model: Model | null;
+  /** The centers the filters leave, in the model's order. */
+  shown: Site[];
+  filters: Filters;
+  onFilters: (filters: Filters) => void;
   found: Found | null;
   selectedId: string | null;
   onFound: (place: Found) => void;
@@ -18,20 +26,61 @@ interface MapPageProps {
   onOpen: (button: HTMLElement, feature: Site) => void;
 }
 
-/** The map view's own part: the search box and the list. The map beside them is App's,
- *  shared with the landing view. */
-export function MapPage({ model, found, selectedId, onFound, onClear, onOpen }: MapPageProps) {
+/** The map view's own part: the search box with the Filters button beside it, and the
+ *  list. The map beside them is App's, shared with the landing view. */
+export function MapPage({
+  model, shown, filters, onFilters, found, selectedId, onFound, onClear, onOpen,
+}: MapPageProps) {
   const minute = useNycMinute();
+  const [filtering, setFiltering] = useState(false);
+  const filterButton = useRef<HTMLButtonElement>(null);
+  const active = activeFilters(filters);
+  // The list shows only what the filters leave; the counts say how many of how many.
+  const listed = model && { ...model, features: shown };
+
+  function closeFilters() {
+    setFiltering(false);
+    filterButton.current?.focus();
+  }
+
   return (
     <>
       <h2 className="visually-hidden" id="map-heading" tabIndex={-1}>Map of warming centers</h2>
       <div className="side">
-        <Search onFound={onFound} onClear={onClear} />
-        <Panel model={model} list="on" origin={found && found.center} selectedId={selectedId}
+        <div className="search-row">
+          <Search onFound={onFound} onClear={onClear} />
+          <button type="button" className="filters-button" ref={filterButton}
+                  aria-expanded={filtering} aria-controls="filters"
+                  onClick={() => (filtering ? closeFilters() : setFiltering(true))}>
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22">
+              <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+                <circle cx="16" cy="7" r="2" />
+                <circle cx="10" cy="17" r="2" />
+              </g>
+            </svg>
+            <span className="visually-hidden">Filters</span>
+            {active > 0 && (
+              <span className="filters-count">
+                <span>{active}</span>
+                <span className="visually-hidden">on</span>
+              </span>
+            )}
+          </button>
+        </div>
+        {filtering && (
+          <FilterPanel id="filters" filters={filters} shown={shown.length}
+                       onChange={onFilters} onClose={closeFilters} />
+        )}
+        <Panel model={listed} list="on" origin={found && found.center} selectedId={selectedId}
                onOpen={onOpen}
-               label="Warming centers" summary={<CenterCount model={model} />}
+               label="Warming centers" summary={<CenterCount count={listed && shown.length} />}
                row={(feature) => centerRow(feature, minute)} marker={centerMarker}
-               header={<ListHead model={model} found={found} />} />
+               header={(
+                 <ListHead total={model && model.features.length} shown={shown.length}
+                           filtered={active > 0} found={found}
+                           onClearFilters={() => onFilters(NO_FILTERS)} />
+               )} />
       </div>
       <MapKey />
     </>
@@ -39,16 +88,35 @@ export function MapPage({ model, found, selectedId, onFound, onClear, onOpen }: 
 }
 
 /**
- * Above the rows on a desktop: how many centers there are and, after a search, the place
- * they are ordered from. On a desktop this line stands in for the search box's own (see
- * warming.css), so it is a live region too, and a screen reader hears it without leaving
- * the input. On a phone the sheet's handle carries the count and the search box keeps its
- * line, so this one is hidden.
+ * Above the rows on a desktop: how many centers there are, or with filters on how many of
+ * how many, and after a search the place they are ordered from. The count is a live
+ * region, so a screen reader hears what a filter left. On a desktop the place line stands
+ * in for the search box's own (see warming.css), so it is a live region too, and a screen
+ * reader hears it without leaving the input. On a phone the sheet's handle carries the
+ * count and the search box keeps its line, so this one is hidden.
  */
-function ListHead({ model, found }: { model: Model | null; found: Found | null }) {
+function ListHead({ total, shown, filtered, found, onClearFilters }: {
+  total: number | null; shown: number; filtered: boolean; found: Found | null;
+  onClearFilters: () => void;
+}) {
   return (
     <>
-      <p className="list-count"><CenterCount model={model} /></p>
+      <p className="list-count" role="status">
+        {filtered ? (
+          <>
+            <span>Showing</span>{" "}<span>{shown}</span>{" "}<span>of</span>{" "}
+            <span>{total}</span>{" "}<span>locations</span>
+          </>
+        ) : <CenterCount count={total} />}
+      </p>
+      {filtered && shown === 0 && (
+        <p className="list-empty">
+          <span>No locations match your filters.</span>{" "}
+          <button type="button" className="filters-clear" onClick={onClearFilters}>
+            <span>Clear filters</span>
+          </button>
+        </p>
+      )}
       <div className="list-closest" role="status">
         {found && <p><span>Closest to</span>{" "}<PlaceName place={found} inline /></p>}
       </div>
@@ -81,11 +149,10 @@ function centerMarker(feature: Site) {
 
 /** "26 locations". The singular and the plural are each their own text node, as in the
  *  block's counts (see SiteCounts in ui/App.tsx). */
-function CenterCount({ model }: { model: Model | null }) {
-  const count = model ? model.features.length : undefined;
+function CenterCount({ count }: { count: number | null | undefined }) {
   return (
     <>
-      <span>{count}</span>{" "}
+      <span>{count ?? undefined}</span>{" "}
       <span hidden={count === 1}>locations</span>{" "}
       <span hidden={count !== 1}>location</span>
     </>

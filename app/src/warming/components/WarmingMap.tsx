@@ -15,6 +15,8 @@ interface WarmingMapProps {
   lang: string;
   basemap: BasemapId;
   data: SiteCollection | null;
+  /** The centers to draw, when only some of `data` should show. */
+  shown?: Site[];
   /** Keep the camera's centre clear of the list. It can change while the map is showing. */
   padForList?: boolean;
   /** The map exists, drawn in `style`. */
@@ -28,7 +30,7 @@ interface WarmingMapProps {
 }
 
 export function WarmingMap({
-  lang, basemap, data, padForList = false, onReady, onSelect, focusPoint, onInteract,
+  lang, basemap, data, shown, padForList = false, onReady, onSelect, focusPoint, onInteract,
 }: WarmingMapProps) {
   const { containerRef, create, destroy } = useMapCore<SiteProperties>();
   const [map, setMap] = useState<MapCore<SiteProperties> | null>(null);
@@ -67,6 +69,11 @@ export function WarmingMap({
       destroy();
     };
   }, [lang, basemap, data, focusPoint, create, destroy]);
+
+  // Its own effect, so a filter changes the pins without making the map again.
+  useEffect(() => {
+    if (map && shown) map.setData({ type: "FeatureCollection", features: shown });
+  }, [map, shown]);
 
   // Its own effect, so the list arriving or leaving changes the padding, not the map.
   useEffect(() => {
