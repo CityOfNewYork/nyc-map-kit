@@ -29,6 +29,8 @@ interface PanelProps {
   row?: (feature: Site) => ReactNode;
   /** Shown above the rows, such as a count of the sites. Nothing unless given. */
   header?: ReactNode;
+  /** A mark before a row's lines, such as an icon of the site's kind. None unless given. */
+  marker?: (feature: Site) => ReactNode;
 }
 
 /**
@@ -45,7 +47,7 @@ interface PanelProps {
  * nothing in it responds.
  */
 export function Panel({
-  model, list, selectedId, origin, onOpen, label, summary, row, header,
+  model, list, selectedId, origin, onOpen, label, summary, row, header, marker,
 }: PanelProps) {
   const [step, setStep] = useState<SheetStep>("collapsed");
   const [dragging, setDragging] = useState(false);
@@ -140,25 +142,36 @@ export function Panel({
       <ul className="site-list" id="site-list" ref={listRef}>
         {sites.map(({ feature, metres }) => {
           const p = feature.properties;
+          const lines = (
+            <>
+              {row ? row(feature) : (
+                <>
+                  <span className="name">{p.org}</span>
+                  <span className="addr">{p.address}</span>
+                </>
+              )}
+              {metres != null && (
+                <span className="dist">
+                  <span>{miles(metres)}</span>{" "}
+                  <span aria-hidden="true">mi</span>
+                  <span className="visually-hidden">miles</span>{" "}
+                  <span>away</span>
+                </span>
+              )}
+            </>
+          );
           return (
             <li key={p.id}>
-              <button type="button" className="site-button" data-site-id={p.id}
+              <button type="button" className={marker ? "site-button marked" : "site-button"}
+                      data-site-id={p.id}
                       aria-current={p.id === selectedId ? "true" : undefined}
                       onClick={(e) => onOpen(e.currentTarget, feature)}>
-                {row ? row(feature) : (
+                {marker ? (
                   <>
-                    <span className="name">{p.org}</span>
-                    <span className="addr">{p.address}</span>
+                    <span className="site-marker">{marker(feature)}</span>
+                    <span className="site-lines">{lines}</span>
                   </>
-                )}
-                {metres != null && (
-                  <span className="dist">
-                    <span>{miles(metres)}</span>{" "}
-                    <span aria-hidden="true">mi</span>
-                    <span className="visually-hidden">miles</span>{" "}
-                    <span>away</span>
-                  </span>
-                )}
+                ) : lines}
               </button>
             </li>
           );

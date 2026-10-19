@@ -350,6 +350,16 @@ body {
 .site-button:hover .name { text-decoration: underline; }
 /* Inside the row: the list scrolls, and a ring outside the row would be clipped. */
 .site-button:focus-visible { outline-offset: -4px; }
+/* With a mark, such as an icon, beside the lines rather than above them. */
+.site-button.marked { flex-direction: row; gap: 12px; }
+.site-marker { flex: none; display: flex; }
+.site-lines {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+}
 .site-button .name { font-size: 1.0625rem; font-weight: 700; line-height: 1.25; }
 .site-button .addr { font-size: 0.875rem; }
 .site-button .dist { font-size: 0.875rem; font-weight: 700; }

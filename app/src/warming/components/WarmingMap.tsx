@@ -5,6 +5,10 @@ import type { MapCore } from "../../core/map-core.ts";
 import type { Site, SiteCollection, SiteProperties } from "../../logic/types.ts";
 import { keepClearOfList } from "../../ui/layout.ts";
 import { useMapCore } from "../../ui/useMapCore.ts";
+import { CENTER_PINS } from "../logic/centers.ts";
+
+/** The list's width on a desktop: .side in warming.css. */
+const LIST_WIDTH = 360;
 
 interface WarmingMapProps {
   lang: string;
@@ -35,7 +39,9 @@ export function WarmingMap({
     loadBasemap(basemap, lang)
       .then((style) => {
         if (cancelled) return;
-        const created = create({ style, data, onSelect: (feature) => select(feature) });
+        const created = create({
+          style, data, categories: CENTER_PINS, onSelect: (feature) => select(feature),
+        });
         // Only the reader's own input carries an originalEvent. A wheel zoom's movestart
         // carries none, so the wheel is heard on its own.
         created.raw.on("click", () => interact());
@@ -58,7 +64,7 @@ export function WarmingMap({
   // Its own effect, so the list arriving or leaving changes the padding, not the map.
   useEffect(() => {
     if (!map || !padForList) return;
-    return keepClearOfList(map);
+    return keepClearOfList(map, LIST_WIDTH);
   }, [map, padForList]);
 
   return (

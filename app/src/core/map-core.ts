@@ -22,6 +22,7 @@
  *     onClusterExpand(count),
  *     focusPoint,                    // optional () => [x, y]: where a selected pin lands,
  *                                    // in container pixels. Default: the container's centre.
+ *     categories,                    // optional: pins coloured by one property (PinCategories)
  *   });
  *
  *   map.setData(geojson);            // replace the data
@@ -100,11 +101,25 @@ export interface SelectInfo {
   via: "map" | "api";
 }
 
+/**
+ * Pins in a colour of their own, with a glyph in the head, by the value of one property.
+ * The core knows nothing of what the values mean: the client names the property and gives
+ * each value its colour and glyph. A value not listed, or a site without the property,
+ * draws the default pin.
+ */
+export interface PinCategories {
+  /** The property that holds the category, such as "type". */
+  field: string;
+  /** Each value's colour, and its glyph as SVG path data on a 24-unit square (see pinImage). */
+  values: Record<string, { color: string; glyph: string }>;
+}
+
 /** createMap's options. `P` is the client's feature properties. */
 export interface MapCoreOptions<P extends PointProperties> {
   style?: StyleSpecification | string;
   data?: FeatureCollection<Point, P>;
   cluster?: boolean;
+  categories?: PinCategories | null;
   onSelect?: (feature: Feature<Point, P> | null, info: SelectInfo) => void;
   onClusterExpand?: (count: number) => void;
   focusPoint?: (() => [number, number] | null) | null;
@@ -150,6 +165,9 @@ const PIN = {
   // Amber ring on the selected pin, and now close enough in hue to the base that it is
   // purely decorative: the darker fill and the larger size are what say "selected".
   halo: "#ffab00",
+  // A category's selected pin keeps its colour, so its kind still reads, and takes a black
+  // ring instead: black, not a hue, because colour on this map means a kind of site.
+  categoryHalo: "#000000",
 };
 
 // The teardrop itself. Drawn rather than fetched: it is a circle, two tangent lines and a
@@ -159,10 +177,15 @@ const PIN = {
 const PIN_SHAPE = { width: 26, height: 34, stroke: 1.5, hole: 0.34, halo: 2.5 };
 const PIN_DPR = 2;
 
-/** One pin as ImageData, in `fill`, optionally ringed in `halo`. The ring is drawn inside
- *  the same canvas — the pin shrinks to make room — so every state shares one geometry and
- *  the tip still lands on the coordinate. */
-function pinImage(fill: string, halo: string | null): ImageData {
+/** A glyph's stroke, in its own 24-unit square, and how much of the head's radius the
+ *  square spans. */
+const GLYPH = { stroke: 2.5, span: 1.2 };
+
+/** One pin as ImageData, in `fill`, optionally ringed in `halo`, with `glyph` (SVG path
+ *  data on a 24-unit square) stroked in white in its head, or else the hole. The ring is
+ *  drawn inside the same canvas — the pin shrinks to make room — so every state shares
+ *  one geometry and the tip still lands on the coordinate. */
+function pinImage(fill: string, halo: string | null, glyph?: string): ImageData {
   const { width: w, height: h, stroke, hole, halo: haloWidth } = PIN_SHAPE;
   const canvas = document.createElement("canvas");
   canvas.width = Math.ceil(w * PIN_DPR);
@@ -194,12 +217,31 @@ function pinImage(fill: string, halo: string | null): ImageData {
   ctx.strokeStyle = PIN.stroke;
   ctx.stroke();
 
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * hole, 0, Math.PI * 2);
-  ctx.fillStyle = PIN.stroke;
-  ctx.fill();
+  if (glyph) {
+    const size = r * GLYPH.span;
+    ctx.translate(cx - size / 2, cy - size / 2);
+    ctx.scale(size / 24, size / 24);
+    ctx.lineWidth = GLYPH.stroke;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke(new Path2D(glyph));
+  } else {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * hole, 0, Math.PI * 2);
+    ctx.fillStyle = PIN.stroke;
+    ctx.fill();
+  }
 
   return ctx.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+/** A category's three states from its one colour: lightened for dimmed, as the default
+ *  pin's is, and unchanged when selected (see PIN.categoryHalo). */
+function shades(color: string): Record<keyof typeof PIN_IMAGE, string> {
+  const dimmed = "#" + [1, 3, 5]
+    .map((i) => Math.round(parseInt(color.slice(i, i + 2), 16) * 0.45 + 255 * 0.55))
+    .map((v) => v.toString(16).padStart(2, "0")).join("");
+  return { base: color, dimmed, selected: color };
 }
 
 /** Image ids registered on the map, one per state. */
@@ -251,6 +293,7 @@ export function createMap<P extends PointProperties>(
     style,
     data = EMPTY,
     cluster = false,
+    categories = null,
     onSelect = () => {},
     onClusterExpand = () => {},
     focusPoint = null,
@@ -328,14 +371,23 @@ export function createMap<P extends PointProperties>(
   const isSelected = (): ExpressionSpecification =>
     ["==", ["get", "id"], selectedId ?? NO_SELECTION];
 
+  /** The image for a pin in `state`: its category's, where it has one listed. */
+  const categoryValues = categories ? Object.keys(categories.values) : [];
+  function pinIcon(state: keyof typeof PIN_IMAGE): ExpressionSpecification | string {
+    if (!categories || !categoryValues.length) return PIN_IMAGE[state];
+    const value: ExpressionSpecification = ["to-string", ["get", categories.field]];
+    return ["match", value, categoryValues, ["concat", PIN_IMAGE[state], ":", value],
+      PIN_IMAGE[state]];
+  }
+
   // State is carried by which pin image is drawn and how big, rather than by a fill
   // colour: an icon's colour is baked into its image, so the three states are three
   // registered images and the expression picks between them.
   function sitesIcon(): ExpressionSpecification | string {
     if (!highlighted.length) {
-      return ["case", isSelected(), PIN_IMAGE.selected, PIN_IMAGE.base];
+      return ["case", isSelected(), pinIcon("selected"), pinIcon("base")];
     }
-    return PIN_IMAGE.dimmed;      // the highlighted ones are drawn by the overlay instead
+    return pinIcon("dimmed");     // the highlighted ones are drawn by the overlay instead
   }
   /**
    * Pin size, as a multiple of the drawn image, interpolated over zoom.
@@ -403,9 +455,18 @@ export function createMap<P extends PointProperties>(
   map.on("load", () => {
     if (destroyed) return;
     for (const [state, id] of Object.entries(PIN_IMAGE) as [keyof typeof PIN_IMAGE, string][]) {
+      const halo = state === "selected" ? PIN.halo : null;
       if (!map.hasImage(id)) {
-        const halo = state === "selected" ? PIN.halo : null;
         map.addImage(id, pinImage(PIN[state], halo), { pixelRatio: PIN_DPR });
+      }
+      for (const value of categoryValues) {
+        const { color, glyph } = categories!.values[value];
+        const categoryId = `${id}:${value}`;
+        if (!map.hasImage(categoryId)) {
+          const ring = state === "selected" ? PIN.categoryHalo : null;
+          map.addImage(categoryId, pinImage(shades(color)[state], ring, glyph),
+            { pixelRatio: PIN_DPR });
+        }
       }
     }
 
@@ -493,7 +554,7 @@ export function createMap<P extends PointProperties>(
       type: "symbol",
       source: "overlay",
       layout: {
-        "icon-image": PIN_IMAGE.base,
+        "icon-image": pinIcon("base"),
         "icon-size": fixedSize(1),
         "icon-anchor": "bottom",
         "icon-allow-overlap": true,
@@ -508,7 +569,7 @@ export function createMap<P extends PointProperties>(
       type: "symbol",
       source: "focus",
       layout: {
-        "icon-image": PIN_IMAGE.selected,
+        "icon-image": pinIcon("selected"),
         "icon-size": fixedSize(1.25),
         "icon-anchor": "bottom",
         "icon-allow-overlap": true,

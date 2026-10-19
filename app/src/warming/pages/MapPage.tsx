@@ -1,8 +1,10 @@
 import type { Found } from "../../logic/places.ts";
 import type { Model, Site } from "../../logic/types.ts";
+import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { Panel } from "../../ui/Panel.tsx";
 import { PlaceName, Search } from "../../ui/Search.tsx";
-import { centerType } from "../logic/centers.ts";
+import { MapKey } from "../components/MapKey.tsx";
+import { centerKind } from "../logic/centers.ts";
 
 interface MapPageProps {
   model: Model | null;
@@ -24,8 +26,10 @@ export function MapPage({ model, found, selectedId, onFound, onClear, onOpen }: 
         <Panel model={model} list="on" origin={found && found.center} selectedId={selectedId}
                onOpen={(_button, feature) => onOpen(feature)}
                label="Warming centers" summary={<CenterCount model={model} />}
-               row={centerRow} header={<ListHead model={model} found={found} />} />
+               row={centerRow} marker={centerMarker}
+               header={<ListHead model={model} found={found} />} />
       </div>
+      <MapKey />
     </>
   );
 }
@@ -53,14 +57,20 @@ function ListHead({ model, found }: { model: Model | null; found: Found | null }
  *  is what tells their rows apart. */
 function centerRow(feature: Site) {
   const p = feature.properties;
-  const type = centerType(feature);
+  const kind = centerKind(feature);
   return (
     <>
       <span className="name">{p.org}</span>
-      {type && <span className="type">{type}</span>}
+      {kind && <span className="type">{kind.label}</span>}
       <span className="addr">{p.address}</span>
     </>
   );
+}
+
+/** The icon of a center's kind, as the map key shows it. */
+function centerMarker(feature: Site) {
+  const kind = centerKind(feature);
+  return kind && <CategoryIcon color={kind.color} glyph={kind.glyph} />;
 }
 
 /** "26 locations". The singular and the plural are each their own text node, as in the
