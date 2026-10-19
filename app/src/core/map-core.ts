@@ -168,16 +168,8 @@ const PIN = {
   // The orange the city's child care finder draws its centre-based sites in — the
   // uniqueValue renderer on its PROD_childcarenyc layer.
   base: "#f38600",
-  dimmed: "#f7cc97",      // the same orange, lightened — "still here, not what you asked about"
-  selected: "#854900",    // the same orange, darkened — the one you are looking at
   cluster: "#f38600",
   stroke: "#ffffff",
-  // Amber ring on the selected pin, and now close enough in hue to the base that it is
-  // purely decorative: the darker fill and the larger size are what say "selected".
-  halo: "#ffab00",
-  // A category's selected pin keeps its colour, so its kind still reads, and takes a black
-  // ring instead: black, not a hue, because colour on this map means a kind of site.
-  categoryHalo: "#000000",
 };
 
 // The teardrop itself. Drawn rather than fetched: it is a circle, two tangent lines and a
@@ -274,13 +266,21 @@ function pinImage(fill: string, halo: string | null, glyph?: string, count = 1):
   return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
-/** A category's three states from its one colour: lightened for dimmed, as the default
- *  pin's is, and unchanged when selected (see PIN.categoryHalo). */
-function shades(color: string): Record<keyof typeof PIN_IMAGE, string> {
-  const dimmed = "#" + [1, 3, 5]
-    .map((i) => Math.round(parseInt(color.slice(i, i + 2), 16) * 0.45 + 255 * 0.55))
+/** `color` mixed with `toward` (0–255 per channel), keeping `keep` of it. */
+function mix(color: string, toward: number, keep: number): string {
+  return "#" + [1, 3, 5]
+    .map((i) => Math.round(parseInt(color.slice(i, i + 2), 16) * keep + toward * (1 - keep)))
     .map((v) => v.toString(16).padStart(2, "0")).join("");
-  return { base: color, dimmed, selected: color };
+}
+
+/** A pin's three states from its one colour, the default orange's and every category's
+ *  alike: lightened when dimmed ("still here, not what you asked about"), darkened when
+ *  selected (the one you are looking at), and the selected pin ringed in the lightened
+ *  colour. The darker fill and the larger size are what say "selected"; the ring sets it
+ *  off from the pins around it, in its own colour, so its kind still reads. */
+function shades(color: string): Record<keyof typeof PIN_IMAGE | "halo", string> {
+  const dimmed = mix(color, 255, 0.45);
+  return { base: color, dimmed, selected: mix(color, 0, 0.55), halo: dimmed };
 }
 
 /** Image ids registered on the map, one per state. */
@@ -464,11 +464,9 @@ export function createMap<P extends PointProperties>(
     const state = match[1] as keyof typeof PIN_IMAGE;
     const count = match[3] ? Number(match[3]) : 1;
     const category = match[2] && categories ? categories.values[match[2]] : null;
-    if (!category) {
-      return pinImage(PIN[state], state === "selected" ? PIN.halo : null, undefined, count);
-    }
-    return pinImage(shades(category.color)[state], state === "selected" ? PIN.categoryHalo : null,
-      category.glyph, count);
+    const shade = shades(category ? category.color : PIN.base);
+    return pinImage(shade[state], state === "selected" ? shade.halo : null, category?.glyph,
+      count);
   }
   map.on("styleimagemissing", (e) => {
     const image = imageFor(e.id);
