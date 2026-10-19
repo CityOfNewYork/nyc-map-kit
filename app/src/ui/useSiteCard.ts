@@ -45,9 +45,12 @@ interface SiteCardOptions {
   style: StyleSpecification | null;
   /** The main map's pin categories, so the small map's pins match. */
   categories?: PinCategories | null;
+  /** Open the card as a panel beside the list, with the map still in use and no small
+   *  map of its own, rather than as a modal. */
+  panel?: boolean;
 }
 
-export function useSiteCard({ model, style, categories = null }: SiteCardOptions) {
+export function useSiteCard({ model, style, categories = null, panel = false }: SiteCardOptions) {
   // The site whose card is open. `seq` counts selections, so selecting a site again (Back
   // to it, say) still runs the effect that opens and focuses the card.
   const [selection, setSelection] = useState<{ feature: Site | null; seq: number }>(
@@ -110,8 +113,23 @@ export function useSiteCard({ model, style, categories = null }: SiteCardOptions
   // focus. Runs as a layout effect so focus moves before the browser paints.
   const showCard = useEffectEvent((feature: Site) => {
     const dialog = dialogRef.current!;
-    if (!dialog.open) dialog.showModal();
+    if (!dialog.open) {
+      if (panel) dialog.show();
+      else dialog.showModal();
+    }
+    if (!panel) showMiniMap(feature);
 
+    // Focus the card's heading so a keyboard or screen-reader user lands on the content
+    // they just asked for instead of being left behind in the list. The exception is a
+    // stepper click: focus goes back to the arrow they pressed, so a second press steps
+    // again.
+    const arrow = stepFocus.current &&
+      dialog.querySelector<HTMLElement>(`.step-${stepFocus.current}`);
+    stepFocus.current = null;
+    (arrow || dialog.querySelector<HTMLElement>("#card-title")!).focus();
+  });
+
+  function showMiniMap(feature: Site) {
     // The small map at the top of the card: where this place is, at street level, with
     // the sites around it. It is the same map-core as the main map, so its pins look and
     // behave the same — tapping another pin here opens that site's card in place.
@@ -147,16 +165,7 @@ export function useSiteCard({ model, style, categories = null }: SiteCardOptions
       });
       miniMap.select(feature.properties.id);
     });
-
-    // Focus the card's heading so a keyboard or screen-reader user lands on the content
-    // they just asked for instead of being left behind in the list. The exception is a
-    // stepper click: focus goes back to the arrow they pressed, so a second press steps
-    // again.
-    const arrow = stepFocus.current &&
-      dialog.querySelector<HTMLElement>(`.step-${stepFocus.current}`);
-    stepFocus.current = null;
-    (arrow || dialog.querySelector<HTMLElement>("#card-title")!).focus();
-  });
+  }
 
   useLayoutEffect(() => {
     if (selection.feature) showCard(selection.feature);

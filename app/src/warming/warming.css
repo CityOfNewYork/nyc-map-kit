@@ -73,6 +73,12 @@
 .status.closed { color: #7a4a00; }
 .status svg { flex: none; }
 
+/* The card as a panel starts beside this list, which is wider than the kit's. App.tsx
+   works out where the panel ends from the same numbers. */
+@media (min-width: 768px) {
+  .stage > .site-dialog.side-panel { left: calc(10px + 360px + 10px); }
+}
+
 /* ------------------------------------------------------------------ map key ------ */
 
 /* Top right, left of the zoom buttons and level with them, on the same white card. */

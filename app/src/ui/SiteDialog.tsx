@@ -1,4 +1,4 @@
-import type { MouseEvent, ReactNode, Ref, SyntheticEvent } from "react";
+import type { KeyboardEvent, MouseEvent, ReactNode, Ref, SyntheticEvent } from "react";
 import type { Model, Site } from "../logic/types.ts";
 import { Card } from "./Card.tsx";
 
@@ -18,6 +18,8 @@ interface SiteDialogProps {
   /** The card's content for a site. It must include the heading, id "card-title", that
    *  focus moves to. The block's own Card unless given. */
   card?: (feature: Site) => ReactNode;
+  /** A panel beside the list rather than a modal (see useSiteCard's `panel`). */
+  panel?: boolean;
 }
 
 /**
@@ -38,7 +40,9 @@ interface SiteDialogProps {
  * card's content is `card`'s, or the block's own Card.
  */
 export function SiteDialog(
-  { ref, miniMapElement, feature, group, model, lang, onStep, onClose, card }: SiteDialogProps,
+  {
+    ref, miniMapElement, feature, group, model, lang, onStep, onClose, card, panel = false,
+  }: SiteDialogProps,
 ) {
   // Escape arrives as `cancel`. Taken over so it closes through history like every other
   // way of closing the card.
@@ -49,12 +53,20 @@ export function SiteDialog(
   // The dialog itself is transparent, so a click that lands on it rather than on the
   // stepper or the box is a click on the backdrop around them.
   const onBackdropClick = (e: MouseEvent<HTMLDialogElement>) => {
-    if (e.target === e.currentTarget) onClose();
+    if (!panel && e.target === e.currentTarget) onClose();
+  };
+  // A panel is not modal, so the browser sends no `cancel` for Escape; it is heard here.
+  const onKeyDown = (e: KeyboardEvent<HTMLDialogElement>) => {
+    if (panel && e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+    }
   };
 
   return (
-    <dialog className="site-dialog" id="site-dialog" aria-labelledby="card-title" ref={ref}
-            onCancel={onCancel} onClick={onBackdropClick}>
+    <dialog className={panel ? "site-dialog side-panel" : "site-dialog"} id="site-dialog"
+            aria-labelledby="card-title" ref={ref}
+            onCancel={onCancel} onClick={onBackdropClick} onKeyDown={onKeyDown}>
       <Stepper group={group} currentId={feature && feature.properties.id} onStep={onStep} />
       <div className="card-box">
         <div className="mini-map" id="mini-map" ref={miniMapElement} />

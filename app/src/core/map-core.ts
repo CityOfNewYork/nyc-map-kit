@@ -640,11 +640,16 @@ export function createMap<P extends PointProperties>(
   // centre. The core does not know what surrounds its container — a list beside it, a
   // card over it — so the client says where the pin should land and the core only does
   // the arithmetic. No `focusPoint` means the container's own centre.
+  // MapLibre measures an easeTo's offset from the centre of the padded viewport (see
+  // keepClearOfList in ui/layout.ts), so the offset is taken from there too.
   function focusOffset(): [number, number] {
     const point = focusPoint ? focusPoint() : null;
     if (!point) return [0, 0];
     const box = map.getContainer().getBoundingClientRect();
-    return [point[0] - box.width / 2, point[1] - box.height / 2];
+    const { left = 0, right = 0, top = 0, bottom = 0 } = map.getPadding();
+    const cx = left + (box.width - left - right) / 2;
+    const cy = top + (box.height - top - bottom) / 2;
+    return [point[0] - cx, point[1] - cy];
   }
 
   function applySelection(id: string, via: SelectInfo["via"]): void {
