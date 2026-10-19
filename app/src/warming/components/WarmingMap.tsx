@@ -1,15 +1,14 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import { loadBasemap } from "../../core/basemaps/index.ts";
+import type { BasemapId } from "../../core/basemaps/names.ts";
 import type { MapCore } from "../../core/map-core.ts";
 import type { Site, SiteCollection, SiteProperties } from "../../logic/types.ts";
 import { keepClearOfList } from "../../ui/layout.ts";
 import { useMapCore } from "../../ui/useMapCore.ts";
 
-// Needs no local tile file, unlike the Protomaps default; revisit before launch.
-const BASEMAP = "openfreemap";
-
 interface WarmingMapProps {
   lang: string;
+  basemap: BasemapId;
   data: SiteCollection | null;
   /** Keep the camera's centre clear of the list. It can change while the map is showing. */
   padForList?: boolean;
@@ -21,7 +20,7 @@ interface WarmingMapProps {
 }
 
 export function WarmingMap({
-  lang, data, padForList = false, onReady, onSelect, onInteract,
+  lang, basemap, data, padForList = false, onReady, onSelect, onInteract,
 }: WarmingMapProps) {
   const { containerRef, create, destroy } = useMapCore<SiteProperties>();
   const [map, setMap] = useState<MapCore<SiteProperties> | null>(null);
@@ -33,7 +32,7 @@ export function WarmingMap({
   useEffect(() => {
     if (!data) return;
     let cancelled = false;
-    loadBasemap(BASEMAP, lang)
+    loadBasemap(basemap, lang)
       .then((style) => {
         if (cancelled) return;
         const created = create({ style, data, onSelect: (feature) => select(feature) });
@@ -54,7 +53,7 @@ export function WarmingMap({
       setMap(null);
       destroy();
     };
-  }, [lang, data, create, destroy]);
+  }, [lang, basemap, data, create, destroy]);
 
   // Its own effect, so the list arriving or leaving changes the padding, not the map.
   useEffect(() => {

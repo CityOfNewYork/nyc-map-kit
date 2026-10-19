@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { BasemapId } from "../core/basemaps/names.ts";
 import type { MapCore } from "../core/map-core.ts";
 import { nearestIds, prepareData } from "../logic/data.ts";
 import type { Found } from "../logic/places.ts";
@@ -18,9 +19,10 @@ const HERO_EXIT_MS = 300;
 
 interface AppProps {
   lang: string;
+  basemap: BasemapId;
 }
 
-export default function App({ lang }: AppProps) {
+export default function App({ lang, basemap }: AppProps) {
   const [view, setView] = useState<View>(() => viewFromUrl(window.location.search));
   const [model, setModel] = useState<Model | null>(null);
   const [failed, setFailed] = useState(false);
@@ -118,7 +120,7 @@ export default function App({ lang }: AppProps) {
               <LandingPage leaving={leaving} onOpenMap={leaveLanding}
                            onFound={searchFromLanding} />
             )}
-            <WarmingMap key="map" lang={lang} data={model && model.data}
+            <WarmingMap key="map" lang={lang} basemap={basemap} data={model && model.data}
                         padForList={view === "map"} onReady={onMapReady}
                         onSelect={(feature) => setSelectedId(feature && feature.properties.id)}
                         onInteract={view === "landing" ? leaveLanding : undefined} />
