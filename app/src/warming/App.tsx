@@ -9,7 +9,7 @@ import { SiteDialog } from "../ui/SiteDialog.tsx";
 import { useSiteCard } from "../ui/useSiteCard.ts";
 import { CenterCard } from "./components/CenterCard.tsx";
 import { WarmingMap } from "./components/WarmingMap.tsx";
-import { CENTER_PINS } from "./logic/centers.ts";
+import { CENTER_CONFIG, CENTER_PINS } from "./logic/centers.ts";
 import { viewFromUrl } from "./logic/view.ts";
 import type { View } from "./logic/view.ts";
 import { LandingPage } from "./pages/LandingPage.tsx";
@@ -50,7 +50,9 @@ export default function App({ lang, basemap }: AppProps) {
         return resp.json() as Promise<SiteCollection>;
       })
       .then((data) => {
-        if (!cancelled) setModel({ config: {}, data, ...prepareData({}, data, null) });
+        if (!cancelled) {
+          setModel({ config: CENTER_CONFIG, data, ...prepareData(CENTER_CONFIG, data, null) });
+        }
       })
       .catch((err) => {
         console.error(err);
@@ -171,7 +173,8 @@ export default function App({ lang, basemap }: AppProps) {
                   feature={card.feature} group={card.group} model={model} lang={lang}
                   onStep={card.step} onClose={card.close}
                   card={(feature) => (
-                    <CenterCard feature={feature} origin={found && found.center} lang={lang} />
+                    <CenterCard feature={feature} model={model!} origin={found && found.center}
+                                lang={lang} />
                   )} />
     </>
   );

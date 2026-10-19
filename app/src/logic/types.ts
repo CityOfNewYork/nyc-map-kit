@@ -19,11 +19,16 @@ export interface FieldRef {
   source: "site" | "org";
 }
 
+/** The icons a fact row on the card can carry. */
+export type FactIcon = "clock" | "globe" | "phone" | "info";
+
 /** A button in the row under the address, or a labelled field below it. */
 export interface LabelledFieldRef extends FieldRef {
   label: string;
   /** How the value links: a phone number or a website. Plain text when absent. */
   as?: "tel" | "url";
+  /** For a field in `facts`, the icon beside it. A plain dot of information when absent. */
+  icon?: FactIcon;
 }
 
 /** config.json. Its `_README` says what each part does. */
@@ -33,7 +38,11 @@ export interface Config {
   /** false drops the link; true links the coordinate; `query` searches for those fields. */
   openInMaps?: boolean | { query: FieldRef[] };
   actions?: LabelledFieldRef[];
+  /** Short facts in rows under the address, each beside its icon. */
+  facts?: LabelledFieldRef[];
   card?: LabelledFieldRef[];
+  /** The day a site's details were last checked, "2026-10-04". The data's date when absent. */
+  updated?: FieldRef;
 }
 
 // ------------------------------------------------------------------------ point data

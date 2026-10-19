@@ -476,19 +476,12 @@ body {
 }
 .card[hidden] { display: none; }
 .card h2 {
-  margin: 0 0 2px;
+  margin: 0;
   font-size: 1.5rem;
   font-weight: 700;
   line-height: 1.2;
 }
 .card h2:focus-visible { outline-offset: 4px; }
-.card .where {
-  margin: 0 0 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--line);
-}
-.card .where .addr { display: block; }
-.card .where .boro { display: block; font-size: 0.875rem; color: var(--ink-muted); }
 
 /* Over the small map's top-right corner, where the main map keeps its zoom buttons.
    White and shadowed like those buttons, so it reads as a control on the map and stays
@@ -509,85 +502,151 @@ body {
 }
 .card-close:hover { background: var(--surface-2); color: var(--ink); }
 
-.card dl { margin: 0; }
-.card dt {
-  /* The label was 12px uppercase with letter-spacing, which is the least readable setting
-     in the card and the one repeated most often. Sentence case at a readable size, told
-     apart from its value by weight and by the space above it rather than by letterforms. */
-  margin-top: 18px;
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--ink-muted);
+/* The card's content (Card.tsx): one column, 10 px between its parts; a few parts add a
+   little more around them. */
+.site-card {
+  display: grid;
+  gap: 10px;
 }
-.card dd {
-  margin: 3px 0 0;
-  font-size: 1rem;
-  line-height: 1.55;
-  /* A reading measure. Without it these values set to the full width of a desktop panel,
-     and prose at that length is hard to track from one line to the next. */
-  max-width: 60ch;
-  overflow-wrap: anywhere;
-}
-/* Structure from parseStructure() in logic/card.ts — real paragraphs and real lists, so the
-   spacing between items is spacing rather than a newline character. */
-.card dd p { margin: 0 0 10px; }
-.card dd p:last-child { margin-bottom: 0; }
-.card dd ul {
-  margin: 0;
-  /* Markers sit in the gutter (list-style-position: outside, the default), so a wrapped
-     item aligns under its own first word rather than under the bullet. */
-  padding-left: 1.1em;
-}
-.card dd li {
-  /* Short entries — "Adults 25+" — are one line each, so the 1.55 line-height meant for
-     running prose is already generous; a margin on top of it made them drift apart.
-     Items separate by 3px, and the list as a whole separates from the next label by the
-     18px above it. */
-  margin: 0;
-  line-height: 1.45;
-}
-.card dd li + li { margin-top: 3px; }
+.site-card p { margin: 0; }
 .card a { color: var(--link); }
 
-/* Call, website, open-in-maps: the row under the address, above everything descriptive.
-   Stacked full-width rather than three across — at a 360 px card width a row would break
-   every label onto two lines, and each of these is a 44 px touch target in its own right.
-   Selectors are `.card .action` so they outrank `.card a`, whose link colour would
-   otherwise win. */
-.actions {
-  display: grid;
-  gap: 8px;
-  margin: 0 0 4px;
-}
-/* Blue outline and blue text on white, with 10px corners. */
-.card .action {
+/* Under the name: the app's line, such as the kind of site, each item beside its icon. */
+.card-meta {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 18px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #333333;
+}
+.card-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-meta .category-icon { width: 18px; height: 18px; }
+.card-meta-icon { flex: none; }
+
+.card-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+}
+.card-distance { font-size: 0.875rem; font-weight: 700; }
+
+/* The buttons, side by side: blue outline, blue text, 10 px corners. */
+.card-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 8px 0 4px;
+}
+.card .card-button {
+  display: flex;
+  align-items: center;
   justify-content: center;
-  min-height: var(--tap);
-  padding: 5px 20px;
+  gap: 8px;
+  min-height: 52px;
+  padding: 10px 12px;
   border: 1.5px solid var(--primary);
   border-radius: 10px;
   background: var(--surface);
   color: var(--primary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
   text-decoration: none;
 }
-.card .action:hover { background: var(--hover); }
-.card .action .action-label { font-size: 1rem; font-weight: 600; }
-/* The number and the domain, kept visible and copyable: on a desktop `tel:` does nothing
-   and the label alone would be a dead end. */
-.card .action .action-detail {
-  font-size: 0.8125rem;
+.card .card-button:hover { background: var(--hover); }
+.card-button svg { flex: none; }
+.card-button .phone { white-space: nowrap; }
+
+/* The address and the fact rows: the icon, then the label over its value. */
+.card-facts {
+  display: grid;
+  gap: 14px;
+  margin: 8px 0 0;
+}
+.card-fact {
+  display: flex;
+  gap: 12px;
+}
+.card-fact-icon { flex: none; margin-top: 1px; }
+.card-facts dt {
+  font-size: 1rem;
+  font-weight: 700;
+}
+.card-facts dd {
+  margin: 0;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
-.card-footer {
-  margin: 14px 0 0;
-  padding-top: 10px;
+/* The longer fields, each under its heading. Structure from parseStructure() in
+   logic/card.ts — real paragraphs and real lists, so the spacing between items is
+   spacing rather than a newline character. */
+.card-section { margin-top: 6px; }
+.card-section h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.site-card .card-section p {
+  margin: 2px 0 0;
+  max-width: 60ch;
+  line-height: 1.55;
+}
+.card-section ul {
+  margin: 2px 0 0;
+  /* Markers sit in the gutter (list-style-position: outside, the default), so a wrapped
+     item aligns under its own first word rather than under the bullet. */
+  padding-left: 1.1em;
+  line-height: 1.45;
+}
+.card-section li + li { margin-top: 3px; }
+
+/* The update date on the left, Copy link on the right, under a rule. */
+.card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--line);
+}
+.card-updated {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   font-size: 0.8125rem;
   color: var(--ink-muted);
 }
+.card-updated svg { flex: none; margin-top: 2px; }
+.card-updated.stale { color: #9a3412; font-weight: 600; }
+.copy-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.copy-link:hover { color: var(--link-hover); }
+.copy-link svg { flex: none; }
 
 /* The stepper: more than one record in the selected site's group.
    Its own small white pill, floating above the card, so it reads as a control that

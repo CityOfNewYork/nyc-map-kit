@@ -1,5 +1,5 @@
 import type { PinCategories } from "../../core/map-core.ts";
-import type { Site, SiteProperties } from "../../logic/types.ts";
+import type { Config, Site, SiteProperties } from "../../logic/types.ts";
 import { statusAt } from "./hours.ts";
 import type { OpenStatus } from "./hours.ts";
 
@@ -44,6 +44,16 @@ export const CENTER_KINDS = new Map<string, CenterKind>([
     glyph: "M7 4.5h10a2 2 0 0 1 2 2V17H5V6.5a2 2 0 0 1 2-2zM5 11.5h14M8 17v2.5M16 17v2.5",
   }],
 ]);
+
+/** What a center's card shows, as the block's config.json would say it (see Card in ui/):
+ *  a Call button, the website as a fact row, how to get in, and the day it was updated.
+ *  The hours row is worked out from `opens` and `closes` instead (see CenterCard). */
+export const CENTER_CONFIG: Config = {
+  actions: [{ key: "phone", source: "site", label: "Call", as: "tel" }],
+  facts: [{ key: "website", source: "site", label: "Website", as: "url", icon: "globe" }],
+  card: [{ key: "instructions", source: "site", label: "How to get in" }],
+  updated: { key: "updated", source: "site" },
+};
 
 /** The pins map-core draws for each kind. */
 export const CENTER_PINS: PinCategories = {

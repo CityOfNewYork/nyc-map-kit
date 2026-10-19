@@ -5,7 +5,7 @@
  * value breaks into paragraphs and lists. The UI renders these; nothing here touches the
  * DOM, so every rule is testable on its own.
  */
-import type { Config, FieldRef, Org, Site, SiteProperties } from "./types.ts";
+import type { Config, FactIcon, FieldRef, Org, Site, SiteProperties } from "./types.ts";
 
 /** A record's fields read by the key config.json gives. The ones a card shows are text. */
 type Fields = Record<string, string | undefined>;
@@ -27,6 +27,11 @@ export interface CardField {
   label: string;
   as?: "tel" | "url";
   value: string;
+}
+
+/** A short fact in a row under the address. See cardFacts. */
+export interface CardFact extends CardField {
+  icon: FactIcon;
 }
 
 /** A field's value broken into readable structure. See parseStructure. */
@@ -187,6 +192,26 @@ export function cardFields(config: Config, p: SiteProperties, org: OrgFields): C
     out.push({ key: field.key, label: field.label, as: field.as, value });
   }
   return out;
+}
+
+/** The fact rows under the address, from `facts` in config.json, in order. Empty fields
+ *  are left out. */
+export function cardFacts(config: Config, p: SiteProperties, org: OrgFields): CardFact[] {
+  const out: CardFact[] = [];
+  for (const field of config.facts || []) {
+    const value = read(field, p, org);
+    if (value) out.push({ key: field.key, label: field.label, as: field.as, value,
+                          icon: field.icon || "info" });
+  }
+  return out;
+}
+
+/** The day this site's details were last checked, from `updated` in config.json, or the
+ *  data's own date. "" when neither is known. */
+export function cardUpdated(
+  config: Config, p: SiteProperties, org: OrgFields, generated: string,
+): string {
+  return (config.updated && read(config.updated, p, org)) || generated;
 }
 
 /**
