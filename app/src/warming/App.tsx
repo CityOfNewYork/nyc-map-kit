@@ -1,18 +1,24 @@
 import { useEffect, useRef, useState } from "react";
+import type { StyleSpecification } from "maplibre-gl";
 import type { BasemapId } from "../core/basemaps/names.ts";
-import type { MapCore } from "../core/map-core.ts";
+import type { MapCore, SelectInfo } from "../core/map-core.ts";
 import { nearestIds, prepareData } from "../logic/data.ts";
 import type { Found } from "../logic/places.ts";
-import type { Model, SiteCollection, SiteProperties } from "../logic/types.ts";
+import type { Model, Site, SiteCollection, SiteProperties } from "../logic/types.ts";
+import { SiteDialog } from "../ui/SiteDialog.tsx";
+import { useSiteCard } from "../ui/useSiteCard.ts";
+import { CenterCard } from "./components/CenterCard.tsx";
 import { WarmingMap } from "./components/WarmingMap.tsx";
+import { CENTER_PINS } from "./logic/centers.ts";
 import { viewFromUrl } from "./logic/view.ts";
 import type { View } from "./logic/view.ts";
 import { LandingPage } from "./pages/LandingPage.tsx";
 import { MapPage } from "./pages/MapPage.tsx";
 
-// The warming centers listed in 311 article KA-03702, retrieved 2026-10-15. The file
-// names its source and retrieval date.
-const DATA_URL = "warming/centers.geojson";
+// Sample centers: real sites mixed with invented ones, with made-up phone numbers, entry
+// instructions and dates (the file's description says which parts). centers.geojson is
+// the list in 311 article KA-03702, retrieved 2026-10-15.
+const DATA_URL = "warming/sample-centers.geojson";
 
 /** How long the hero takes to fold away: .hero's transition in warming.css. */
 const HERO_EXIT_MS = 300;
@@ -27,10 +33,14 @@ export default function App({ lang, basemap }: AppProps) {
   const [model, setModel] = useState<Model | null>(null);
   const [failed, setFailed] = useState(false);
   const [found, setFound] = useState<Found | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);   // the hero is folding away
+  const [style, setStyle] = useState<StyleSpecification | null>(null);   // the basemap
   const mapRef = useRef<MapCore<SiteProperties> | null>(null);
   const leaveTimer = useRef<number | null>(null);
+  const focusMapHeading = useRef(false);   // move focus to the map view once it renders
+  // A center's card: what is selected, its modal, its ?site= address, focus, its small map.
+  const card = useSiteCard({ model, style, categories: CENTER_PINS });
+  const { attach, selectingFromUrl, dialogElement, miniMapElement } = card;
 
   useEffect(() => {
     let cancelled = false;
@@ -64,9 +74,35 @@ export default function App({ lang, basemap }: AppProps) {
     if (mapRef.current) showFound(mapRef.current, found, model);
   }, [found, model]);
 
-  function onMapReady(map: MapCore<SiteProperties>) {
+  // Focus follows the reader into the map view when they asked for it: the "See full
+  // map" button or a search. Touching the map changes nothing about focus.
+  useEffect(() => {
+    if (view !== "map" || !focusMapHeading.current) return;
+    focusMapHeading.current = false;
+    document.getElementById("map-heading")?.focus();
+  }, [view]);
+
+  function onMapReady(map: MapCore<SiteProperties>, basemap: StyleSpecification) {
     mapRef.current = map;
+    attach(map);
+    setStyle(basemap);
     showFound(map, found, model);
+    // A link with ?site= opens on that center's card.
+    const id = new URLSearchParams(window.location.search).get("site");
+    if (id && model?.byId.has(id)) {
+      selectingFromUrl();
+      map.select(id);
+    }
+  }
+
+  /** A pin was chosen, or the selection cleared. On the landing view a touch on the map
+   *  opens the map view (see onInteract) and nothing more, so a pin is let go again. */
+  function onMapSelect(feature: Site | null, info: SelectInfo) {
+    if (feature && view !== "map") {
+      queueMicrotask(() => mapRef.current?.select(null));
+      return;
+    }
+    card.onSelect(feature, info);
   }
 
   function openMap() {
@@ -76,9 +112,11 @@ export default function App({ lang, basemap }: AppProps) {
     setView("map");
   }
 
-  /** From the landing view to the map view: the hero folds away, then the list arrives. */
-  function leaveLanding() {
+  /** From the landing view to the map view: the hero folds away, then the list arrives.
+   *  `moveFocus` takes keyboard focus along to the map view. */
+  function leaveLanding(moveFocus = false) {
     if (view !== "landing" || leaveTimer.current !== null) return;
+    focusMapHeading.current = moveFocus;
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       openMap();
       return;
@@ -93,6 +131,7 @@ export default function App({ lang, basemap }: AppProps) {
 
   function searchFromLanding(place: Found) {
     setFound(place);
+    focusMapHeading.current = true;
     openMap();
   }
 
@@ -113,20 +152,27 @@ export default function App({ lang, basemap }: AppProps) {
           <div className={view === "map" ? "stage" : "landing"}
                data-list={view === "map" ? "on" : undefined}>
             {view === "map" ? (
-              <MapPage model={model} found={found} selectedId={selectedId}
+              <MapPage model={model} found={found}
+                       selectedId={card.feature && card.feature.properties.id}
                        onFound={setFound} onClear={() => setFound(null)}
-                       onOpen={(feature) => mapRef.current?.select(feature.properties.id)} />
+                       onOpen={card.openFromList} />
             ) : (
-              <LandingPage leaving={leaving} onOpenMap={leaveLanding}
+              <LandingPage leaving={leaving} onOpenMap={() => leaveLanding(true)}
                            onFound={searchFromLanding} />
             )}
             <WarmingMap key="map" lang={lang} basemap={basemap} data={model && model.data}
                         padForList={view === "map"} onReady={onMapReady}
-                        onSelect={(feature) => setSelectedId(feature && feature.properties.id)}
-                        onInteract={view === "landing" ? leaveLanding : undefined} />
+                        onSelect={onMapSelect}
+                        onInteract={view === "landing" ? () => leaveLanding() : undefined} />
           </div>
         )}
       </main>
+      <SiteDialog ref={dialogElement} miniMapElement={miniMapElement}
+                  feature={card.feature} group={card.group} model={model} lang={lang}
+                  onStep={card.step} onClose={card.close}
+                  card={(feature) => (
+                    <CenterCard feature={feature} origin={found && found.center} lang={lang} />
+                  )} />
     </>
   );
 }

@@ -23,6 +23,7 @@
  *     focusPoint,                    // optional () => [x, y]: where a selected pin lands,
  *                                    // in container pixels. Default: the container's centre.
  *     categories,                    // optional: pins coloured by one property (PinCategories)
+ *     zoomButtons,                   // optional: false leaves out the + and − buttons
  *   });
  *
  *   map.setData(geojson);            // replace the data
@@ -123,6 +124,8 @@ export interface MapCoreOptions<P extends PointProperties> {
   onSelect?: (feature: Feature<Point, P> | null, info: SelectInfo) => void;
   onClusterExpand?: (count: number) => void;
   focusPoint?: (() => [number, number] | null) | null;
+  /** The + and − buttons in the top-right corner. On unless set to false. */
+  zoomButtons?: boolean;
 }
 
 /** A place the client searched for: a point, and for an area the box to frame. */
@@ -297,6 +300,7 @@ export function createMap<P extends PointProperties>(
     onSelect = () => {},
     onClusterExpand = () => {},
     focusPoint = null,
+    zoomButtons = true,
   } = options;
 
   // ------------------------------------------------------------------ live region
@@ -323,9 +327,11 @@ export function createMap<P extends PointProperties>(
     attributionControl: { compact: true },
   });
   // The canvas is a single tab stop that pans with the arrow keys. Everything a keyboard
-  // user actually needs — every site — is reachable from the client's list; these zoom
-  // buttons are real <button>s and take focus in order.
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+  // user actually needs — every site — is reachable from the client's list; the zoom
+  // buttons, unless the client leaves them out, are real <button>s and take focus in order.
+  if (zoomButtons) {
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+  }
 
   let currentData = data;
   let selectedId: string | null = null;

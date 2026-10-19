@@ -1,9 +1,9 @@
 /**
  * App.tsx — the block: the list, the map, and the card either of them opens.
  *
- * App owns what is selected and everything that follows from a selection: the address
- * bar, the modal, focus, and the small map in the card. The components under it are
- * markup. The maps are only ever touched through map-core's API (core/map-core.ts), so
+ * What is selected, and everything that follows from a selection — the address bar, the
+ * modal, focus, and the small map in the card — is useSiteCard's. The components under
+ * it are markup. The maps are only ever touched through map-core's API (core/map-core.ts), so
  * the map half of the block can be reused without any of this.
  *
  * TWO RULES THIS FILE AND ITS COMPONENTS KEEP:
@@ -29,12 +29,12 @@
  *    closing the card puts focus back where it came from. A search re-orders the list;
  *    it never removes a site from it.
  */
-import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
 import { loadBasemap } from "../core/basemaps/index.ts";
 import type { MapCore, SelectInfo } from "../core/map-core.ts";
 import { track } from "../logic/analytics.ts";
-import { coincidentWith, nearestIds, prepareData } from "../logic/data.ts";
+import { nearestIds, prepareData } from "../logic/data.ts";
 import type { Settings } from "../logic/params.ts";
 import type { Found } from "../logic/places.ts";
 import type {
@@ -44,15 +44,11 @@ import { keepClearOfList } from "./layout.ts";
 import { Panel } from "./Panel.tsx";
 import { Search } from "./Search.tsx";
 import { SiteDialog } from "./SiteDialog.tsx";
-import type { StepDirection } from "./SiteDialog.tsx";
 import { useMapCore } from "./useMapCore.ts";
+import { useSiteCard } from "./useSiteCard.ts";
 
 /** The heading until config.json or `?title=` names the map. */
 const DEFAULT_TITLE = "SNAP volunteer opportunities";
-
-/** Street level, a little closer than the main map's: the card's map answers "where is
- *  this" for one place, not "what is near me". */
-const MINI_MAP_ZOOM = 15.5;
 
 interface AppProps {
   settings: Settings;
@@ -62,22 +58,13 @@ export default function App({ settings }: AppProps) {
   const [model, setModel] = useState<Model | null>(null);   // config.json + the prepared data
   const [basemap, setBasemap] = useState<StyleSpecification | null>(null);   // once fetched
   const [failed, setFailed] = useState(false);
-  // The site whose card is open. `seq` counts selections, so selecting a site again (Back
-  // to it, say) still runs the effect that opens and focuses the card.
-  const [selection, setSelection] = useState<{ feature: Site | null; seq: number }>(
-    { feature: null, seq: 0 });
   const [found, setFound] = useState<Found | null>(null);   // what the search box found
 
   const main = useMapCore<SiteProperties>();
-  const mini = useMapCore<SiteProperties>();   // the map in the card; made on first open
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  // Bookkeeping that event handlers read and write but nothing renders: refs, not state.
-  const selectedId = useRef<string | null>(null);   // what map-core has selected, readable at once
-  const stepFocus = useRef<StepDirection | null>(null);  // while a stepper click is in flight
-  const returnFocusTo = useRef<HTMLElement | null>(null);  // the control that opened the card
-  const pushed = useRef(false);        // the open card has a history entry of its own
-  const urlDriven = useRef(false);     // the URL, not the reader, chose the site
+  const { containerRef } = main;
+  // The card: what is selected, its modal, its ?site= address, focus and its small map.
+  const card = useSiteCard({ model, style: basemap });
+  const { attach, selectingFromUrl, dialogElement, miniMapElement } = card;
 
   // ------------------------------------------------------------------------- loading
 
@@ -107,7 +94,7 @@ export default function App({ settings }: AppProps) {
 
   // The map calls back on every selection, and must always reach this render's handler.
   const onMapSelect = useEffectEvent(
-    (feature: Site | null, info: SelectInfo) => handleSelect(feature, info));
+    (feature: Site | null, info: SelectInfo) => card.onSelect(feature, info));
 
   useEffect(() => {
     if (!model || !basemap) return;
@@ -127,6 +114,8 @@ export default function App({ settings }: AppProps) {
       return;
     }
 
+    attach(map);
+
     // Set before the style loads, so the first framing already accounts for the list.
     const unpad = settings.list !== "off" ? keepClearOfList(map) : () => {};
 
@@ -145,17 +134,16 @@ export default function App({ settings }: AppProps) {
 
     // A link with ?site= opens on that site's card.
     if (settings.site && model.byId.has(settings.site)) {
-      urlDriven.current = true;
+      selectingFromUrl();
       map.select(settings.site);
     }
 
     return () => {
       unpad();
+      attach(null);
       main.destroy();
     };
-  }, [model, basemap, settings, main]);
-
-  useEffect(() => mini.destroy, [mini]);
+  }, [model, basemap, settings, main, attach, selectingFromUrl]);
 
   // A search result: mark it and frame it with the sites nearest it. A neighborhood or
   // ZIP code is marked at its centre too — that is the point the list's distances are
@@ -173,180 +161,9 @@ export default function App({ settings }: AppProps) {
                   nearestIds(model.features, found.center));
   }, [found, model, basemap, main]);
 
-  // ---------------------------------------------------------------------- selection
-  //
-  // Everything from here on runs only once the data has loaded and the main map exists: a
-  // selection, a step and a close all start from that map. So these handlers assert
-  // `model`, `basemap`, the dialog and the main map with `!` rather than checking for them.
-
-  /** map-core's onSelect: the one place a selection lands, however it was made. */
-  function handleSelect(feature: Site | null, info: SelectInfo) {
-    if (!feature) {
-      selectedId.current = null;
-      setSelection((s) => (s.feature ? { feature: null, seq: s.seq } : s));
-      return;
-    }
-    const p = feature.properties;
-    selectedId.current = p.id;
-    recordInUrl(p.id);
-    setSelection((s) => ({ feature, seq: s.seq + 1 }));
-    announceSelected(main.mapRef.current, p);
-    if (info.via === "map") {
-      returnFocusTo.current = null;
-      track("map_pin_open", { org_id: p.org_id, site_id: p.id, via: "map" });
-    }
-  }
-
-  // After a selection renders: open the modal, show the place on the card's map, and move
-  // focus. Runs as a layout effect so focus moves before the browser paints.
-  const showCard = useEffectEvent((feature: Site) => {
-    const dialog = dialogRef.current!;
-    if (!dialog.open) dialog.showModal();
-
-    // The small map at the top of the card: where this place is, at street level, with
-    // the sites around it. It is the same map-core as the main map, so its pins look and
-    // behave the same — tapping another pin here opens that site's card in place.
-    // Scroll-to-zoom is off because the wheel belongs to the card's text; the zoom
-    // buttons and dragging stay.
-    let miniMap = mini.mapRef.current;
-    if (!miniMap) {
-      miniMap = mini.create({
-        style: structuredClone(basemap!),
-        data: model!.data,
-        onSelect: (picked, info) => {
-          if (info.via === "map" && picked && picked.properties.id !== selectedId.current) {
-            main.mapRef.current!.select(picked.properties.id);
-            track("map_pin_open", {
-              org_id: picked.properties.org_id, site_id: picked.properties.id, via: "mini_map",
-            });
-          }
-        },
-      });
-      miniMap.raw.scrollZoom.disable();
-      // MapLibre opens the compact attribution expanded until the first drag; on a map
-      // this small it would cover the bottom third. Collapsed, it is the (i) button.
-      miniMap.ready(() => miniMap!.raw.getContainer()
-        .querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show"));
-    }
-    // The dialog was display:none until a moment ago; the canvas has to measure again.
-    miniMap.raw.resize();
-    miniMap.ready(() => {
-      miniMap.raw.jumpTo({
-        center: feature.geometry.coordinates as [number, number], zoom: MINI_MAP_ZOOM,
-      });
-      miniMap.select(feature.properties.id);
-    });
-
-    // Focus the card's heading so a keyboard or screen-reader user lands on the content
-    // they just asked for instead of being left behind in the list. The exception is a
-    // stepper click: focus goes back to the arrow they pressed, so a second press steps
-    // again.
-    const arrow = stepFocus.current &&
-      dialog.querySelector<HTMLElement>(`.step-${stepFocus.current}`);
-    stepFocus.current = null;
-    (arrow || dialog.querySelector<HTMLElement>("#card-title")!).focus();
-  });
-
-  useLayoutEffect(() => {
-    if (selection.feature) showCard(selection.feature);
-  }, [selection]);
-
-  function openFromList(button: HTMLElement, feature: Site) {
-    const map = main.mapRef.current;
-    if (!map) return;                  // the list is up before the map is
-    returnFocusTo.current = button;
-    map.select(feature.properties.id);
-    track("map_pin_open", {
-      org_id: feature.properties.org_id, site_id: feature.properties.id, via: "list",
-    });
-  }
-
-  /** Step to the previous (-1) or next (+1) record in this group, wrapping round. */
-  function step(delta: number, dir: StepDirection) {
-    const group = coincidentWith(model!.atCoord, selection.feature!);
-    const index = group.findIndex((f) => f.properties.id === selection.feature!.properties.id);
-    const next = group[(index + delta + group.length) % group.length];
-    stepFocus.current = dir;
-    // Re-select through the core so the map's own state moves with the card.
-    main.mapRef.current!.select(next.properties.id);
-    track("map_pin_open", {
-      org_id: next.properties.org_id, site_id: next.properties.id, via: "stepper",
-    });
-  }
-
-  // ------------------------------------------------------------- the card's address
-
-  /*
-   * Opening a card from the map or the list adds a history entry with ?site=<id>, so the
-   * card has an address that can be shared, and the browser's Back button — the one a
-   * phone user reaches for — closes the card instead of leaving the page. Every way of
-   * closing it (the × button, Escape, a click on the blurred map) goes back through that
-   * same entry, so the history never collects a trail of closed cards.
-   *
-   * Moving between cards while one is open (the stepper, or a pin on the small map)
-   * replaces the entry instead of adding one: Back closes the card, whichever site it has
-   * reached, rather than stepping back through each one.
-   *
-   * Inside an iframe the address that changes is the frame's, not the host page's, so the
-   * link is the frame's own address with ?site=<id>. Back still works, because the browser
-   * keeps one history for the page and its frames.
-   */
-
-  /** Put the selected site in the address bar: a new entry when a card opens, else in place. */
-  function recordInUrl(id: string) {
-    if (urlDriven.current) {
-      urlDriven.current = false;       // the address already says so
-      return;
-    }
-    if (dialogRef.current!.open) {
-      history.replaceState(history.state, "", siteUrl(id));
-    } else {
-      history.pushState({ mapkitSite: id }, "", siteUrl(id));
-      pushed.current = true;
-    }
-  }
-
-  /** Close the card. If it has its own history entry, close it by going back. */
-  function closeCard() {
-    if (pushed.current) {
-      history.back();                  // popstate finds no ?site= and calls hideCard
-      return;
-    }
-    hideCard();
-    history.replaceState(history.state, "", siteUrl(null));
-  }
-
-  function hideCard() {
-    pushed.current = false;
-    if (dialogRef.current!.open) dialogRef.current!.close();
-    if (main.mapRef.current) main.mapRef.current.select(null);   // clears the selection
-    const back = returnFocusTo.current;
-    returnFocusTo.current = null;
-    if (back && document.contains(back)) back.focus();
-  }
-
-  const onPopState = useEffectEvent(() => {
-    const map = main.mapRef.current;
-    if (!map) return;
-    const id = new URLSearchParams(window.location.search).get("site");
-    if (id && model!.byId.has(id)) {
-      urlDriven.current = true;
-      map.select(id);
-      pushed.current = Boolean(history.state && history.state.mapkitSite);
-    } else if (dialogRef.current!.open) {
-      hideCard();
-    }
-  });
-
-  useEffect(() => {
-    const listener = () => onPopState();
-    window.addEventListener("popstate", listener);
-    return () => window.removeEventListener("popstate", listener);
-  }, []);
-
   // ------------------------------------------------------------------------- render
 
-  const feature = selection.feature;
+  const feature = card.feature;
   return (
     <>
       {/*
@@ -378,11 +195,11 @@ export default function App({ settings }: AppProps) {
         <div className="side">
           <Search onFound={setFound} onClear={() => setFound(null)} />
           <Panel model={model} list={settings.list} origin={found && found.center}
-                 selectedId={feature && feature.properties.id} onOpen={openFromList}
+                 selectedId={feature && feature.properties.id} onOpen={card.openFromList}
                  label="Volunteer sites" summary={<SiteCounts model={model} />} />
         </div>
         {/* map-core fills this div; React only puts the loading and error notes in it. */}
-        <div className="map" id="map" tabIndex={-1} ref={main.containerRef}>
+        <div className="map" id="map" tabIndex={-1} ref={containerRef}>
           {failed ? (
             <p className="load-error" id="loading"><span>The map could not load its data.</span></p>
           ) : !basemap && (
@@ -391,11 +208,10 @@ export default function App({ settings }: AppProps) {
         </div>
       </div>
 
-      <SiteDialog ref={dialogRef} miniMapRef={mini.containerRef}
-                  feature={feature}
-                  group={feature ? coincidentWith(model!.atCoord, feature) : []}
+      <SiteDialog ref={dialogElement} miniMapElement={miniMapElement}
+                  feature={feature} group={card.group}
                   model={model} lang={settings.lang}
-                  onStep={step} onClose={closeCard} />
+                  onStep={card.step} onClose={card.close} />
     </>
   );
 }
@@ -457,27 +273,4 @@ function SiteCounts({ model }: { model: Model | null }) {
       <span hidden={siteCount !== 1}>site</span>
     </>
   );
-}
-
-// ------------------------------------------------------------------------ live region
-
-/**
- * Announce a selection through the one live region map-core owns. Built as DOM nodes,
- * each string in its own element, because the region sits inside the map's container,
- * outside anything React renders — and the translation proxy has to reach it too.
- */
-function announceSelected(map: MapCore<SiteProperties> | null, p: SiteProperties) {
-  if (!map) return;
-  const span = (text: string) =>
-    Object.assign(document.createElement("span"), { textContent: text });
-  const line = document.createElement("p");
-  line.append(span("Selected"), ": ", span(p.org), ", ", span(p.address));
-  map.announce(line);
-}
-
-function siteUrl(id: string | null): URL {
-  const url = new URL(window.location.href);
-  if (id) url.searchParams.set("site", id);
-  else url.searchParams.delete("site");
-  return url;
 }

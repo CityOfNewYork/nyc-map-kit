@@ -3,8 +3,23 @@ import type { Site, SiteProperties } from "../../logic/types.ts";
 import { statusAt } from "./hours.ts";
 import type { OpenStatus } from "./hours.ts";
 
-/** The fields of a center the warming app reads, beyond a site's. */
-type CenterProperties = SiteProperties & { type?: string; opens?: string; closes?: string };
+/** The fields of a center the warming app reads, beyond a site's. Any may be missing. */
+export interface CenterDetails {
+  type?: string;
+  /** "HH:MM", New York time (see hours.ts). */
+  opens?: string;
+  closes?: string;
+  phone?: string;
+  /** The center's web page, with or without "https://". */
+  website?: string;
+  wheelchair?: boolean;
+  pets?: boolean;
+  /** How to get in, in a sentence or two. */
+  instructions?: string;
+  /** The day the center's details were last checked, "2026-10-04". */
+  updated?: string;
+}
+type CenterProperties = SiteProperties & CenterDetails;
 
 /** A kind of center: what the list calls it, the colour of its pins and icons, and the
  *  glyph they carry, as SVG path data on a 24-unit square. */
@@ -41,6 +56,11 @@ export const CENTER_PINS: PinCategories = {
 export function centerKind(feature: Site): CenterKind | undefined {
   const { type } = feature.properties as CenterProperties;
   return type === undefined ? undefined : CENTER_KINDS.get(type);
+}
+
+/** A center's own fields. */
+export function centerDetails(feature: Site): CenterDetails {
+  return feature.properties as CenterProperties;
 }
 
 /** Whether a center is open at `minute` past midnight, New York time. Null when its

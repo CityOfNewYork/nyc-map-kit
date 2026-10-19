@@ -1,4 +1,4 @@
-import type { MouseEvent, Ref, SyntheticEvent } from "react";
+import type { MouseEvent, ReactNode, Ref, SyntheticEvent } from "react";
 import type { Model, Site } from "../logic/types.ts";
 import { Card } from "./Card.tsx";
 
@@ -8,13 +8,16 @@ export type StepDirection = "prev" | "next";
 interface SiteDialogProps {
   ref: Ref<HTMLDialogElement>;
   /** The div the card's small map is drawn into. */
-  miniMapRef: Ref<HTMLDivElement>;
+  miniMapElement: Ref<HTMLDivElement>;
   feature: Site | null;
   group: Site[];
   model: Model | null;
   lang: string;
   onStep: (delta: number, dir: StepDirection) => void;
   onClose: () => void;
+  /** The card's content for a site. It must include the heading, id "card-title", that
+   *  focus moves to. The block's own Card unless given. */
+  card?: (feature: Site) => ReactNode;
 }
 
 /**
@@ -24,16 +27,18 @@ interface SiteDialogProps {
  *
  * A native <dialog> opened with showModal() makes everything behind it inert, keeps
  * Tab inside it, and turns Escape into a `cancel` event — the modal contract, from the
- * browser rather than from code. It holds a small map of the place, the stepper (chrome
- * for moving between records that share a location) and the card (always exactly one
- * record). The stepper and the card are siblings, so the card's content is never mixed
- * with the controls around it. Close is last in the DOM so Tab walks the card first.
+ * browser rather than from code. It holds the stepper (chrome for moving between records
+ * that share a location), floating above a white box with a small map of the place and
+ * the card (always exactly one record). The stepper and the card are siblings, so the
+ * card's content is never mixed with the controls around it. Close is last in the box so
+ * Tab walks the card first.
  *
- * App.tsx opens and closes it (showModal / close) and owns what is selected; this file is
- * only its markup. `group` is every record at the selected one's location.
+ * useSiteCard.ts opens and closes it (showModal / close) and owns what is selected; this
+ * file is only its markup. `group` is every record at the selected one's location. The
+ * card's content is `card`'s, or the block's own Card.
  */
 export function SiteDialog(
-  { ref, miniMapRef, feature, group, model, lang, onStep, onClose }: SiteDialogProps,
+  { ref, miniMapElement, feature, group, model, lang, onStep, onClose, card }: SiteDialogProps,
 ) {
   // Escape arrives as `cancel`. Taken over so it closes through history like every other
   // way of closing the card.
@@ -41,8 +46,8 @@ export function SiteDialog(
     e.preventDefault();
     onClose();
   };
-  // The dialog's children fill it, so a click that lands on the dialog element itself is
-  // a click on the backdrop around it.
+  // The dialog itself is transparent, so a click that lands on it rather than on the
+  // stepper or the box is a click on the backdrop around them.
   const onBackdropClick = (e: MouseEvent<HTMLDialogElement>) => {
     if (e.target === e.currentTarget) onClose();
   };
@@ -50,15 +55,20 @@ export function SiteDialog(
   return (
     <dialog className="site-dialog" id="site-dialog" aria-labelledby="card-title" ref={ref}
             onCancel={onCancel} onClick={onBackdropClick}>
-      <div className="mini-map" id="mini-map" ref={miniMapRef} />
       <Stepper group={group} currentId={feature && feature.properties.id} onStep={onStep} />
-      <article className="card" id="card" aria-labelledby="card-title" hidden={!feature}>
-        {feature && <Card feature={feature} model={model!} lang={lang} />}
-      </article>
-      <button className="card-close" id="card-close" type="button" onClick={onClose}>
-        <span aria-hidden="true">×</span>{" "}
-        <span className="visually-hidden">Close this site</span>
-      </button>
+      <div className="card-box">
+        <div className="mini-map" id="mini-map" ref={miniMapElement} />
+        <article className="card" id="card" aria-labelledby="card-title" hidden={!feature}>
+          {feature && (card ? card(feature) : <Card feature={feature} model={model!} lang={lang} />)}
+        </article>
+        <button className="card-close" id="card-close" type="button" onClick={onClose}>
+          <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20">
+            <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2.2"
+                  strokeLinecap="round" />
+          </svg>
+          <span className="visually-hidden">Close this site</span>
+        </button>
+      </div>
     </dialog>
   );
 }
@@ -91,34 +101,38 @@ function Stepper({ group, currentId, onStep }: StepperProps) {
     <div className="stepper" id="stepper" role="group" hidden={!show}>
       {show && (
         <>
-          <ArrowButton dir="prev" glyph={"‹"} label="Previous site at this location"
-                       onClick={() => onStep(-1, "prev")} />
+          <ArrowButton dir="prev" path="M12.5 4.5 7 10l5.5 5.5"
+                       label="Previous site at this location" onClick={() => onStep(-1, "prev")} />
           {/* Separate text nodes, never "1 of 2" as one string: the proxy translates the
               words and leaves the numerals alone. */}
           <p className="step-count">
             <span>{index + 1}</span>{" "}<span>of</span>{" "}<span>{group.length}</span>{" "}
             <span>at this location</span>
           </p>
-          <ArrowButton dir="next" glyph={"›"} label="Next site at this location"
-                       onClick={() => onStep(1, "next")} />
+          <ArrowButton dir="next" path="M7.5 4.5 13 10l-5.5 5.5"
+                       label="Next site at this location" onClick={() => onStep(1, "next")} />
         </>
       )}
     </div>
   );
 }
 
-/** One stepper arrow. The glyph is decoration; the label is what is announced. */
+/** One stepper arrow. The chevron (`path`, on a 20-unit square) is decoration; the label
+ *  is what is announced. */
 interface ArrowButtonProps {
   dir: StepDirection;
-  glyph: string;
+  path: string;
   label: string;
   onClick: () => void;
 }
 
-function ArrowButton({ dir, glyph, label, onClick }: ArrowButtonProps) {
+function ArrowButton({ dir, path, label, onClick }: ArrowButtonProps) {
   return (
     <button type="button" className={`step step-${dir}`} onClick={onClick}>
-      <span aria-hidden="true">{glyph}</span>
+      <svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16">
+        <path d={path} fill="none" stroke="currentColor" strokeWidth="2.4"
+              strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
       <span className="visually-hidden">{label}</span>
     </button>
   );

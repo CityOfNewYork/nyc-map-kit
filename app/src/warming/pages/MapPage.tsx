@@ -14,7 +14,8 @@ interface MapPageProps {
   selectedId: string | null;
   onFound: (place: Found) => void;
   onClear: () => void;
-  onOpen: (feature: Site) => void;
+  /** A row was chosen: the button that was pressed, and its center. */
+  onOpen: (button: HTMLElement, feature: Site) => void;
 }
 
 /** The map view's own part: the search box and the list. The map beside them is App's,
@@ -23,11 +24,11 @@ export function MapPage({ model, found, selectedId, onFound, onClear, onOpen }: 
   const minute = useNycMinute();
   return (
     <>
-      <h2 className="visually-hidden">Map of warming centers</h2>
+      <h2 className="visually-hidden" id="map-heading" tabIndex={-1}>Map of warming centers</h2>
       <div className="side">
         <Search onFound={onFound} onClear={onClear} />
         <Panel model={model} list="on" origin={found && found.center} selectedId={selectedId}
-               onOpen={(_button, feature) => onOpen(feature)}
+               onOpen={onOpen}
                label="Warming centers" summary={<CenterCount model={model} />}
                row={(feature) => centerRow(feature, minute)} marker={centerMarker}
                header={<ListHead model={model} found={found} />} />

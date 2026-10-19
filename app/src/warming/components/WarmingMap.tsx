@@ -1,7 +1,8 @@
 import { useEffect, useEffectEvent, useState } from "react";
 import { loadBasemap } from "../../core/basemaps/index.ts";
 import type { BasemapId } from "../../core/basemaps/names.ts";
-import type { MapCore } from "../../core/map-core.ts";
+import type { StyleSpecification } from "maplibre-gl";
+import type { MapCore, SelectInfo } from "../../core/map-core.ts";
 import type { Site, SiteCollection, SiteProperties } from "../../logic/types.ts";
 import { keepClearOfList } from "../../ui/layout.ts";
 import { useMapCore } from "../../ui/useMapCore.ts";
@@ -16,8 +17,9 @@ interface WarmingMapProps {
   data: SiteCollection | null;
   /** Keep the camera's centre clear of the list. It can change while the map is showing. */
   padForList?: boolean;
-  onReady?: (map: MapCore<SiteProperties>) => void;
-  onSelect?: (feature: Site | null) => void;
+  /** The map exists, drawn in `style`. */
+  onReady?: (map: MapCore<SiteProperties>, style: StyleSpecification) => void;
+  onSelect?: (feature: Site | null, info: SelectInfo) => void;
   /** The reader clicked, dragged, zoomed or panned the map. Moves the map makes on its
    *  own, such as framing a search result, do not count. */
   onInteract?: () => void;
@@ -29,8 +31,10 @@ export function WarmingMap({
   const { containerRef, create, destroy } = useMapCore<SiteProperties>();
   const [map, setMap] = useState<MapCore<SiteProperties> | null>(null);
   const [failed, setFailed] = useState(false);
-  const ready = useEffectEvent((created: MapCore<SiteProperties>) => onReady?.(created));
-  const select = useEffectEvent((feature: Site | null) => onSelect?.(feature));
+  const ready = useEffectEvent(
+    (created: MapCore<SiteProperties>, style: StyleSpecification) => onReady?.(created, style));
+  const select = useEffectEvent(
+    (feature: Site | null, info: SelectInfo) => onSelect?.(feature, info));
   const interact = useEffectEvent(() => onInteract?.());
 
   useEffect(() => {
@@ -40,7 +44,8 @@ export function WarmingMap({
       .then((style) => {
         if (cancelled) return;
         const created = create({
-          style, data, categories: CENTER_PINS, onSelect: (feature) => select(feature),
+          style: structuredClone(style), data, categories: CENTER_PINS,
+          onSelect: (feature, info) => select(feature, info),
         });
         // Only the reader's own input carries an originalEvent. A wheel zoom's movestart
         // carries none, so the wheel is heard on its own.
@@ -48,7 +53,7 @@ export function WarmingMap({
         created.raw.on("wheel", () => interact());
         created.raw.on("movestart", (e) => { if (e.originalEvent) interact(); });
         setMap(created);
-        ready(created);
+        ready(created, style);
       })
       .catch((err) => {
         console.error(err);
