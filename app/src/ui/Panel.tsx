@@ -27,8 +27,12 @@ interface PanelProps {
   summary: ReactNode;
   /** A row's lines above the distance. The site's name and address unless given. */
   row?: (feature: Site) => ReactNode;
-  /** Shown above the rows, such as a count of the sites. Nothing unless given. */
+  /** Shown above the rows and kept in view, such as a count of the sites. Nothing unless
+   *  given. */
   header?: ReactNode;
+  /** Shown at the top of the rows and scrolled away with them, such as a notice. Nothing
+   *  unless given. */
+  intro?: ReactNode;
   /** A mark before a row's lines, such as an icon of the site's kind. None unless given. */
   marker?: (feature: Site) => ReactNode;
 }
@@ -48,12 +52,12 @@ interface PanelProps {
  * nothing in it responds.
  */
 export function Panel({
-  model, list, selectedId, origin, onOpen, label, summary, row, header, marker,
+  model, list, selectedId, origin, onOpen, label, summary, row, header, intro, marker,
 }: PanelProps) {
   const [step, setStep] = useState<SheetStep>("collapsed");
   const [dragging, setDragging] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ y: number; h: number } | null>(null);
 
   // The sheet's height is a CSS variable on <html>, because the map's own controls read
@@ -74,7 +78,7 @@ export function Panel({
 
   // A new order starts at the top, where the nearest site now is.
   useEffect(() => {
-    if (listRef.current) listRef.current.scrollTop = 0;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [origin]);
 
   // Drag, in addition to tap. Pointer events cover mouse, touch and pen with one path.
@@ -140,44 +144,47 @@ export function Panel({
         elements: the number, then "mi" for the eye and "miles" for a screen reader, then
         "away".
       */}
-      <ul className="site-list" id="site-list" ref={listRef}>
-        {sites.map(({ feature, metres }) => {
-          const p = feature.properties;
-          const lines = (
-            <>
-              {row ? row(feature) : (
-                <>
-                  <span className="name">{p.org}</span>
-                  <span className="addr">{p.address}</span>
-                </>
-              )}
-              {metres != null && (
-                <span className="dist">
-                  <span>{miles(metres)}</span>{" "}
-                  <span aria-hidden="true">mi</span>
-                  <span className="visually-hidden">miles</span>{" "}
-                  <span>away</span>
-                </span>
-              )}
-            </>
-          );
-          return (
-            <li key={p.id}>
-              <button type="button" className={marker ? "site-button marked" : "site-button"}
-                      data-site-id={p.id}
-                      aria-current={p.id === selectedId ? "true" : undefined}
-                      onClick={(e) => onOpen(e.currentTarget, feature)}>
-                {marker ? (
+      <div className="site-scroll" ref={scrollRef}>
+        {intro && <div className="list-intro">{intro}</div>}
+        <ul className="site-list" id="site-list">
+          {sites.map(({ feature, metres }) => {
+            const p = feature.properties;
+            const lines = (
+              <>
+                {row ? row(feature) : (
                   <>
-                    <span className="site-marker">{marker(feature)}</span>
-                    <span className="site-lines">{lines}</span>
+                    <span className="name">{p.org}</span>
+                    <span className="addr">{p.address}</span>
                   </>
-                ) : lines}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+                )}
+                {metres != null && (
+                  <span className="dist">
+                    <span>{miles(metres)}</span>{" "}
+                    <span aria-hidden="true">mi</span>
+                    <span className="visually-hidden">miles</span>{" "}
+                    <span>away</span>
+                  </span>
+                )}
+              </>
+            );
+            return (
+              <li key={p.id}>
+                <button type="button" className={marker ? "site-button marked" : "site-button"}
+                        data-site-id={p.id}
+                        aria-current={p.id === selectedId ? "true" : undefined}
+                        onClick={(e) => onOpen(e.currentTarget, feature)}>
+                  {marker ? (
+                    <>
+                      <span className="site-marker">{marker(feature)}</span>
+                      <span className="site-lines">{lines}</span>
+                    </>
+                  ) : lines}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </nav>
   );
 }

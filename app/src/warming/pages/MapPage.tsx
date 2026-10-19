@@ -65,7 +65,7 @@ export function MapPage({
                        onChange={onFilters} onClose={closeFilters} />
         )}
         <Panel model={listed} list="on" origin={found && found.center} selectedId={selectedId}
-               onOpen={onOpen}
+               onOpen={onOpen} intro={<CodeBlueNotice />}
                label="Warming centers" summary={<CenterCount count={listed && shown.length} />}
                row={(feature) => centerRow(feature, minute)} marker={centerMarker}
                header={(
@@ -80,13 +80,13 @@ export function MapPage({
 }
 
 /**
- * Above the rows: the Code Blue notice, then on a desktop how many centers there are, or
- * with filters on how many of how many, and after a search the place they are ordered
- * from. The count is a live region, so a screen reader hears what a filter left. On a
- * desktop the place line stands in for the search box's own (see warming.css), so it is a
- * live region too, and a screen reader hears it without leaving the input. On a phone the
- * sheet's handle carries the count and the search box keeps its line, so only the notice
- * shows.
+ * Above the rows, on a desktop: how many centers there are, or with filters on how many
+ * of how many, and after a search the place they are ordered from. The count is a live
+ * region, so a screen reader hears what a filter left. The place line stands in for the
+ * search box's own (see warming.css), so it is a live region too, and a screen reader
+ * hears it without leaving the input. On a phone the sheet's handle carries the count and
+ * the search box keeps its line, so this is hidden. The Code Blue notice is the list's
+ * intro, at the top of the rows and scrolling away with them.
  */
 function ListHead({ total, shown, filtered, found, onClearFilters }: {
   total: number | null; shown: number; filtered: boolean; found: Found | null;
@@ -94,7 +94,6 @@ function ListHead({ total, shown, filtered, found, onClearFilters }: {
 }) {
   return (
     <>
-      <CodeBlueNotice />
       <p className="list-count" role="status">
         {filtered ? (
           <>

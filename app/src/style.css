@@ -522,13 +522,17 @@ body {
    sometimes a destination and sometimes a container has to be learned before it can be
    used. The borough is not repeated here — it is already inside the address string — so
    a row is two lines and the panel scrolls a third less. */
+/* What scrolls: an app's intro, if it gives one, then the rows. */
+.site-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .site-list {
   margin: 0;
   padding: 0;
   list-style: none;
-  overflow-y: auto;
-  flex: 1;
-  -webkit-overflow-scrolling: touch;
 }
 .site-list > li { border-bottom: 1px solid var(--line); }
 

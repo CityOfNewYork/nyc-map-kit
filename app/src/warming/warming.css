@@ -121,8 +121,13 @@
   .stage .search-status:has(> .search-found) { padding: 0; border-top: 0; }
 }
 @media (max-width: 767px) {
-  .list-head { padding: 12px 14px 0; border-bottom: 0; }
-  .list-head > :not(.notice) { display: none; }
+  .list-head { display: none; }
+}
+
+/* At the top of the rows, scrolling away with them. */
+.list-intro { padding: 12px 16px 2px; }
+@media (max-width: 767px) {
+  .list-intro { padding: 12px 14px 2px; }
 }
 
 /* That a Code Blue is in effect: pale blue, with the snowflake in the primary blue. */
