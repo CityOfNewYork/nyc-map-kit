@@ -175,7 +175,7 @@ function parkland(style: StyleSpecification, palette: Palette) {
 /** Buildings appear from BUILDING_ZOOM, fading in over the half zoom before it, as
  *  Google's map shows them only once its streets are block by block. Further out the
  *  tiles carry only some of the buildings, which draw as a sparse scatter. */
-const BUILDING_ZOOM = 15;
+const BUILDING_ZOOM = 16;
 
 /** Buildings opaque, with positron's outline, from BUILDING_ZOOM. Protomaps draws them
  *  half-transparent, and from z13. */
