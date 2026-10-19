@@ -1,5 +1,10 @@
 import type { PinCategories } from "../../core/map-core.ts";
 import type { Site, SiteProperties } from "../../logic/types.ts";
+import { statusAt } from "./hours.ts";
+import type { OpenStatus } from "./hours.ts";
+
+/** The fields of a center the warming app reads, beyond a site's. */
+type CenterProperties = SiteProperties & { type?: string; opens?: string; closes?: string };
 
 /** A kind of center: what the list calls it, the colour of its pins and icons, and the
  *  glyph they carry, as SVG path data on a 24-unit square. */
@@ -34,6 +39,13 @@ export const CENTER_PINS: PinCategories = {
 
 /** A center's kind. Undefined for a type not listed above. */
 export function centerKind(feature: Site): CenterKind | undefined {
-  const { type } = feature.properties as SiteProperties & { type?: string };
+  const { type } = feature.properties as CenterProperties;
   return type === undefined ? undefined : CENTER_KINDS.get(type);
+}
+
+/** Whether a center is open at `minute` past midnight, New York time. Null when its
+ *  hours cannot be read. */
+export function centerStatus(feature: Site, minute: number): OpenStatus | null {
+  const { opens, closes } = feature.properties as CenterProperties;
+  return statusAt(opens, closes, minute);
 }

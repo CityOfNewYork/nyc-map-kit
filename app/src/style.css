@@ -84,7 +84,7 @@ body {
   margin: 0;
   font-family: var(--font);
   font-size: 16px;
-  font-weight: 500;        /* the design system sets text in Noto Sans Medium */
+  font-weight: 400;
   line-height: 1.5;
   color: var(--ink);
   background: var(--surface);
