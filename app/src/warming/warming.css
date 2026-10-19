@@ -193,6 +193,68 @@
 
 /* ------------------------------------------------------------------ filters ------ */
 
+/* Where they fit, the filters are a row of buttons beside the search box, and the
+   Filters button and its panel step aside. */
+.filter-bar { display: none; align-items: center; gap: 8px; }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--search-h);
+  padding: 0 12px;
+  border: 1px solid #bbbbbb;
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pill:hover { background: var(--hover); }
+/* A filter that is on: tinted, in the primary blue. */
+.pill.on {
+  border-color: var(--primary);
+  background: #e6efff;
+  color: #050560;
+  font-weight: 600;
+}
+.pill[aria-expanded="true"] svg { transform: rotate(180deg); }
+.check-pill input { width: 18px; height: 18px; margin: 0; accent-color: var(--ink); }
+.check-pill:has(input:focus-visible) { outline: 2px dashed var(--ink); outline-offset: 2px; }
+.check-pill input:focus-visible { outline: none; }
+
+/* A filter button's menu, under it, over the map and the list. */
+.dropdown { position: relative; }
+.dropdown-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 10;
+  display: grid;
+  gap: 14px;
+  min-width: 220px;
+  padding: 14px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+}
+.dropdown-panel[hidden] { display: none; }
+.dropdown-panel fieldset { display: grid; gap: 4px; margin: 0; padding: 0; border: 0; }
+.dropdown-done {
+  justify-self: end;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* The search box with the round Filters button beside it, as wide as the list below. */
 .search-row {
   display: flex;
@@ -232,6 +294,14 @@
   color: var(--surface);
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+/* Wide enough for the row of filter buttons (see .filter-bar above). */
+@media (min-width: 1100px) {
+  .search-row { width: auto; }
+  .search-row .search { flex: none; width: 360px; }
+  .filters-button { display: none; }
+  .filter-bar { display: flex; }
 }
 
 /* The filters: a card under the toolbar, pushing the list down. */

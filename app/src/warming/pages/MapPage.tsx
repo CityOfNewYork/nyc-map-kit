@@ -5,6 +5,7 @@ import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { Panel } from "../../ui/Panel.tsx";
 import { PlaceName, Search } from "../../ui/Search.tsx";
 import { CodeBlueNotice } from "../components/CodeBlueNotice.tsx";
+import { FilterBar } from "../components/FilterBar.tsx";
 import { FilterPanel } from "../components/FilterPanel.tsx";
 import { MapKey } from "../components/MapKey.tsx";
 import { OpenStatusLine } from "../components/OpenStatusLine.tsx";
@@ -27,8 +28,10 @@ interface MapPageProps {
   onOpen: (button: HTMLElement, feature: Site) => void;
 }
 
-/** The map view's own part: the search box with the Filters button beside it, on a bar
- *  above the map, then the list. The map is App's, shared with the landing view. */
+/** The map view's own part: the search box with the filters beside it, on a bar above
+ *  the map, then the list. On a wide screen the filters are a row of buttons (FilterBar);
+ *  narrower, one Filters button opens them all (FilterPanel). The map is App's, shared
+ *  with the landing view. */
 export function MapPage({
   model, shown, filters, onFilters, found, selectedId, onFound, onClear, onOpen,
 }: MapPageProps) {
@@ -68,6 +71,7 @@ export function MapPage({
               </span>
             )}
           </button>
+          <FilterBar filters={filters} onChange={onFilters} />
         </div>
       </div>
       <div className="side">
