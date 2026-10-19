@@ -243,9 +243,9 @@ const PARK_NAME_ZOOM = 14;
  *  size. A cemetery is named this many zooms before the tiles say, so Green-Wood is
  *  named from z12 as Prospect Park is. */
 const CEMETERY_HEAD_START = 1;
-/** Neighbourhood names, about as big as a borough's name at the map's opening zoom on a
+/** Neighbourhood names, a point under a borough's name at the map's opening zoom on a
  *  desktop (see addBoroughLabels). Protomaps sizes places by population. */
-const NEIGHBOURHOOD_SIZE = 15;
+const NEIGHBOURHOOD_SIZE = 14;
 /** Positron names major roads from this zoom; Protomaps from z11. */
 const POSITRON_ROAD_NAME_ZOOM = 12.2;
 
