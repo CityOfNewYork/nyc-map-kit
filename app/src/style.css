@@ -1084,9 +1084,21 @@ body {
   .sheet-handle:hover { background: var(--hover); }
   .sheet-handle:focus-visible { outline-offset: -4px; }
   .sheet-handle .counts { flex: 1; font-size: 0.875rem; font-weight: 600; }
-  .panel.shut { flex: none; }
+  /* Shut, the list is its own small box, as an app's closed map key is: a triangle and
+     "Show list", in the key's type. */
+  .panel.shut { flex: none; align-self: flex-start; }
   .panel.shut > :not(.sheet-handle) { display: none; }
-  .panel.shut .sheet-handle { border-bottom: 0; }
+  .panel.shut .sheet-handle {
+    gap: 8px;
+    min-height: 0;
+    padding: 10px 14px;
+    border-bottom: 0;
+    line-height: 20px;
+    color: var(--ink);
+  }
+  .panel.shut .sheet-handle .counts { font-weight: 700; }
+  .panel.shut .sheet-handle .chev { font-size: 0.5625rem; color: var(--ink); }
+  [dir="rtl"] .panel.shut .sheet-handle .chev { transform: scaleX(-1); }
 }
 
 /* ------------------------------------------------------------------ right to left - */

@@ -59,8 +59,9 @@ export function Panel({
 }: PanelProps) {
   const [step, setStep] = useState<SheetStep>("collapsed");
   const [dragging, setDragging] = useState(false);
-  // On a desktop the handle is the panel's top line, and hides the list under it or shows
-  // it again; on a phone it steps the sheet's height.
+  // On a desktop the handle is the panel's top line, and hides the list under it; the
+  // panel then shrinks to a box that says "Show list". On a phone it steps the sheet's
+  // height.
   const [desktop, setDesktop] = useState(() => matchMedia(DESKTOP).matches);
   const [shut, setShut] = useState(false);
   useEffect(() => {
@@ -130,11 +131,18 @@ export function Panel({
                 ? setShut((s) => !s) : setStep((s) => NEXT_STEP[s]))}
               onPointerDown={onPointerDown} onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}>
-        <span className="counts">{summary}</span>
-        <span className="chev" aria-hidden="true">
-          {(desktop ? shut : step === "half") ? "▼" : "▲"}
-        </span>
-        <span className="visually-hidden">{t("Show or hide the list")}</span>
+        {desktop && shut ? (
+          <>
+            <span className="chev" aria-hidden="true">▶</span>
+            <span className="counts">{t("Show list")}</span>
+          </>
+        ) : (
+          <>
+            <span className="counts">{summary}</span>
+            <span className="chev" aria-hidden="true">{step === "half" ? "▼" : "▲"}</span>
+            <span className="visually-hidden">{t("Show or hide the list")}</span>
+          </>
+        )}
       </button>
 
       {header && <div className="list-head">{header}</div>}
