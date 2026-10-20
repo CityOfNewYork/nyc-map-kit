@@ -79,7 +79,8 @@
  *
  * A `pmtiles://` source reads its tiles out of one PMTiles file by HTTP range request, with
  * no tile server; the Protomaps basemap (basemaps/protomaps.ts) is one. The protocol is
- * registered here once, like the worker, so any map the core creates can draw one.
+ * registered here once, like the worker, so any map the core creates can draw one. Each
+ * file is read through a RereadingSource, below.
  */
 
 import type { Feature, FeatureCollection, Point } from "geojson";
@@ -87,10 +88,41 @@ import * as maplibregl from "maplibre-gl";
 import type { ExpressionSpecification, GeoJSONSource, StyleSpecification } from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Protocol } from "pmtiles";
+import { FetchSource, PMTiles, Protocol } from "pmtiles";
+
+/**
+ * A FetchSource that reads once more, past the browser's cache, when a read fails.
+ *
+ * A browser that kept part of the file asks for a range with If-Range. Every deploy
+ * restamps the file's Last-Modified and ETag, so after one the server answers with the
+ * whole file instead of the range (RFC 9110 §13.1.5), and FetchSource rejects that. The
+ * Protocol keeps a failed header read, so without a second read no tile would load until
+ * the page did. The second read, and every read after it, uses cache "reload", which
+ * sends no If-Range.
+ */
+class RereadingSource extends FetchSource {
+  override async getBytes(offset: number, length: number, signal?: AbortSignal, etag?: string) {
+    try {
+      return await super.getBytes(offset, length, signal, etag);
+    } catch (err) {
+      // An aborted read was cancelled on purpose. A source already reloading has failed
+      // past the cache, or has FetchSource's own ETag retry under way.
+      if (signal?.aborted || this.mustReload) throw err;
+      this.mustReload = true;
+      return super.getBytes(offset, length, signal, etag);
+    }
+  }
+}
 
 maplibregl.setWorkerUrl(workerUrl);
-maplibregl.addProtocol("pmtiles", new Protocol().tile);
+const pmtiles = new Protocol();
+maplibregl.addProtocol("pmtiles", (params, abort) => {
+  // The Protocol makes a plain FetchSource for a file it has not been given, so it is
+  // given each one first. The URL is pmtiles://<file>, or pmtiles://<file>/z/x/y.
+  const file = params.url.slice("pmtiles://".length).replace(/\/\d+\/\d+\/\d+$/, "");
+  if (!pmtiles.get(file)) pmtiles.add(new PMTiles(new RereadingSource(file)));
+  return pmtiles.tilev4(params, abort);
+});
 
 // -------------------------------------------------------------------------------- types
 
