@@ -120,5 +120,24 @@
   "How to get in": "كيفية الدخول",
   "Hospital": "مستشفى",
   "Drop-in center": "مركز استقبال",
-  "Warming bus": "حافلة تدفئة"
+  "Warming bus": "حافلة تدفئة",
+  "Computer centers": "مراكز الحاسوب",
+  "{n} centers": {
+    "zero": "{n} مراكز",
+    "one": "مركز واحد",
+    "two": "مركزان",
+    "few": "{n} مراكز",
+    "many": "{n} مركزًا",
+    "other": "{n} مركز"
+  },
+  "Overseen by": "تحت إشراف",
+  "Help and classes": "المساعدة والدروس",
+  "Who it's for": "لمن هو",
+  "Who can use it": "من يمكنه استخدامه",
+  "Computers": "أجهزة الحاسوب",
+  "Devices": "الأجهزة",
+  "Lends devices": "يُعير الأجهزة",
+  "Languages": "اللغات",
+  "Operated by": "تديره",
+  "public computer centers data": "بيانات مراكز الحاسوب العامة"
 }

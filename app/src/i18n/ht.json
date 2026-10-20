@@ -99,5 +99,20 @@
   "How to get in": "Kijan pou antre",
   "Hospital": "Lopital",
   "Drop-in center": "Sant akèy",
-  "Warming bus": "Bis chofaj"
+  "Warming bus": "Bis chofaj",
+  "Computer centers": "Sant òdinatè",
+  "{n} centers": {
+    "one": "{n} sant",
+    "other": "{n} sant"
+  },
+  "Overseen by": "Sipèvize pa",
+  "Help and classes": "Èd ak klas",
+  "Who it's for": "Pou ki moun",
+  "Who can use it": "Ki moun ki ka itilize l",
+  "Computers": "Òdinatè",
+  "Devices": "Aparèy",
+  "Lends devices": "Prete aparèy",
+  "Languages": "Lang",
+  "Operated by": "Jere pa",
+  "public computer centers data": "done sou sant òdinatè piblik yo"
 }

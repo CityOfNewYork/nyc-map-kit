@@ -1,0 +1,32 @@
+{
+  "_README": "The public computer centers map's configuration; app/public/config.json explains each part. Every field is read off the center's own properties (`source: \"site\"`): build/computer-centers.py writes them, composing `hours` from the seven weekday columns and `services` from the Y/N columns. `pins` colours the pins by oversight agency from the stock in app/src/core/pins.ts, the agency with the most centers first.",
+  "title": "Public computer centers",
+  "listLabel": "Computer centers",
+  "count": { "one": "{n} center", "other": "{n} centers" },
+  "filterLabel": "Overseen by",
+  "pins": { "field": "org_type" },
+  "coLocationRadiusM": 35,
+  "openInMaps": {
+    "query": [
+      { "key": "address", "source": "site" }
+    ]
+  },
+  "actions": [
+    { "key": "phone", "source": "site", "label": "Call", "as": "tel" }
+  ],
+  "facts": [
+    { "key": "hours", "source": "site", "label": "Hours", "icon": "clock" },
+    { "key": "website", "source": "site", "label": "Website", "as": "url", "icon": "globe" }
+  ],
+  "card": [
+    { "key": "services", "source": "site", "label": "Help and classes" },
+    { "key": "population", "source": "site", "label": "Who it's for" },
+    { "key": "access", "source": "site", "label": "Who can use it" },
+    { "key": "computers", "source": "site", "label": "Computers" },
+    { "key": "devices", "source": "site", "label": "Devices" },
+    { "key": "lending", "source": "site", "label": "Lends devices" },
+    { "key": "languages", "source": "site", "label": "Languages" },
+    { "key": "wheelchair", "source": "site", "label": "Wheelchair accessible" },
+    { "key": "operator", "source": "site", "label": "Operated by" }
+  ]
+}

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Public computer centers map</title>
+<meta name="robots" content="noindex">
+<!--
+  The block (see index.html) showing a second dataset: the City's public computer centers.
+  The page names its own files on <body>; main.tsx reads them. The data is built by
+  build/computer-centers.py, and computer-centers/config.json decides what the card shows.
+  It has no orgs.json: each center is its own entry.
+-->
+<link rel="preload" href="/fonts/noto-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+</head>
+
+<body data-config="computer-centers/config.json" data-data="computer-centers/sites.geojson"
+      data-orgs="">
+<p class="prototype-note"><strong data-t>Prototype, not a City service.</strong>
+<span data-t>For current information see the City's</span>
+<a href="https://data.cityofnewyork.us/d/sejx-2gn3" target="_top" data-t>public computer centers data</a><span>.</span>
+<button class="note-close" type="button"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span class="visually-hidden" data-t>Close this note</span></button></p>
+<div id="root"></div>
+<script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

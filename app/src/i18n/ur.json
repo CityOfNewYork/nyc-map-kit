@@ -117,5 +117,20 @@
   "How to get in": "اندر کیسے جائیں",
   "Hospital": "ہسپتال",
   "Drop-in center": "ڈراپ اِن سینٹر",
-  "Warming bus": "گرمائش بس"
+  "Warming bus": "گرمائش بس",
+  "Computer centers": "کمپیوٹر مراکز",
+  "{n} centers": {
+    "one": "{n} مرکز",
+    "other": "{n} مراکز"
+  },
+  "Overseen by": "زیرِ نگرانی",
+  "Help and classes": "مدد اور کلاسیں",
+  "Who it's for": "کس کے لیے",
+  "Who can use it": "کون استعمال کر سکتا ہے",
+  "Computers": "کمپیوٹر",
+  "Devices": "آلات",
+  "Lends devices": "آلات مستعار دیتا ہے",
+  "Languages": "زبانیں",
+  "Operated by": "زیرِ انتظام",
+  "public computer centers data": "عوامی کمپیوٹر مراکز کا ڈیٹا"
 }

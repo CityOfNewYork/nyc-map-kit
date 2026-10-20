@@ -120,5 +120,20 @@
   "How to get in": "Cómo entrar",
   "Hospital": "Hospital",
   "Drop-in center": "Centro sin cita previa",
-  "Warming bus": "Autobús de calentamiento"
+  "Warming bus": "Autobús de calentamiento",
+  "Computer centers": "Centros de computación",
+  "{n} centers": {
+    "one": "{n} centro",
+    "other": "{n} centros"
+  },
+  "Overseen by": "Supervisado por",
+  "Help and classes": "Ayuda y clases",
+  "Who it's for": "Para quién es",
+  "Who can use it": "Quién puede usarlo",
+  "Computers": "Computadoras",
+  "Devices": "Dispositivos",
+  "Lends devices": "Presta dispositivos",
+  "Languages": "Idiomas",
+  "Operated by": "Operado por",
+  "public computer centers data": "datos de centros públicos de computación"
 }

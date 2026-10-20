@@ -117,5 +117,20 @@
   "How to get in": "ווי אַזוי אַרײַנצוגיין",
   "Hospital": "שפּיטאָל",
   "Drop-in center": "אַרײַנקום־צענטער",
-  "Warming bus": "וואַרעמונג־באַס"
+  "Warming bus": "וואַרעמונג־באַס",
+  "Computer centers": "קאָמפּיוטער־צענטערס",
+  "{n} centers": {
+    "one": "{n} צענטער",
+    "other": "{n} צענטערס"
+  },
+  "Overseen by": "אונטער דער השגחה פֿון",
+  "Help and classes": "הילף און קלאַסן",
+  "Who it's for": "פֿאַר וועמען",
+  "Who can use it": "ווער קען עס ניצן",
+  "Computers": "קאָמפּיוטערס",
+  "Devices": "מכשירים",
+  "Lends devices": "לײַט אויס מכשירים",
+  "Languages": "שפּראַכן",
+  "Operated by": "געפֿירט דורך",
+  "public computer centers data": "דאַטן וועגן עפֿנטלעכע קאָמפּיוטער־צענטערס"
 }

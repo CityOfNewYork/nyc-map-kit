@@ -134,5 +134,22 @@
   "How to get in": "Как войти",
   "Hospital": "Больница",
   "Drop-in center": "Дневной центр",
-  "Warming bus": "Автобус обогрева"
+  "Warming bus": "Автобус обогрева",
+  "Computer centers": "Компьютерные центры",
+  "{n} centers": {
+    "one": "{n} центр",
+    "few": "{n} центра",
+    "many": "{n} центров",
+    "other": "{n} центра"
+  },
+  "Overseen by": "Курирующее ведомство",
+  "Help and classes": "Помощь и занятия",
+  "Who it's for": "Для кого",
+  "Who can use it": "Кто может пользоваться",
+  "Computers": "Компьютеры",
+  "Devices": "Устройства",
+  "Lends devices": "Выдаёт устройства",
+  "Languages": "Языки",
+  "Operated by": "Оператор",
+  "public computer centers data": "данные о публичных компьютерных центрах"
 }
