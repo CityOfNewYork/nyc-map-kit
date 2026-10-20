@@ -1,6 +1,5 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { resolveLang } from "./core/basemap-style.ts";
 import { chooseLanguage, loadLanguage, translateMarked } from "./logic/i18n.ts";
 import { readSettings } from "./logic/params.ts";
 import App from "./ui/App.tsx";
@@ -10,9 +9,8 @@ import "./style.css";
 
 const params = readSettings(window.location.search, document.baseURI, window.location.origin);
 // The interface's language: ?lang=, or in an embed the host page's (see logic/i18n.ts).
-// The basemap's labels follow it, by its bare subtag.
 const language = chooseLanguage(window.location.search, document.referrer);
-const settings = { ...params, lang: resolveLang(language) };
+const settings = { ...params, lang: language };
 
 await loadLanguage(language);
 translateMarked();

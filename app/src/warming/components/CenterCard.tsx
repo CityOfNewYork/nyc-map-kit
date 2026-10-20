@@ -14,7 +14,6 @@ interface CenterCardProps {
   model: Model;
   /** Where the reader searched for, or null. */
   origin: LngLat | null;
-  lang: string;
 }
 
 /**
@@ -23,13 +22,13 @@ interface CenterCardProps {
  * name, whether it is open now, and its hours worked out from its opening and closing
  * times.
  */
-export function CenterCard({ feature, model, origin, lang }: CenterCardProps) {
+export function CenterCard({ feature, model, origin }: CenterCardProps) {
   const details = centerDetails(feature);
   const kind = centerKind(feature);
   const status = centerStatus(feature, useNycMinute());
   const showMeta = kind || details.wheelchair || details.pets;
   return (
-    <Card feature={feature} model={model} lang={lang} origin={origin}
+    <Card feature={feature} model={model} origin={origin}
           meta={showMeta && (
             <>
               {kind && (

@@ -43,6 +43,7 @@ import { keepClearOfList } from "./layout.ts";
 import { Panel } from "./Panel.tsx";
 import { Search } from "./Search.tsx";
 import { SiteDialog } from "./SiteDialog.tsx";
+import { useLanguage } from "./useLanguage.ts";
 import { useMapCore } from "./useMapCore.ts";
 import { useSiteCard } from "./useSiteCard.ts";
 import { plural, t } from "../logic/i18n.ts";
@@ -55,6 +56,7 @@ interface AppProps {
 }
 
 export default function App({ settings }: AppProps) {
+  useLanguage();   // re-render in a new language (logic/i18n.ts)
   const [model, setModel] = useState<Model | null>(null);   // config.json + the prepared data
   const [basemap, setBasemap] = useState<StyleSpecification | null>(null);   // once fetched
   const [failed, setFailed] = useState(false);
@@ -82,7 +84,9 @@ export default function App({ settings }: AppProps) {
       const loaded = await loadData(settings);
       if (cancelled) return;
       setModel(loaded);                // the list can render while the basemap loads
-      const style = await loadBasemap(settings.basemap, settings.lang);
+      // The basemap's labels stay English in every language, so the map is the same
+      // whichever is chosen.
+      const style = await loadBasemap(settings.basemap, "en");
       if (!cancelled) setBasemap(style);
     }
     load().catch((err) => {
@@ -263,7 +267,7 @@ export default function App({ settings }: AppProps) {
 
       <SiteDialog ref={dialogElement} miniMapElement={miniMapElement}
                   feature={feature} group={card.group}
-                  model={model} lang={settings.lang} origin={found && found.center}
+                  model={model} origin={found && found.center}
                   onStep={card.step} onClose={card.close} />
     </>
   );

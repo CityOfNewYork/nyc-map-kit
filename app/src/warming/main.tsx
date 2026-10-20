@@ -1,6 +1,5 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { resolveLang } from "../core/basemap-style.ts";
 import { basemapId } from "../core/basemaps/names.ts";
 import { chooseLanguage, loadLanguage, translateMarked } from "../logic/i18n.ts";
 import App from "./App.tsx";
@@ -9,10 +8,10 @@ import "../style.css";
 import "./warming.css";
 
 const params = new URLSearchParams(window.location.search);
-// The interface's language, from ?lang= (see logic/i18n.ts); the basemap's labels follow
-// it, by its bare subtag.
+// The interface's language, from ?lang= (see logic/i18n.ts). The basemap's labels stay
+// English in every language, so the map is the same whichever is chosen.
 const language = chooseLanguage(window.location.search, document.referrer);
-const lang = resolveLang(language);
+const lang = "en";
 // The default basemap unless ?basemap= names another (see core/basemaps/names.ts).
 const basemap = basemapId(params.get("basemap"));
 // A center's card opens as a panel beside the list, or as a pop-up with ?detail=popup.

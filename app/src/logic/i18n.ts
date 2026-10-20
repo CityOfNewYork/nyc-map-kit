@@ -6,10 +6,10 @@
  * designated citywide languages (Local Law 30 of 2017), and English. Chinese is offered
  * in both scripts, as nyc.gov offers it.
  *
- * The language is settled once, before the first render (see `chooseLanguage`), and
- * changing it loads the page again with `?lang=`, so nothing here re-renders. The words
- * live in src/i18n/<code>.json, keyed by the English text; a string with no translation
- * shows in English. `{name}` in a string is filled in by `t`'s second argument.
+ * The language is settled before the first render (see `chooseLanguage`), and can change
+ * after it (`loadLanguage`); a page re-renders on the change (ui/useLanguage.ts). The
+ * words live in src/i18n/<code>.json, keyed by the English text; a string with no
+ * translation shows in English. `{name}` in a string is filled in by `t`'s second argument.
  */
 
 export interface Language {
@@ -84,17 +84,26 @@ type Entry = string | Partial<Record<Intl.LDMLPluralRule, string>>;
 
 let current = "en";
 let words: Record<string, Entry> = {};
+const listeners = new Set<() => void>();
+
+/** Call `listener` whenever the language changes; returns the way to stop. */
+export function onLanguageChange(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+}
 
 const LOADERS = import.meta.glob<{ default: Record<string, Entry> }>("../i18n/*.json");
 
-/** Load `code`'s words and mark the page as written in it: `<html lang>` and `dir`.
- *  Resolves once the words are in; English has none to load. */
+/** Load `code`'s words, mark the page as written in it (`<html lang>` and `dir`), and
+ *  tell whoever listens. Resolves once the words are in; English has none to load. */
 export async function loadLanguage(code: string): Promise<void> {
+  const load = LOADERS[`../i18n/${code}.json`];
+  const next = load ? (await load()).default : {};
   current = code;
+  words = next;
   document.documentElement.lang = code;
   document.documentElement.dir = RTL.has(code) ? "rtl" : "ltr";
-  const load = LOADERS[`../i18n/${code}.json`];
-  words = load ? (await load()).default : {};
+  for (const listener of listeners) listener();
 }
 
 /** The language being shown. */
@@ -133,10 +142,11 @@ export function plural(
 }
 
 /** The text of each element under `root` marked `data-t`, translated: the plain HTML a page
- *  shows before the app renders. */
+ *  shows before the app renders. The English is kept in the attribute, for the next change. */
 export function translateMarked(root: ParentNode = document): void {
   for (const el of root.querySelectorAll<HTMLElement>("[data-t]")) {
-    el.textContent = t(el.textContent?.trim() ?? "");
+    if (!el.dataset.t) el.dataset.t = el.textContent?.trim() ?? "";
+    el.textContent = t(el.dataset.t);
   }
 }
 

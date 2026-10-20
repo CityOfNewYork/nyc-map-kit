@@ -7,7 +7,7 @@ import {
 } from "../logic/card.ts";
 import type { CardAction, CardField } from "../logic/card.ts";
 import { metresBetween } from "../logic/data.ts";
-import { number, t } from "../logic/i18n.ts";
+import { language, number, t } from "../logic/i18n.ts";
 import type { LngLat } from "../logic/places.ts";
 import type { FactIcon, Model, Site } from "../logic/types.ts";
 import { siteUrl } from "./useSiteCard.ts";
@@ -20,7 +20,6 @@ const METRES_PER_MILE = 1609.344;
 interface CardProps {
   feature: Site;
   model: Model;
-  lang: string;
   /** Where the reader searched for, or null. The card says how far the site is. */
   origin?: LngLat | null;
   /** A line under the name, such as what kind of site it is. */
@@ -41,7 +40,7 @@ interface CardProps {
  *
  * Every visible string is its own element — see the language rule at the top of App.tsx.
  */
-export function Card({ feature, model, lang, origin = null, meta, status, hours }: CardProps) {
+export function Card({ feature, model, origin = null, meta, status, hours }: CardProps) {
   const p = feature.properties;
   const org = model.orgById.get(p.org_id) || {};
   const { config } = model;
@@ -90,7 +89,7 @@ export function Card({ feature, model, lang, origin = null, meta, status, hours 
       ))}
 
       <div className="card-foot">
-        <Updated date={cardUpdated(config, p, org, model.generated)} lang={lang} />
+        <Updated date={cardUpdated(config, p, org, model.generated)} />
         <CopyLink key={p.id} id={p.id} />
       </div>
     </div>
@@ -191,7 +190,7 @@ function FieldValue({ field, feature, block = false }: {
 }
 
 /** "Updated Oct 4, 2026", and past STALE_DAYS, when set, a warning to call first. */
-function Updated({ date, lang }: { date: string; lang: string }) {
+function Updated({ date }: { date: string }) {
   const [now] = useState(() => Date.now());   // read once: the threshold is in days
   const day = date ? new Date(`${date}T12:00:00`) : null;
   if (!day || Number.isNaN(day.valueOf())) return <p className="card-updated" />;
@@ -202,8 +201,8 @@ function Updated({ date, lang }: { date: string; lang: string }) {
       <span>
         <span>
           {t("Updated {date}", {
-            date: new Intl.DateTimeFormat(lang, { month: "short", day: "numeric", year: "numeric" })
-              .format(day),
+            date: new Intl.DateTimeFormat(language(),
+              { month: "short", day: "numeric", year: "numeric" }).format(day),
           })}
         </span>
         {stale && <>{" — "}<span>{t("This info may be out of date. Call before you go.")}</span></>}

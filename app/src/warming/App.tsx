@@ -19,6 +19,7 @@ import type { View } from "./logic/view.ts";
 import { LandingPage } from "./pages/LandingPage.tsx";
 import { MapPage } from "./pages/MapPage.tsx";
 import { t } from "../logic/i18n.ts";
+import { useLanguage } from "../ui/useLanguage.ts";
 
 // Sample centers: real sites mixed with invented ones, with made-up phone numbers, entry
 // instructions and dates (the file's description says which parts). centers.geojson is
@@ -29,6 +30,7 @@ const DATA_URL = "warming/sample-centers.geojson";
 const HERO_EXIT_MS = 300;
 
 interface AppProps {
+  /** The basemap's label language. */
   lang: string;
   basemap: BasemapId;
   /** A center's card opens as a panel beside the list rather than as a pop-up. */
@@ -52,6 +54,7 @@ function panelFocusPoint(): [number, number] | null {
 }
 
 export default function App({ lang, basemap, panel = false }: AppProps) {
+  useLanguage();   // re-render in a new language (logic/i18n.ts)
   const [view, setView] = useState<View>(() => viewFromUrl(window.location.search));
   const [model, setModel] = useState<Model | null>(null);
   const [failed, setFailed] = useState(false);
@@ -203,11 +206,11 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
             {/* Here, between the list and the map, so as a panel it sits over the map and
                 comes after the list in the tab order. As a pop-up its place does not matter. */}
             <SiteDialog ref={dialogElement} miniMapElement={miniMapElement} panel={panel}
-                        feature={card.feature} group={card.group} model={model} lang={lang}
+                        feature={card.feature} group={card.group} model={model}
                         onStep={card.step} onClose={card.close}
                         card={(feature) => (
                           <CenterCard feature={feature} model={model!}
-                                      origin={found && found.center} lang={lang} />
+                                      origin={found && found.center} />
                         )} />
             <WarmingMap key="map" lang={lang} basemap={basemap} data={model && model.data}
                         shown={shown} padForList={view === "map"} onReady={onMapReady}
