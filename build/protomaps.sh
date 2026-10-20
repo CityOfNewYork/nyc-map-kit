@@ -6,7 +6,7 @@
 # Writes app/public/nyc.pmtiles: every tile from z0 to z15 that covers the area the map
 # lets a reader pan to (MAX_BOUNDS in app/src/core/map-core.ts). Outside the city line
 # the tiles then keep only land, water, parks and roads (build/protomaps-outside.py),
-# which brings the file from about 150 MB to about 95 MB. A reader's browser fetches only the
+# which brings the file from about 170 MB to about 100 MB. A reader's browser fetches only the
 # tiles on screen, by range request. Prints the name of the build it cut from.
 #
 # The file is too large for git. A deploy downloads one pinned cut (BASEMAP_URL in
@@ -24,7 +24,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/app/public/nyc.pmtiles"
-BBOX="-74.42,40.39,-73.53,41.03"   # MAX_BOUNDS in app/src/core/map-core.ts
+BBOX="-74.52,40.39,-73.43,41.03"   # MAX_BOUNDS in app/src/core/map-core.ts
 MAXZOOM=15                          # the deepest zoom Protomaps builds
 
 BUILD="$(curl -fsS https://build-metadata.protomaps.dev/builds.json | node -e '

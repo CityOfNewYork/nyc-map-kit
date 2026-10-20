@@ -40,8 +40,8 @@ jobs:
       - name: Download the Protomaps basemap
         if: github.ref == 'refs/heads/main'
         env:
-          BASEMAP_URL: https://github.com/CityOfNewYork/nyc-map-kit/releases/download/basemap-20261019/nyc-20261019.pmtiles
-          BASEMAP_SHA256: 11cdd7a0424208ae70e5e2975435a9c5d1e80e9ed445b1dca3d1c8c96c4d1e9b
+          BASEMAP_URL: https://github.com/CityOfNewYork/nyc-map-kit/releases/download/basemap-20261019-3/nyc-20261019-3.pmtiles
+          BASEMAP_SHA256: b36c554f9ed888292c924c24ab7b9e6738b6c58212586337ea2df000b28ad2ca
         run: |
           curl -fsSL --retry 3 "$BASEMAP_URL" -o app/public/nyc.pmtiles
           echo "$BASEMAP_SHA256  app/public/nyc.pmtiles" | sha256sum -c -

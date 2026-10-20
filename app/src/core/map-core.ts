@@ -298,12 +298,16 @@ const NYC_BOUNDS: [LngLat, LngLat] = [[-74.30, 40.47], [-73.65, 40.95]];
 // NYC's latitude, so a Manhattan block is ~17 × 57 px. A map already closer than this is
 // left at its zoom, and so is a pin the reader clicked on the map (see applySelection).
 const STREET_ZOOM = 15;
-// How far the camera may leave the city: NYC_BOUNDS plus roughly 10 km on each side, so
-// Jersey City, Yonkers and the Nassau line stay in frame as context and Philadelphia does
-// not. MapLibre's maxBounds does two things at once: it stops the pan at the edge, and it
-// stops zooming out at the point where the bounds fill the container — so the zoom-out
-// limit follows the frame's size instead of being a number that is right for one width.
-const MAX_BOUNDS: [LngLat, LngLat] = [[-74.42, 40.39], [-73.53, 41.03]];
+// The area the map opens within: NYC_BOUNDS plus roughly 10 km on each side, so Jersey
+// City, Yonkers and the Nassau line are in frame as context. The opening view shows no
+// more than this, centred within it as far as it can be, until the reader moves the map.
+const OPENING_BOUNDS: [LngLat, LngLat] = [[-74.42, 40.39], [-73.53, 41.03]];
+// How far the camera may leave the city: OPENING_BOUNDS and 0.1° of longitude more on
+// each side, about 150 px at a laptop's opening zoom, so the opening view can pan east
+// and west too. MapLibre's maxBounds does two things at once: it stops the pan at the
+// edge, and it stops zooming out at the point where the bounds fill the container. The
+// basemap file covers the same area (BBOX in build/protomaps.sh).
+const MAX_BOUNDS: [LngLat, LngLat] = [[-74.52, 40.39], [-73.43, 41.03]];
 
 // A value no real site id can equal, so "nothing is selected" is expressible inside a
 // MapLibre expression (which has no notion of null).
@@ -694,8 +698,37 @@ export function createMap<P extends PointProperties>(
     // difference between a legible location and a speck in the middle of the region.
     // Instant, so there is no camera animation on first paint.
     fitToIds([], 0);
+    keepWithinOpening();
     while (pending.length) pending.shift()!();
   });
+
+  // Until the reader moves the map, the view keeps within OPENING_BOUNDS, also when its
+  // frame changes size, as when a page's layout around it changes.
+  let readerMoved = false;
+  map.on("movestart", (e) => { if (e.originalEvent) readerMoved = true; });
+  map.on("resize", () => keepWithinOpening());
+  function keepWithinOpening(): void {
+    if (readerMoved) return;
+    const { clientWidth: width, clientHeight: height } = map.getContainer();
+    if (!width || !height) return;
+    // Web Mercator x and y, in the units of a 512 px world at zoom 0.
+    const x = (lng: number) => ((lng + 180) / 360) * 512;
+    const y = (lat: number) =>
+      (512 / (2 * Math.PI)) * (Math.PI - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)));
+    const [[west, south], [east, north]] = OPENING_BOUNDS;
+    const left = x(west), right = x(east), top = y(north), bottom = y(south);
+    // Zoomed in until the bounds fill the frame both ways, as maxBounds would hold it.
+    const fill = Math.max(Math.log2(width / (right - left)), Math.log2(height / (bottom - top)));
+    const zoom = Math.max(map.getZoom(), fill);
+    const scale = 2 ** zoom;
+    const halfW = width / 2 / scale, halfH = height / 2 / scale;
+    const c = map.getCenter();
+    const cx = Math.min(Math.max(x(c.lng), left + halfW), right - halfW);
+    const cy = Math.min(Math.max(y(c.lat), top + halfH), bottom - halfH);
+    const lng = (cx / 512) * 360 - 180;
+    const lat = (Math.atan(Math.sinh(Math.PI - (2 * Math.PI * cy) / 512)) * 180) / Math.PI;
+    map.jumpTo({ zoom, center: [lng, lat] });
+  }
 
   function fitToIds(ids: string[], duration: number): void {
     const list = (ids && ids.length ? ids.map((i) => byId.get(i)) : [...byId.values()])
