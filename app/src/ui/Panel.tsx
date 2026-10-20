@@ -121,6 +121,10 @@ export function Panel({
     setStep(h / window.innerHeight < 0.2 ? "collapsed" : "half");
   }
 
+  // A collapsed sheet's rows are below the screen's edge: out of the tab order, and out of
+  // a screen reader's reach, until the handle opens it.
+  const hidden = !desktop && step === "collapsed";
+
   return (
     <nav className={["panel", dragging && "dragging", desktop && shut && "shut"]
                       .filter(Boolean).join(" ")}
@@ -145,7 +149,7 @@ export function Panel({
         )}
       </button>
 
-      {header && <div className="list-head">{header}</div>}
+      {header && <div className="list-head" inert={hidden}>{header}</div>}
 
       {/*
         One row per site. Not per organization.
@@ -168,7 +172,7 @@ export function Panel({
         elements: the number, then "mi" for the eye and "miles" for a screen reader, then
         "away".
       */}
-      <div className="site-scroll" ref={scrollRef}>
+      <div className="site-scroll" ref={scrollRef} inert={hidden}>
         {intro && <div className="list-intro">{intro}</div>}
         <ul className="site-list" id="site-list">
           {sites.map(({ feature, metres }) => {

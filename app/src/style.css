@@ -579,6 +579,8 @@ body {
 .site-button:hover .name { text-decoration: underline; }
 /* Inside the row: the list scrolls, and a ring outside the row would be clipped. */
 .site-button:focus-visible { outline-offset: -4px; }
+/* Inside the handle too: the panel clips anything outside it. */
+.sheet-handle:focus-visible { outline-offset: -4px; }
 /* With a mark, such as an icon, beside the lines rather than above them. */
 .site-button.marked { flex-direction: row; gap: 12px; }
 .site-marker { flex: none; display: flex; }
@@ -1082,7 +1084,6 @@ body {
     cursor: pointer;
   }
   .sheet-handle:hover { background: var(--hover); }
-  .sheet-handle:focus-visible { outline-offset: -4px; }
   .sheet-handle .counts { flex: 1; font-size: 0.875rem; font-weight: 600; }
   /* Shut, the list is its own small box, as an app's closed map key is: a triangle and
      "Show list", in the key's type. */
