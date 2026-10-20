@@ -8,11 +8,11 @@ import type { Model, Site } from "../logic/types.ts";
 
 const METRES_PER_MILE = 1609.344;
 
-/** The bottom sheet's three heights on a phone; the handle cycles through them in order. */
-const SHEET_HEIGHTS = { collapsed: "48px", half: "45dvh", full: "85dvh" };
+/** The bottom sheet's two heights on a phone; the handle switches between them. At its
+ *  tallest the sheet stays lower than the card that opens over it as a panel (style.css). */
+const SHEET_HEIGHTS = { collapsed: "48px", half: "45dvh" };
 type SheetStep = keyof typeof SHEET_HEIGHTS;
-const NEXT_STEP: Record<SheetStep, SheetStep> =
-  { collapsed: "half", half: "full", full: "collapsed" };
+const NEXT_STEP: Record<SheetStep, SheetStep> = { collapsed: "half", half: "collapsed" };
 /** Wider than this the list is a panel, not a sheet (see style.css). */
 const DESKTOP = "(min-width: 768px)";
 
@@ -105,7 +105,7 @@ export function Panel({
   }
   function onPointerMove(e: PointerEvent<HTMLButtonElement>) {
     if (!drag.current) return;
-    const h = Math.min(window.innerHeight * 0.9,
+    const h = Math.min(window.innerHeight * 0.45,
                        Math.max(48, drag.current.h + (drag.current.y - e.clientY)));
     panelRef.current!.style.height = `${h}px`;
   }
@@ -117,8 +117,7 @@ export function Panel({
     setDragging(false);
     panelRef.current!.style.height = "";
     if (moved < 8) return;                       // a tap; the click handler owns it
-    const frac = h / window.innerHeight;
-    setStep(frac < 0.2 ? "collapsed" : frac < 0.65 ? "half" : "full");
+    setStep(h / window.innerHeight < 0.2 ? "collapsed" : "half");
   }
 
   return (
@@ -133,7 +132,7 @@ export function Panel({
               onPointerUp={onPointerUp}>
         <span className="counts">{summary}</span>
         <span className="chev" aria-hidden="true">
-          {(desktop ? shut : step === "full") ? "▼" : "▲"}
+          {(desktop ? shut : step === "half") ? "▼" : "▲"}
         </span>
         <span className="visually-hidden">{t("Show or hide the list")}</span>
       </button>

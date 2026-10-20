@@ -966,7 +966,7 @@ body {
     grid-template-rows: 1fr;
   }
 
-  /* Bottom sheet. Three heights; the handle cycles collapsed -> half -> full. */
+  /* Bottom sheet. Two heights; the handle switches between collapsed and half. */
   .panel {
     position: absolute;
     left: 0; right: 0; bottom: 0;
