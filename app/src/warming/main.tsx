@@ -19,6 +19,10 @@ const panel = params.get("detail") !== "popup";
 await loadLanguage(language);
 translateMarked();
 
+// The note's × removes it until the page loads again, and the page takes its height.
+const note = document.querySelector(".prototype-note");
+note?.querySelector(".note-close")?.addEventListener("click", () => note.remove());
+
 // The note's Sidebar and Pop-up buttons load the page again with the card the other way,
 // keeping the rest of its address: the view, the open card and the filters.
 for (const button of document.querySelectorAll<HTMLButtonElement>(".card-mode [data-detail]")) {
