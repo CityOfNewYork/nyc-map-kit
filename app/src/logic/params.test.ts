@@ -8,7 +8,7 @@ describe("readSettings", () => {
   test("defaults", () => {
     const s = readSettings("", BASE, ORIGIN);
     expect(s.data.href).toBe("https://cityofnewyork.github.io/nyc-map-kit/app/sites.geojson");
-    expect(s.orgs.href).toBe("https://cityofnewyork.github.io/nyc-map-kit/app/orgs.json");
+    expect(s.orgs?.href).toBe("https://cityofnewyork.github.io/nyc-map-kit/app/orgs.json");
     expect(s).toMatchObject({ list: "on", lang: null, title: null, site: null });
   });
 

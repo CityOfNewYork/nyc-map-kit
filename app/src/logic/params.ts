@@ -3,17 +3,32 @@
  *
  * Pure: the page's address, base URI and origin are passed in rather than read from
  * `window`, so this runs (and is tested) without a browser.
+ *
+ * Each map is a page that names its own files (see main.tsx), so one build serves several
+ * maps: app/ is the SNAP map, app/computer-centers.html the computer centers.
  */
 import { basemapId } from "../core/basemaps/names.ts";
 import type { BasemapId } from "../core/basemaps/names.ts";
 
-export const DEFAULTS = { data: "sites.geojson", orgs: "orgs.json", list: "on" } as const;
+export const DEFAULTS = {
+  config: "config.json", data: "sites.geojson", orgs: "orgs.json", list: "on",
+} as const;
+
+/** The files a page names for itself, in place of DEFAULTS. `orgs: ""` means the map has
+ *  no orgs.json, and the block groups the sites by their `org` property instead. */
+export interface PageFiles {
+  config?: string;
+  data?: string;
+  orgs?: string;
+}
 
 /** What the block reads from its URL. */
 export interface Settings {
-  /** The point data and orgs.json, resolved against the page and same-origin only. */
+  /** config.json, the point data and orgs.json, resolved against the page and same-origin
+   *  only. `orgs` is null for a map without one. */
+  config: URL;
   data: URL;
-  orgs: URL;
+  orgs: URL | null;
   /** The label language: a bare subtag such as "es". See basemap-style.ts's resolveLang. */
   lang: string;
   /** "off" hides the list and leaves the map alone in the frame. */
@@ -48,15 +63,20 @@ export function sameOriginUrl(
 
 /**
  * Every parameter the block reads. `lang` is returned as given: resolving it against
- * `<html lang>` is basemap-style.ts's `resolveLang`, which needs the document.
+ * `<html lang>` is basemap-style.ts's `resolveLang`, which needs the document. `files` are
+ * the page's own; `?data=` and `?orgs=` still override them.
  */
 export function readSettings(
-  search: string, baseURI: string, origin: string,
+  search: string, baseURI: string, origin: string, files: PageFiles = {},
 ): Omit<Settings, "lang"> & { lang: string | null } {
   const params = new URLSearchParams(search);
+  const orgs = params.get("orgs") || files.orgs;
   return {
-    data: sameOriginUrl(params.get("data"), DEFAULTS.data, baseURI, origin),
-    orgs: sameOriginUrl(params.get("orgs"), DEFAULTS.orgs, baseURI, origin),
+    // Not a URL parameter: config.json decides what the card says, which an embed's
+    // query string should not.
+    config: sameOriginUrl(null, files.config || DEFAULTS.config, baseURI, origin),
+    data: sameOriginUrl(params.get("data"), files.data || DEFAULTS.data, baseURI, origin),
+    orgs: orgs === "" ? null : sameOriginUrl(orgs ?? null, DEFAULTS.orgs, baseURI, origin),
     lang: params.get("lang"),
     list: params.get("list") === "off" ? "off" : DEFAULTS.list,
     title: params.get("title"),

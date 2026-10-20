@@ -492,8 +492,9 @@ body {
   min-height: 32px;
   cursor: pointer;
 }
-.filter-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--primary); }
-.filter-check .category-icon { width: 20px; height: 20px; }
+/* flex: none, so a label that wraps to several lines cannot squeeze the box or the icon. */
+.filter-check input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--primary); }
+.filter-check .category-icon { flex: none; width: 20px; height: 20px; }
 .filters-foot {
   display: flex;
   align-items: center;
@@ -1141,3 +1142,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* A list row's type with its pins' icon beside it, when the pins are coloured by type. */
+.site-button .type { display: flex; align-items: center; gap: 6px; }
+.site-button .type .category-icon { flex: none; width: 16px; height: 16px; }

@@ -9,10 +9,15 @@ import type { Site } from "./types.ts";
 
 /** Each organization type in `features`, most sites first, with how many it has. */
 export function orgTypes(features: Site[]): { type: string; count: number }[] {
+  return valuesByCount(features, "org_type");
+}
+
+/** Each value of property `key` in `features`, most sites first, with how many it has. */
+export function valuesByCount(features: Site[], key: string): { type: string; count: number }[] {
   const counts = new Map<string, number>();
   for (const f of features) {
-    const type = f.properties.org_type;
-    if (type) counts.set(type, (counts.get(type) ?? 0) + 1);
+    const type = (f.properties as unknown as Record<string, unknown>)[key];
+    if (typeof type === "string" && type) counts.set(type, (counts.get(type) ?? 0) + 1);
   }
   return [...counts].map(([type, count]) => ({ type, count }))
     .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));

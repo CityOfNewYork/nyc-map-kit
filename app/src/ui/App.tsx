@@ -30,14 +30,17 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
 import { loadBasemap } from "../core/basemaps/index.ts";
 import type { MapCore, SelectInfo } from "../core/map-core.ts";
+import { stockCategories, stockStyles } from "../core/pins.ts";
+import type { PinStyle } from "../core/pins.ts";
 import { track } from "../logic/analytics.ts";
 import { nearestIds, prepareData } from "../logic/data.ts";
-import { ofTypes, orgTypes, typesFromUrl, withTypes } from "../logic/filters.ts";
+import { ofTypes, orgTypes, typesFromUrl, valuesByCount, withTypes } from "../logic/filters.ts";
 import type { Settings } from "../logic/params.ts";
 import type { Found } from "../logic/places.ts";
 import type {
   Config, Model, OrgsDoc, Site, SiteCollection, SiteProperties,
 } from "../logic/types.ts";
+import { CategoryIcon } from "./CategoryIcon.tsx";
 import { FilterDisclosure, FiltersButton, FiltersPanel } from "./Filters.tsx";
 import { keepClearOfList } from "./layout.ts";
 import { Panel } from "./Panel.tsx";
@@ -48,8 +51,8 @@ import { useMapCore } from "./useMapCore.ts";
 import { useSiteCard } from "./useSiteCard.ts";
 import { plural, t } from "../logic/i18n.ts";
 
-/** The heading until config.json or `?title=` names the map. */
-const DEFAULT_TITLE = "SNAP volunteer opportunities";
+/** The heading until config.json or `?title=` names the map: the page's own <title>. */
+const DEFAULT_TITLE = document.title;
 
 interface AppProps {
   settings: Settings;
@@ -70,10 +73,21 @@ export default function App({ settings }: AppProps) {
   const shown = useMemo(() => (model ? ofTypes(model.features, types) : []), [model, types]);
   const listed = model && { ...model, features: shown };
 
+  // Each pin category's colour and mark, when config.json asks for them (see core/pins.ts).
+  const pinField = model?.config.pins?.field;
+  const pinStyles = useMemo(
+    () => (model && pinField
+      ? stockStyles(valuesByCount(model.features, pinField).map(({ type }) => type))
+      : null),
+    [model, pinField]);
+  const categories = useMemo(
+    () => (pinField && pinStyles ? stockCategories(pinField, pinStyles) : null),
+    [pinField, pinStyles]);
+
   const main = useMapCore<SiteProperties>();
   const { containerRef } = main;
   // The card: what is selected, its modal, its ?site= address, focus and its small map.
-  const card = useSiteCard({ model, style: basemap });
+  const card = useSiteCard({ model, style: basemap, categories });
   const { attach, selectingFromUrl, dialogElement, miniMapElement } = card;
 
   // ------------------------------------------------------------------------- loading
@@ -115,6 +129,7 @@ export default function App({ settings }: AppProps) {
       map = main.create({
         style: structuredClone(basemap),
         data: model.data,
+        categories,
         counts: true,
         onSelect: (feature, info) => onMapSelect(feature, info),
         onClusterExpand: () => {},
@@ -156,7 +171,7 @@ export default function App({ settings }: AppProps) {
       attach(null);
       main.destroy();
     };
-  }, [model, basemap, settings, main, attach, selectingFromUrl]);
+  }, [model, basemap, categories, settings, main, attach, selectingFromUrl]);
 
   // Its own effect, so a filter changes the pins without making the map again.
   useEffect(() => {
@@ -239,11 +254,13 @@ export default function App({ settings }: AppProps) {
           {filtering && model && (
             <FiltersPanel id="filters" shown={shown.length} onClose={closeFilters}
                           onClear={clearTypes}>
-              <FilterDisclosure label={t("Organization type")} chosen={types.length}>
+              <FilterDisclosure label={t(model.config.filterLabel || "Organization type")}
+                                chosen={types.length}>
                 {orgTypes(model.features).map(({ type }) => (
                   <label key={type} className="filter-check">
                     <input type="checkbox" checked={types.includes(type)}
                            onChange={(e) => toggleType(type, e.target.checked)} />
+                    {pinField === "org_type" && <TypeIcon style={pinStyles?.get(type)} />}
                     <span>{type}</span>
                   </label>
                 ))}
@@ -252,8 +269,9 @@ export default function App({ settings }: AppProps) {
           )}
           <Panel model={listed} list={settings.list} origin={found && found.center}
                  selectedId={feature && feature.properties.id} onOpen={card.openFromList}
-                 label={t("Volunteer sites")} summary={<SiteCounts sites={listed && shown} />}
-                 row={siteRow} />
+                 label={t(model?.config.listLabel || "Volunteer sites")}
+                 summary={<SiteCounts sites={listed && shown} count={model?.config.count} />}
+                 row={(f) => siteRow(f, pinField === "org_type" ? pinStyles : null)} />
         </div>
         {/* map-core fills this div; React only puts the loading and error notes in it. */}
         <div className="map" id="map" tabIndex={-1} ref={containerRef}>
@@ -295,9 +313,9 @@ async function fetchJson<T>(url: string | URL, fallback: T): Promise<T> {
 /** config.json, the point data and orgs.json, shaped by logic/data.ts. */
 async function loadData(settings: Settings): Promise<Model> {
   const [config, data, orgsDoc] = await Promise.all([
-    fetchJson<Config>("config.json", {}),
+    fetchJson<Config>(settings.config, {}),
     fetchJson<SiteCollection | null>(settings.data, null),
-    fetchJson<OrgsDoc | null>(settings.orgs, null),
+    settings.orgs ? fetchJson<OrgsDoc | null>(settings.orgs, null) : null,
   ]);
   if (!data || !Array.isArray(data.features)) {
     throw new Error(`no point data at ${settings.data.pathname}`);
@@ -310,11 +328,17 @@ async function loadData(settings: Settings): Promise<Model> {
 
 /**
  * "75 organizations · 185 sites", or as many as the filter leaves: the list's top line.
- * Each count in the form its language gives that number (see logic/i18n.ts).
+ * A map whose config.json gives a `count` says that instead: "486 centers". Each count in
+ * the form its language gives that number (see logic/i18n.ts).
  */
-function SiteCounts({ sites }: { sites: Site[] | null }) {
+function SiteCounts({ sites, count }: { sites: Site[] | null; count?: Config["count"] }) {
   const orgCount = sites ? new Set(sites.map((f) => f.properties.org_id)).size : undefined;
   const siteCount = sites ? sites.length : undefined;
+  if (count) {
+    return siteCount !== undefined && (
+      <span id="sheet-sites">{plural(siteCount, count.one, count.other)}</span>
+    );
+  }
   return (
     orgCount !== undefined && siteCount !== undefined && (
       <>
@@ -326,13 +350,24 @@ function SiteCounts({ sites }: { sites: Site[] | null }) {
   );
 }
 
-/** A row's lines: the organization's name, its type, and the site's address. */
-function siteRow(feature: Site) {
+/** A category's icon, or nothing for a value without a pin style. */
+function TypeIcon({ style }: { style?: PinStyle }) {
+  return style ? <CategoryIcon color={style.color} glyph={style.glyph} fill /> : null;
+}
+
+/** A row's lines: the organization's name, its type — with its pins' icon, when the pins
+ *  are coloured by type — and the site's address. */
+function siteRow(feature: Site, styles: Map<string, PinStyle> | null) {
   const p = feature.properties;
   return (
     <>
       <span className="name">{p.org}</span>
-      {p.org_type && <span className="type">{p.org_type}</span>}
+      {p.org_type && (
+        <span className="type">
+          {styles && <TypeIcon style={styles.get(p.org_type)} />}
+          <span>{p.org_type}</span>
+        </span>
+      )}
       <span className="addr">{p.address}</span>
     </>
   );
