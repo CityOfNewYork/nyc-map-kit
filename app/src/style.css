@@ -630,8 +630,8 @@ body {
   max-width: calc(100% - 20px);
 }
 /* The map's key (ui/MapKey.tsx), on the same white card as the list: top right, left of
-   the zoom buttons and level with them. On a phone, where the search row takes the top,
-   it sits under them (see the media query below). */
+   the zoom buttons and level with them. On a phone, where the search bar takes the top,
+   it is still level with them, below the bar (see the media query below). */
 .map-key {
   position: absolute;
   top: 10px;
@@ -1010,10 +1010,14 @@ body {
 /* ------------------------------------------------------------- phone layout ------ */
 
 @media (max-width: 767px) {
+  /* Two rows: a white bar across the top with the search box and the Filters button,
+     then the map, as the warming centers map lays out a phone. */
   .stage {
+    --bar-h: calc(var(--search-h) + 20px);
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
+    grid-template-rows: var(--bar-h) minmax(0, 1fr);
   }
+  .stage > .map { grid-area: 2 / 1; }
 
   /* Bottom sheet. Two heights; the handle switches between collapsed and half. */
   .panel {
@@ -1058,17 +1062,23 @@ body {
   .sheet-handle .counts { flex: 1; font-size: 0.875rem; }
   .sheet-handle .chev { color: var(--ink-muted); }
 
-  /* The column drops out: the list is the bottom sheet, and the search box runs across
-     the top of the map, stopping 10 px short of the zoom buttons in the top-right corner.
-     Above the sheet, so its choices are not hidden when the sheet is pulled up. */
+  /* The column drops out: the list is the bottom sheet, and the search row is the bar
+     above the map. The bar keeps its height; what the search box has to say opens under
+     it, over the map. Above the sheet, so its choices are not hidden when the sheet is
+     pulled up. */
   .side { display: contents; }
   .side > .search-row {
     position: relative;
     z-index: 5;
     grid-area: 1 / 1;
-    align-self: start;
-    margin: 10px calc(10px + 44px + 10px) 10px 10px;
+    min-height: 0;
+    margin: 0;
+    padding: 10px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
   }
+  /* The list's sheet stops under the bar at its tallest. */
+  .stage .panel { max-height: calc(100% - var(--bar-h)); }
 
   /* The filters as a modal card in the middle of the screen, over the blurred map, as the
      site card opens. */
@@ -1090,7 +1100,7 @@ body {
   /* Keep the zoom buttons and the attribution clear of the sheet. */
   .map .maplibregl-ctrl-bottom-left,
   .map .maplibregl-ctrl-bottom-right { bottom: var(--sheet-h, 48px); }
-  .map-key { top: calc(10px + 2 * 44px + 10px); right: 10px; }
+  .map-key { top: calc(var(--bar-h) + 10px); right: calc(10px + 44px + 10px); }
   .stage:has(.maplibregl-canvas:focus-visible) .map-keys {
     inset-inline: 10px;
     bottom: calc(var(--sheet-h, 48px) + 44px);

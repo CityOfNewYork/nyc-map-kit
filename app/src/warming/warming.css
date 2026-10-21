@@ -333,11 +333,8 @@
 
 /* The key's card is style.css's. Here the search box is in the bar, not over the map, so
    the key stays left of the zoom buttons and level with them at every width, below the
-   bar. On a phone the zoom buttons are 44 px wide. */
+   bar. style.css places it the same way on a phone. */
 .map-key { top: calc(var(--bar-h) + 10px); }
-@media (max-width: 767px) {
-  .map-key { top: calc(var(--bar-h) + 10px); right: calc(10px + 44px + 10px); }
-}
 
 /* ------------------------------------------------------------------ landing ------ */
 
