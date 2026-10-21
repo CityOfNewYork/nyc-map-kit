@@ -21,11 +21,13 @@
 <span data-t>To find a warming center, call 311.</span></p>
 <!-- Which way a center's card opens. main.tsx marks the current one and wires them. -->
 <div class="card-mode" role="group" aria-labelledby="card-mode-label">
-<span id="card-mode-label" data-t>Card</span>
+<span id="card-mode-label" data-t>Detail card options:</span>
 <button type="button" data-detail="side" data-t>Sidebar</button>
 <button type="button" data-detail="popup" data-t>Pop-up</button>
+<!-- Empty at load, so a screen reader is already watching it when main.tsx fills it in. -->
+<span class="visually-hidden" role="status" id="card-mode-status"></span>
 </div>
-<button class="note-close" type="button"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span class="visually-hidden" data-t>Close this note</span></button>
+<button class="note-close" type="button"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span class="visually-hidden" data-t>Close prototype notice</span></button>
 </div>
 <div id="root"></div>
 <script type="module" src="/src/warming/main.tsx"></script>
