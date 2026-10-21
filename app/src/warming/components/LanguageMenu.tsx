@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import type { KeyboardEvent, MouseEvent } from "react";
+import type { FocusEvent, KeyboardEvent, MouseEvent } from "react";
 import { language, LANGUAGES, loadLanguage, t, translateMarked } from "../../logic/i18n.ts";
 
 /** The translate symbol nyc.gov's header draws on its language button. */
@@ -35,6 +35,12 @@ export function LanguageMenu() {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
 
+  // Tab out of the list closes it, so it does not cover what focus moves on to. A focus
+  // that goes nowhere, as a click on the page does, is left to the pointerdown above.
+  function onBlur(e: FocusEvent<HTMLDivElement>) {
+    const next = e.relatedTarget as Node | null;
+    if (open && next && !root.current?.contains(next)) setOpen(false);
+  }
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (open && e.key === "Escape") {
       e.preventDefault();
@@ -54,7 +60,7 @@ export function LanguageMenu() {
   }
 
   return (
-    <div className="language-menu" ref={root} onKeyDown={onKeyDown}>
+    <div className="language-menu" ref={root} onKeyDown={onKeyDown} onBlur={onBlur}>
       <button type="button" className="language-toggle" ref={button} aria-expanded={open}
               aria-controls={id} onClick={() => setOpen((o) => !o)}>
         <svg aria-hidden="true" viewBox="0 0 19 17" width="19" height="17">

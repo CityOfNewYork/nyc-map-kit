@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { FocusEvent, KeyboardEvent, ReactNode } from "react";
 import { track } from "../../logic/analytics.ts";
 import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { CENTER_KINDS } from "../logic/centers.ts";
@@ -101,6 +101,12 @@ function Dropdown({ label, on, children }: { label: ReactNode; on: boolean; chil
     setOpen(false);
     button.current?.focus();
   }
+  // Tab out of the list closes it, so it does not cover what focus moves on to. A focus
+  // that goes nowhere, as a click on the page does, is left to the pointerdown above.
+  function onBlur(e: FocusEvent<HTMLDivElement>) {
+    const next = e.relatedTarget as Node | null;
+    if (open && next && !root.current?.contains(next)) setOpen(false);
+  }
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     if (open && e.key === "Escape") {
       e.preventDefault();
@@ -109,7 +115,7 @@ function Dropdown({ label, on, children }: { label: ReactNode; on: boolean; chil
   }
 
   return (
-    <div className="dropdown" ref={root} onKeyDown={onKeyDown}>
+    <div className="dropdown" ref={root} onKeyDown={onKeyDown} onBlur={onBlur}>
       <button type="button" className={on ? "pill on" : "pill"} ref={button}
               aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
         {label}
