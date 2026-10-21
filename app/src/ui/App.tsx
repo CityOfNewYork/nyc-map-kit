@@ -43,6 +43,7 @@ import type {
 import { CategoryIcon } from "./CategoryIcon.tsx";
 import { FilterDisclosure, FiltersButton, FiltersPanel } from "./Filters.tsx";
 import { keepClearOfList } from "./layout.ts";
+import { MapKey } from "./MapKey.tsx";
 import { Panel } from "./Panel.tsx";
 import { Search } from "./Search.tsx";
 import { SiteDialog } from "./SiteDialog.tsx";
@@ -273,6 +274,11 @@ export default function App({ settings }: AppProps) {
           {t("Arrow keys move the map. Plus and minus zoom in and out.")}
           {settings.list !== "off" && " " + t("Every site on the map is also in the list.")}
         </p>
+        {model && pinStyles && (
+          <MapKey caption={t(model.config.filterLabel || "Organization type")}
+                  items={[...pinStyles].map(([type, { color, glyph }]) => (
+                    { label: type, color, glyph, fill: true }))} />
+        )}
         {/* map-core fills this div; React only puts the loading and error notes in it. */}
         <div className="map" id="map" ref={containerRef}>
           {failed ? (

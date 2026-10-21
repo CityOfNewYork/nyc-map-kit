@@ -3,15 +3,15 @@ import type { Found } from "../../logic/places.ts";
 import type { Model, Site } from "../../logic/types.ts";
 import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { FiltersButton } from "../../ui/Filters.tsx";
+import { MapKey } from "../../ui/MapKey.tsx";
 import { Panel } from "../../ui/Panel.tsx";
 import { PlaceName, Search } from "../../ui/Search.tsx";
 import { CodeBlueNotice } from "../components/CodeBlueNotice.tsx";
 import { FilterBar } from "../components/FilterBar.tsx";
 import { FilterPanel } from "../components/FilterPanel.tsx";
-import { MapKey } from "../components/MapKey.tsx";
 import { OpenStatusLine } from "../components/OpenStatusLine.tsx";
 import { useNycMinute } from "../components/useNycMinute.ts";
-import { centerKind, centerStatus } from "../logic/centers.ts";
+import { CENTER_KINDS, centerKind, centerStatus } from "../logic/centers.ts";
 import { activeFilters, NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
 import { number, plural, t } from "../../logic/i18n.ts";
@@ -77,7 +77,8 @@ export function MapPage({
                            onClearFilters={() => onFilters(NO_FILTERS)} />
                )} />
       </div>
-      <MapKey />
+      <MapKey items={[...CENTER_KINDS.values()].map(({ label, color, glyph }) => (
+        { label: t(label), color, glyph }))} />
     </>
   );
 }

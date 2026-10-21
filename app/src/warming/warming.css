@@ -331,41 +331,12 @@
 
 /* ------------------------------------------------------------------ map key ------ */
 
-/* Top right, left of the zoom buttons and level with them, on the same white card. */
-.map-key {
-  position: absolute;
-  top: calc(var(--bar-h) + 10px);
-  right: calc(10px + 40px + 10px);
-  z-index: 3;
-  max-width: 240px;
-  border-radius: var(--radius-card);
-  background: var(--surface);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-  font-size: 0.875rem;
-}
-.map-key summary {
-  padding: 10px 14px;
-  line-height: 20px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.map-key ul {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0 14px 12px;
-  list-style: none;
-}
-.map-key li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.map-key .category-icon { width: 22px; height: 22px; }
-
-/* On a phone the zoom buttons are 44 px wide. */
+/* The key's card is style.css's. Here the search box is in the bar, not over the map, so
+   the key stays left of the zoom buttons and level with them at every width, below the
+   bar. On a phone the zoom buttons are 44 px wide. */
+.map-key { top: calc(var(--bar-h) + 10px); }
 @media (max-width: 767px) {
-  .map-key { right: calc(10px + 44px + 10px); }
+  .map-key { top: calc(var(--bar-h) + 10px); right: calc(10px + 44px + 10px); }
 }
 
 /* ------------------------------------------------------------------ landing ------ */

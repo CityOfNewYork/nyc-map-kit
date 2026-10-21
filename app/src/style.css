@@ -629,6 +629,44 @@ body {
   inset-inline: 10px;
   max-width: calc(100% - 20px);
 }
+/* The map's key (ui/MapKey.tsx), on the same white card as the list: top right, left of
+   the zoom buttons and level with them. On a phone, where the search row takes the top,
+   it sits under them (see the media query below). */
+.map-key {
+  position: absolute;
+  top: 10px;
+  right: calc(10px + 40px + 10px);
+  z-index: 3;
+  max-width: 240px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  font-size: 0.875rem;
+}
+.map-key summary {
+  padding: 10px 14px;
+  line-height: 20px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.map-key-caption {
+  margin: 0;
+  padding: 0 14px 8px;
+  color: var(--ink-muted);
+}
+.map-key ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0 14px 12px;
+  list-style: none;
+}
+.map-key li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.map-key .category-icon { flex: none; width: 22px; height: 22px; }
 /* MapLibre's zoom buttons default to 29 px. They are standalone controls, so the WCAG
    2.2 SC 2.5.8 exception for targets inline in a block of text does not cover them. */
 .maplibregl-ctrl-group button { width: 40px; height: 40px; }
@@ -1052,6 +1090,7 @@ body {
   /* Keep the zoom buttons and the attribution clear of the sheet. */
   .map .maplibregl-ctrl-bottom-left,
   .map .maplibregl-ctrl-bottom-right { bottom: var(--sheet-h, 48px); }
+  .map-key { top: calc(10px + 2 * 44px + 10px); right: 10px; }
   .stage:has(.maplibregl-canvas:focus-visible) .map-keys {
     inset-inline: 10px;
     bottom: calc(var(--sheet-h, 48px) + 44px);
@@ -1130,7 +1169,7 @@ body {
    to left. */
 [dir="rtl"] .stage { direction: ltr; }
 [dir="rtl"] .stage :is(.panel, .site-dialog, .filters-panel, .search, .search-status,
-  .search-choices, .map-keys) { direction: rtl; }
+  .search-choices, .map-keys, .map-key) { direction: rtl; }
 [dir="rtl"] .search-bar {
   background: linear-gradient(to right, var(--ink) 28px, var(--surface) 28px);
 }
