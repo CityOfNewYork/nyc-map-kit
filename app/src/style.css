@@ -112,6 +112,9 @@ body {
   outline-offset: 2px;
   box-shadow: none;
 }
+/* The map itself takes focus, for the arrow keys. Its frame clips anything outside it, so
+   the ring sits inside the edge. */
+.maplibregl-canvas:focus-visible { outline-offset: -4px; }
 
 /* Screen-reader-only text. Used instead of aria-label wherever the string is meant for
    a person, because the city's translation proxy rewrites text nodes and cannot see
