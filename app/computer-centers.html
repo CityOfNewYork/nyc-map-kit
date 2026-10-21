@@ -6,10 +6,9 @@
 <title>Public computer centers map</title>
 <meta name="robots" content="noindex">
 <!--
-  The block (see index.html) showing a second dataset: the City's public computer centers.
-  The page names its own files on <body>; main.tsx reads them. The data is built by
-  build/computer-centers.py, and computer-centers/config.json decides what the card shows.
-  It has no orgs.json: each center is its own entry.
+  The same page as index.html, the computer centers map, at its own address so links made
+  to it keep working. A copy rather than a redirect, so an embed keeps the host page as its
+  referrer, which sets the block's language (see logic/i18n.ts). Keep the two the same.
 -->
 <link rel="preload" href="/fonts/noto-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 </head>

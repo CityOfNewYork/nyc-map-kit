@@ -5,7 +5,7 @@
  * `window`, so this runs (and is tested) without a browser.
  *
  * Each map is a page that names its own files (see main.tsx), so one build serves several
- * maps: app/ is the SNAP map, app/computer-centers.html the computer centers.
+ * maps: app/ is the computer centers, app/snap.html the SNAP map.
  */
 import { basemapId } from "../core/basemaps/names.ts";
 import type { BasemapId } from "../core/basemaps/names.ts";

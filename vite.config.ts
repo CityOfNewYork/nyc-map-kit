@@ -3,9 +3,10 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
 // The app lives in app/ and builds to dist/app/. The map is <site>/app/ (index.html), the
-// address a host page's iframe points at too. <site>/app/examples.html embeds it at several
-// sizes, and <site>/app/compare.html shows two basemaps side by side.
-// <site>/app/computer-centers.html is the same block on a second dataset.
+// address a host page's iframe points at too; it shows the public computer centers, and
+// <site>/app/computer-centers.html is the same page. <site>/app/snap.html is the same block
+// on a second dataset, <site>/app/examples.html embeds that one at several sizes, and
+// <site>/app/compare.html shows two basemaps side by side.
 //
 // `base: "./"` makes every built URL relative. The block has to work at localhost, under
 // the GitHub Pages subpath, and wherever a city host puts it, without a rebuild per host.
@@ -45,6 +46,7 @@ export default defineConfig({
     rolldownOptions: {
       input: {
         index: resolve(import.meta.dirname, "app/index.html"),
+        snap: resolve(import.meta.dirname, "app/snap.html"),
         examples: resolve(import.meta.dirname, "app/examples.html"),
         compare: resolve(import.meta.dirname, "app/compare.html"),
         warming: resolve(import.meta.dirname, "app/warming.html"),

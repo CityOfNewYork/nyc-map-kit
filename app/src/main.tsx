@@ -8,7 +8,7 @@ import App from "./ui/App.tsx";
 import "./style.css";
 
 // The page names its files on <body>: data-config, data-data and data-orgs (see
-// computer-centers.html). The SNAP map's index.html names none and takes the defaults.
+// index.html). The SNAP map's snap.html names none and takes the defaults.
 const params = readSettings(window.location.search, document.baseURI, window.location.origin,
   document.body.dataset);
 // The interface's language: ?lang=, or in an embed the host page's (see logic/i18n.ts).

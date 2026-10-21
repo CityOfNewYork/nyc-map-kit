@@ -8,7 +8,7 @@
 <!--
   The examples page: the block near full width with the list, the same data without the
   list, a one-site frame, and a menu that switches the basemap under all of them. Nothing
-  else. The map on its own is index.html. Everything the page used to say about itself —
+  else. The map on its own is snap.html. Everything the page used to say about itself —
   what the component is, what to try, what the network tab shows — belongs in the README,
   where it can be read without a map scrolled off the top of the screen.
 
@@ -73,7 +73,7 @@
   }
 
   /* The provenance note in full. Each frame also carries the block's own one-line note
-     (see index.html). */
+     (see snap.html). */
   .note {
     margin: 0 0 24px;
     padding: 12px 16px;
@@ -121,22 +121,22 @@
 
   <figure>
     <iframe id="map-all" title="Map of SNAP volunteer opportunities in New York City"
-            src="./?list=on"></iframe>
+            src="./snap.html?list=on"></iframe>
   </figure>
 
   <figure>
     <iframe id="map-nolist" title="Map of SNAP volunteer opportunities in New York City, without the list"
-            src="./?list=off"></iframe>
+            src="./snap.html?list=off"></iframe>
   </figure>
 
   <figure class="single">
     <iframe id="map-one" title="Map of one SNAP volunteer site"
-            src="./?list=off&amp;data=one-site.geojson&amp;title=Henry%20Street%20Settlement"></iframe>
+            src="./snap.html?list=off&amp;data=one-site.geojson&amp;title=Henry%20Street%20Settlement"></iframe>
   </figure>
 
   <figure class="phone">
     <iframe id="map-phone" title="Map of SNAP volunteer opportunities in New York City, at phone width"
-            src="./?list=on"></iframe>
+            src="./snap.html?list=on"></iframe>
   </figure>
 
 </main>
@@ -155,7 +155,7 @@ function show(id) {
   for (const frame of document.querySelectorAll("figure iframe")) {
     const url = new URL(frame.getAttribute("src"), location.href);
     url.searchParams.set("basemap", id);
-    frame.src = `./?${url.searchParams}`;
+    frame.src = url.href;
   }
 }
 
