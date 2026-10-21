@@ -70,15 +70,18 @@ export function SiteDialog(
 
   return (
     <dialog className={panel ? "site-dialog side-panel" : "site-dialog"} id="site-dialog"
-            aria-labelledby="card-title" ref={ref}
+            aria-labelledby="card-title"
+            aria-describedby={group.length > 1 ? "step-count" : undefined} ref={ref}
             onCancel={onCancel} onClick={onBackdropClick} onKeyDown={onKeyDown}>
       <Stepper group={group} currentId={feature && feature.properties.id} onStep={onStep} />
       <div className="card-box">
         <div className="mini-map" id="mini-map" ref={miniMapElement} />
-        <article className="card" id="card" aria-labelledby="card-title" hidden={!feature}>
+        {/* A plain box, not an <article>: inside the dialog, already named for the place,
+            an article only made VoiceOver say the name again. */}
+        <div className="card" id="card" hidden={!feature}>
           {feature && (card ? card(feature)
             : <Card feature={feature} model={model!} origin={origin} />)}
-        </article>
+        </div>
         <button className="card-close" id="card-close" type="button" onClick={onClose}>
           <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20">
             <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2.2"
@@ -115,13 +118,17 @@ interface StepperProps {
 function Stepper({ group, currentId, onStep }: StepperProps) {
   const show = group.length > 1;
   const index = group.findIndex((f) => f.properties.id === currentId);
+  // No role="group": unnamed, VoiceOver names the group by its text and reads the count
+  // again on entering ("group") and leaving ("end of group"). The arrows' own labels
+  // already say they belong to this location. The count is heard once, as the dialog's
+  // description, when the card opens.
   return (
-    <div className="stepper" id="stepper" role="group" hidden={!show}>
+    <div className="stepper" id="stepper" hidden={!show}>
       {show && (
         <>
           <ArrowButton dir="prev" path="M12.5 4.5 7 10l5.5 5.5"
                        label={t("Previous site at this location")} onClick={() => onStep(-1, "prev")} />
-          <p className="step-count">
+          <p className="step-count" id="step-count">
             <span>
               {t("{index} of {count} at this location",
                 { index: number(index + 1), count: number(group.length) })}
