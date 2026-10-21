@@ -17,8 +17,8 @@ import { layers, namedFlavor } from "@protomaps/basemaps";
 import type { Flavor } from "@protomaps/basemaps";
 import type { ExpressionSpecification, LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, and, dotCityLine, nameExpression, PARK_NAME_COLOR, POSITRON_BUILDING,
-  POSITRON_LAND, OUTSIDE, POSITRON_ROADS, greyOutsideCity,
+  addBoroughLabels, and, dotCityLine, flatBuildings, nameExpression, PARK_NAME_COLOR,
+  POSITRON_BUILDING, POSITRON_LAND, OUTSIDE, POSITRON_ROADS, greyOutsideCity,
   warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
@@ -54,7 +54,7 @@ export function protomapsStyle(
     layers: layers(SOURCE, flavor(palette), { lang }),
   };
   parkland(style, palette);
-  flatBuildings(style);
+  protomapsBuildings(style);
   positronRoads(style);
   placeLabels(style, lang);
   paleRoadsOutside(style);
@@ -172,21 +172,12 @@ function parkland(style: StyleSpecification, palette: Palette) {
   if (green?.type === "fill") green.paint = { "fill-color": palette.park };
 }
 
-/** Buildings appear from BUILDING_ZOOM, fading in over the half zoom before it, as
- *  Google's map shows them only once its streets are block by block. Further out the
- *  tiles carry only some of the buildings, which draw as a sparse scatter. */
-const BUILDING_ZOOM = 16;
-
-/** Buildings opaque, with positron's outline, from BUILDING_ZOOM. Protomaps draws them
- *  half-transparent, and from z13. */
-function flatBuildings(style: StyleSpecification) {
+/** Buildings opaque, with positron's outline, from the zoom flatBuildings sets. Protomaps
+ *  draws them half-transparent, and from z13, where the tiles carry only some of the
+ *  buildings, which draw as a sparse scatter. */
+function protomapsBuildings(style: StyleSpecification) {
   const buildings = layer(style, "buildings");
-  if (buildings?.type !== "fill") return;
-  buildings.minzoom = BUILDING_ZOOM - 0.5;
-  buildings.paint = {
-    "fill-color": POSITRON_BUILDING.fill, "fill-outline-color": POSITRON_BUILDING.outline,
-    "fill-opacity": ["interpolate", ["linear"], ["zoom"], BUILDING_ZOOM - 0.5, 0, BUILDING_ZOOM, 1],
-  };
+  if (buildings?.type === "fill") flatBuildings(buildings);
 }
 
 /** Route networks that get a shield: Interstates and US routes, the two OTI's map

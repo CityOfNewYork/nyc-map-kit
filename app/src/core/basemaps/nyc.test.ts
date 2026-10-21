@@ -117,7 +117,10 @@ describe("the NYC basemap steps", () => {
     expect(paint("Sidewalks/Sidewalk"))
       .toEqual({ "fill-color": "rgb(242,243,240)", "fill-opacity": 0.74 });
     expect(paint("Plaza/Plaza")).toEqual({ "fill-color": PALETTE.park });
-    const flat = { "fill-color": "rgb(234, 234, 229)", "fill-outline-color": "rgb(219, 219, 218)" };
+    const flat = {
+      "fill-color": "rgb(234, 234, 229)", "fill-outline-color": "rgb(219, 219, 218)",
+      "fill-opacity": ["interpolate", ["linear"], ["zoom"], 15.5, 0, 16, 1],
+    };
     expect(paint("Buildings/Building/1")).toEqual(flat);
     expect(paint("Buildings/Landmark Building/1")).toEqual(flat);
   });

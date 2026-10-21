@@ -18,7 +18,8 @@
 import type { Feature, FeatureCollection, MultiLineString, Point, Polygon } from "geojson";
 import { convertFilter } from "@maplibre/maplibre-gl-style-spec";
 import type {
-  ExpressionSpecification, FilterSpecification, LayerSpecification, StyleSpecification,
+  ExpressionSpecification, FillLayerSpecification, FilterSpecification, LayerSpecification,
+  StyleSpecification,
 } from "maplibre-gl";
 import CITY_LIMITS from "./city-limits.json";
 import CITY_LINE from "./city-line.json";
@@ -491,6 +492,20 @@ export function hideLabelsOutsideCity(style: StyleSpecification, source: string,
 /** Land, and buildings in positron's fill and outline. */
 export const POSITRON_LAND = "rgb(242,243,240)";
 export const POSITRON_BUILDING = { fill: "rgb(234, 234, 229)", outline: "rgb(219, 219, 218)" };
+
+/** Buildings appear from BUILDING_ZOOM, the scale at which Google's map first shows them,
+ *  once its streets are block by block, and fade in over the half zoom before it. */
+const BUILDING_ZOOM = 16;
+
+/** Draw a building layer flat, in positron's fill and outline, from BUILDING_ZOOM, in
+ *  place. Every basemap's buildings go through this, so they appear at the same zoom. */
+export function flatBuildings(layer: FillLayerSpecification) {
+  layer.minzoom = BUILDING_ZOOM - 0.5;
+  layer.paint = {
+    "fill-color": POSITRON_BUILDING.fill, "fill-outline-color": POSITRON_BUILDING.outline,
+    "fill-opacity": ["interpolate", ["linear"], ["zoom"], BUILDING_ZOOM - 0.5, 0, BUILDING_ZOOM, 1],
+  };
+}
 
 /** Positron's roads: its colours, before warmTint, and its widths, which grow
  *  exponentially with zoom. Side streets turn from grey to white at z14, as

@@ -9,7 +9,7 @@
  */
 import type { StyleSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, and, OUTSIDE, PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND,
+  addBoroughLabels, and, flatBuildings, OUTSIDE, PARK_NAME_COLOR, POSITRON_LAND,
   POSITRON_ROADS, reportUnmatched, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
@@ -62,8 +62,6 @@ const NYC_WATER = ["Ocean", "Inland Hydrography", "Region Hydrography"];
 const NYC_PARK = ["Parks", "Region Parks", "Plaza", "The High Line"];
 const NYC_LAND = ["Land/Land_NYC", "Land/Land_Region"];
 const NYC_LAND_COLOR = POSITRON_LAND;
-/** Buildings in positron's fill and outline. */
-const NYC_BUILDING = POSITRON_BUILDING;
 /** Walking paths: OTI's sidewalk layer, which also holds the paths through parks. It is
  *  drawn in the land colour, so sidewalks vanish into the blocks, and part-transparent,
  *  so a path through grass takes the tone of positron's paths rather than the land's. */
@@ -88,10 +86,11 @@ const NYC_STATION = "rgb(191,191,187)";
  * the region around the city a step darker; this block keeps positron's single ground,
  * and water already outlines most of the city.
  *
- * Buildings, landmarks included, are drawn flat in positron's fill and outline. The
- * style draws them a darker grey, and landmarks darker still, which suits a reference
- * map but at street level outweighs the pins; quietNycDetail drops the outlines and
- * drop shadows it draws them with. Station platforms are drawn darker than the buildings but not in
+ * Buildings, landmarks included, are drawn flat in positron's fill and outline, from the
+ * zoom flatBuildings sets rather than the style's z12. The style draws them a darker
+ * grey, and landmarks darker still, which suits a reference map but at street level
+ * outweighs the pins; quietNycDetail drops the outlines and drop shadows it draws them
+ * with. Station platforms are drawn darker than the buildings but not in
  * the style's dark grey, which along an elevated line like the 7 in Jackson Heights
  * is the heaviest thing at street level. A dark block reads as a mark on the map,
  * which is the pins' job.
@@ -111,7 +110,7 @@ export function nycBasemapPalette(
     const sourceLayer = layer["source-layer"] || "";
     if (sourceLayer === "Buildings" && layer.type === "fill") {
       hits.buildings++;
-      layer.paint = { "fill-color": NYC_BUILDING.fill, "fill-outline-color": NYC_BUILDING.outline };
+      flatBuildings(layer);
       continue;
     }
     if (layer.id === "Sidewalks/Sidewalk") {
