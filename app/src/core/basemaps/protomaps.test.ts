@@ -55,14 +55,18 @@ describe("the Protomaps basemap", () => {
   });
 
   test("leaves the boroughs to the block's own labels", () => {
-    expect(filter("places_subplace")).toContainEqual(["!=", "kind_detail", "suburb"]);
     expect(layer("places_subplace")?.minzoom).toBe(13);
     expect(layer("borough_label")?.maxzoom).toBe(13);
   });
 
-  test("names no localities, and leaves Nolan Park out of the neighbourhoods", () => {
+  test("names neighbourhoods from the file build/neighborhoods.py writes, in English", () => {
+    expect(style.sources.neighbourhoods).toEqual({ type: "geojson", data: "neighborhoods.geojson" });
+    expect(layer("places_subplace")).toMatchObject({ source: "neighbourhoods",
+      layout: { "text-field": ["get", "name"] } });
+  });
+
+  test("names no localities", () => {
     expect(ids).not.toContain("places_locality");
-    expect(filter("places_subplace")).toContainEqual(["!in", "name", "Nolan Park"]);
   });
 
   test("greys the land outside the city under the water, with no test in the browser", () => {
