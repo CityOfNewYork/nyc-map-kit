@@ -63,7 +63,7 @@ export function useSiteCard({ model, style, categories = null, panel = false }: 
   // Bookkeeping that event handlers read and write but nothing renders: refs, not state.
   const selectedId = useRef<string | null>(null);   // what map-core has selected, readable at once
   const stepFocus = useRef<StepDirection | null>(null);  // while a stepper click is in flight
-  const returnFocusTo = useRef<HTMLElement | null>(null);  // the control that opened the card
+  const returnFocusTo = useRef<HTMLElement | null>(null);  // the row that opened the card; see closedCardFocus
   const pushed = useRef(false);        // the open card has a history entry of its own
   const urlDriven = useRef(false);     // the URL, not the reader, chose the site
   const mainMapRef = useRef<MapCore<SiteProperties> | null>(null);   // see attach
@@ -225,12 +225,15 @@ export function useSiteCard({ model, style, categories = null, panel = false }: 
   }
 
   function hideCard() {
+    const id = selectedId.current;     // before select(null) clears it
+    const dialog = dialogRef.current!;
     pushed.current = false;
-    if (dialogRef.current!.open) dialogRef.current!.close();
+    if (dialog.open) dialog.close();
     mainMap()?.select(null);           // clears the selection
     const back = returnFocusTo.current;
     returnFocusTo.current = null;
     if (back && document.contains(back)) back.focus();
+    else if (focusLost(dialog)) closedCardFocus(id)?.focus();
   }
 
   const onPopState = useEffectEvent(() => {
@@ -267,6 +270,24 @@ export function useSiteCard({ model, style, categories = null, panel = false }: 
     step,
     close,
   };
+}
+
+/** Whether closing `dialog` left focus nowhere: on the page itself, or still inside the
+ *  closed card. */
+function focusLost(dialog: HTMLDialogElement) {
+  const active = document.activeElement;
+  return !active || active === document.body || dialog.contains(active);
+}
+
+/** Where focus goes when a card closes that no list row opened — a link with ?site=, or a
+ *  pin: the site's row in the list, so the reader is left where it is in the list, or, if
+ *  the list is shut or off, the map's heading (the element marked data-card-return). */
+function closedCardFocus(id: string | null): HTMLElement | null {
+  const row = id
+    ? document.querySelector<HTMLElement>(`.site-button[data-site-id="${CSS.escape(id)}"]`)
+    : null;
+  if (row && row.getClientRects().length) return row;   // not in a shut list
+  return document.querySelector<HTMLElement>("[data-card-return]");
 }
 
 /** Announce a selection through the one live region map-core owns. */

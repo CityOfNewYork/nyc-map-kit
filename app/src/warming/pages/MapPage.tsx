@@ -52,7 +52,8 @@ export function MapPage({
 
   return (
     <>
-      <h2 className="visually-hidden" id="map-heading" tabIndex={-1}>{t("Map of warming centers")}</h2>
+      <h2 className="visually-hidden" id="map-heading" tabIndex={-1}
+          data-card-return>{t("Map of warming centers")}</h2>
       <div className="toolbar">
         <div className="search-row">
           <Search onFound={onFound} onClear={onClear} />

@@ -231,9 +231,13 @@ export default function App({ settings }: AppProps) {
         leave an iframe whose document has no heading outline at all; it is what a screen
         reader announces on entering the frame, which is the only way a non-sighted user
         learns what the frame contains; and it is the landmark the list and map sit under.
+
+        It also takes focus when a card closes that no list row opened and the list is shut or off
+        (useSiteCard.ts, closedCardFocus), so focus is not left on nothing.
       */}
       <header className="block-header">
-        <h1 id="block-title" className="visually-hidden">{title || DEFAULT_TITLE}</h1>
+        <h1 id="block-title" className="visually-hidden" tabIndex={-1}
+            data-card-return>{title || DEFAULT_TITLE}</h1>
       </header>
 
       <div className="stage" id="stage" data-list={model ? settings.list : "on"}>
