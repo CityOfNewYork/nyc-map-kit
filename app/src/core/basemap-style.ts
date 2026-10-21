@@ -498,7 +498,8 @@ export const POSITRON_BUILDING = { fill: "rgb(234, 234, 229)", outline: "rgb(219
 const BUILDING_ZOOM = 16;
 
 /** Draw a building layer flat, in positron's fill and outline, from BUILDING_ZOOM, in
- *  place. Every basemap's buildings go through this, so they appear at the same zoom. */
+ *  place. The Protomaps and NYC basemaps' buildings go through this, so they appear at
+ *  the same zoom. */
 export function flatBuildings(layer: FillLayerSpecification) {
   layer.minzoom = BUILDING_ZOOM - 0.5;
   layer.paint = {
