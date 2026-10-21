@@ -231,10 +231,9 @@ function positronRoads(style: StyleSpecification) {
   }
 }
 
-/** Places the tiles file as neighbourhoods that are parts of a park: Nolan Park is a
- *  section of Governors Island's historic district, as are the island's hamlets. */
-const NOT_NEIGHBOURHOODS = ["Nolan Park"];
-/** Below this zoom the boroughs are named; from it, the neighbourhoods the tiles carry. */
+/** The neighbourhood names OTI's basemap draws, written by build/neighborhoods.py. */
+const NEIGHBOURHOODS = "neighborhoods.geojson";
+/** Below this zoom the boroughs are named; from it, the neighbourhoods. */
 const NEIGHBOURHOOD_ZOOM = 13;
 /** Islands whose name repeats a borough's. */
 const ISLANDS_NAMED_FOR_BOROUGHS = ["Manhattan", "Staten Island", "Manhattan Island"];
@@ -260,19 +259,24 @@ const POSITRON_ROAD_NAME_ZOOM = 12.2;
 /**
  * The labels, balanced on the city as the other basemaps' are.
  *
- *   1. The tiles' own borough labels (neighbourhoods of kind `suburb`), the islands named
- *      after boroughs, and "New York" are dropped. The block draws the boroughs itself,
- *      translated and anchored on open ground, until NEIGHBOURHOOD_ZOOM.
+ *   1. The islands named after boroughs, and "New York", are dropped. The block draws
+ *      the boroughs itself, translated and anchored on open ground, until
+ *      NEIGHBOURHOOD_ZOOM.
  *   2. No localities are named. Within the city OpenStreetMap files as localities New
  *      York itself, hamlets that are Todt Hill again or sections of Governors Island,
  *      and things that are not places to live, such as "Clinton Hill Historic District",
- *      an interchange and a rooftop farm. Nolan Park, another section of Governors
- *      Island, is filed as a neighbourhood and left out too. Outside the city nothing
- *      is named: the file holds no labels there but the highways' and the water's
+ *      an interchange and a rooftop farm. Outside the city nothing is named: the file
+ *      holds no labels there but the highways' and the water's
  *      (build/protomaps-outside.py).
- *   3. Neighbourhoods are named at NEIGHBOURHOOD_SIZE in Noto Sans Italic, with
- *      positron's narrow collision margin. Protomaps pads neighbourhood names by up to
- *      20 px, which at street level leaves no room for the park names below them.
+ *   3. Neighbourhoods are named from the names OTI's basemap draws (NEIGHBOURHOODS),
+ *      not the tiles' own. OpenStreetMap leaves out neighbourhoods the City's maps
+ *      name, Brooklyn Heights and Prospect Lefferts Gardens among them: its
+ *      neighbourhoods that are mapped as areas never reach the tiles, which name only
+ *      points. The layer keeps the tiles' layer's place and colours, at
+ *      NEIGHBOURHOOD_SIZE in Noto Sans Italic, with positron's narrow collision margin.
+ *      Protomaps pads neighbourhood names by up to 20 px, which at street level leaves
+ *      no room for the park names below them. The names are English only, as the rest
+ *      of the basemap's are.
  *   4. House numbers and one-way arrows are dropped, as positron and quietNycDetail leave
  *      them out.
  *   5. Parks and cemeteries are named in the green italic the other basemaps use for
@@ -283,14 +287,18 @@ const POSITRON_ROAD_NAME_ZOOM = 12.2;
  * Protomaps writes its filters in the legacy syntax, so the clauses added are legacy too.
  */
 function placeLabels(style: StyleSpecification, lang: string) {
-  const subplace = layer(style, "places_subplace");
+  const at = style.layers.findIndex((l) => l.id === "places_subplace");
+  const subplace = style.layers[at];
   if (subplace?.type === "symbol") {
-    subplace.filter = and(subplace.filter, ["!=", "kind_detail", "suburb"],
-      ["!in", "name", ...NOT_NEIGHBOURHOODS]);
-    subplace.minzoom = NEIGHBOURHOOD_ZOOM;
-    const { "text-padding": _, ...layout } = subplace.layout ?? {};
-    subplace.layout = { ...layout, "text-font": ["Noto Sans Italic"],
-      "text-size": NEIGHBOURHOOD_SIZE, "text-max-width": 9 };
+    const { "text-padding": _, "symbol-sort-key": __, ...layout } = subplace.layout ?? {};
+    style.sources.neighbourhoods = { type: "geojson", data: NEIGHBOURHOODS };
+    style.layers[at] = {
+      id: subplace.id, type: "symbol", source: "neighbourhoods",
+      minzoom: NEIGHBOURHOOD_ZOOM,
+      layout: { ...layout, "text-field": ["get", "name"], "text-font": ["Noto Sans Italic"],
+        "text-size": NEIGHBOURHOOD_SIZE, "text-max-width": 9 },
+      paint: subplace.paint,
+    };
   }
   const roadNames = layer(style, "roads_labels_major");
   if (roadNames) roadNames.minzoom = POSITRON_ROAD_NAME_ZOOM;
