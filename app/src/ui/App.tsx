@@ -233,13 +233,6 @@ export default function App({ settings }: AppProps) {
         <h1 id="block-title" className="visually-hidden">{title || DEFAULT_TITLE}</h1>
       </header>
 
-      {/*
-        185 sites is 185 tab stops before a keyboard user reaches the map's own controls.
-        This is the standard escape hatch: invisible until it takes focus, first in the tab
-        order, and it lands on the map container.
-      */}
-      <a className="skip-link" href="#map">{t("Skip the list and go to the map")}</a>
-
       <div className="stage" id="stage" data-list={model ? settings.list : "on"}>
         {/* The search box and the Filters button above the list, one column on a desktop.
             On a phone the list is a bottom sheet and this wrapper drops out of the layout
@@ -274,7 +267,7 @@ export default function App({ settings }: AppProps) {
                  row={(f) => siteRow(f, pinField === "org_type" ? pinStyles : null)} />
         </div>
         {/* map-core fills this div; React only puts the loading and error notes in it. */}
-        <div className="map" id="map" tabIndex={-1} ref={containerRef}>
+        <div className="map" id="map" ref={containerRef}>
           {failed ? (
             <p className="load-error" id="loading"><span>{t("The map could not load its data.")}</span></p>
           ) : !basemap && (

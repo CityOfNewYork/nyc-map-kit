@@ -181,8 +181,6 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
 
   return (
     <>
-      {/* Outside .site-main, which is positioned, so style.css can park it off-screen. */}
-      {view === "map" && <a className="skip-link" href="#map">{t("Skip the list and go to the map")}</a>}
       <TopBar />
       <main className="site-main">
         {failed ? (

@@ -83,7 +83,7 @@ export function WarmingMap({
   }, [map, padForList]);
 
   return (
-    <div className="map" id="map" tabIndex={-1} ref={containerRef}>
+    <div className="map" id="map" ref={containerRef}>
       {failed && <p className="load-error"><span>{t("The map could not load.")}</span></p>}
     </div>
   );

@@ -51,9 +51,9 @@
 :root {
   /* Neutral throughout. Blue is the only hue in the interface — on links, buttons and the
      selected row — so a coloured thing means "this goes somewhere" or "this is the one"
-     and nothing else competes with it. Amber appears only on the skip link. The map
-     carries its own colour; the panel around it does not. Every pair here clears WCAG AA:
-     4.5:1 for text, 3:1 for borders, icons and focus rings. */
+     and nothing else competes with it. The map carries its own colour; the panel around
+     it does not. Every pair here clears WCAG AA: 4.5:1 for text, 3:1 for borders, icons
+     and focus rings. */
   --ink:        #000000;   /* nyc-sys-color-text-base — 21:1 on white */
   --ink-muted:  #555555;   /* nyc-sys-color-text-secondary — 7.5:1 on white, 6.0:1 on
                               --selected */
@@ -65,7 +65,6 @@
   --link:       #103fef;   /* the same as --primary */
   --link-hover: #050560;   /* nyc-sys-color-link-hover */
   --hover:      #f4f7ff;
-  --amber:      #ffb320;   /* the skip link — 11.7:1 under black text */
   --radius:     8px;
   --radius-card: 12px;     /* nyc-sys-radius-sm */
   --radius-pill: 40px;     /* nyc-sys-radius-2xl */
@@ -127,27 +126,6 @@ body {
   overflow: hidden;
   white-space: nowrap;
 }
-
-/* The skip link. Off-screen until it takes focus, then a normal visible control — the
-   one piece of UI that only keyboard users ever see. */
-.skip-link {
-  position: absolute;
-  left: 8px;
-  top: -60px;
-  z-index: 10;
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 0 14px;
-  border-radius: 6px;
-  background: var(--amber);
-  color: var(--ink);
-  font-size: 1rem;
-  font-weight: 700;
-  text-decoration: none;
-  transition: top 0.12s ease;
-}
-.skip-link:focus { top: 8px; }
 
 /* ------------------------------------------------------------------ frame -------- */
 
@@ -611,7 +589,6 @@ body {
 .map {
   position: relative;
   grid-area: 1 / 1;
-  outline: none;   /* it is a skip-link target, not an interactive control of its own */
   min-height: 0;
   min-width: 0;
   background: var(--surface-2);
