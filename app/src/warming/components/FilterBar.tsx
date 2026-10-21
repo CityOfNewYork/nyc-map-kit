@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { FocusEvent, KeyboardEvent, ReactNode } from "react";
 import { track } from "../../logic/analytics.ts";
 import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
+import { Check } from "../../ui/Check.tsx";
 import { CENTER_KINDS } from "../logic/centers.ts";
 import type { Filters } from "../logic/filters.ts";
 import { ClockIcon, PawIcon, WheelchairIcon } from "./FeatureIcons.tsx";
@@ -35,12 +36,11 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         <fieldset>
           <legend className="visually-hidden">{t("Location type")}</legend>
           {[...CENTER_KINDS].map(([type, kind]) => (
-            <label key={type} className="filter-check">
-              <input type="checkbox" checked={filters.types.includes(type)}
-                     onChange={(e) => toggleType(type, e.target.checked)} />
-              <CategoryIcon color={kind.color} glyph={kind.glyph} />
-              <span>{t(kind.label)}</span>
-            </label>
+            <Check key={type} className="filter-check" checked={filters.types.includes(type)}
+                   onChange={(on) => toggleType(type, on)}
+                   icon={<CategoryIcon color={kind.color} glyph={kind.glyph} />}>
+              {t(kind.label)}
+            </Check>
           ))}
         </fieldset>
       </Dropdown>
@@ -58,24 +58,21 @@ export function FilterToggles({ filters, set }: {
 }) {
   return (
     <>
-      <label className={filters.openNow ? "pill check-pill on" : "pill check-pill"}>
-        <input type="checkbox" checked={filters.openNow}
-               onChange={(e) => set({ openNow: e.target.checked }, "open", e.target.checked)} />
-        <ClockIcon />
-        <span>{t("Open now")}</span>
-      </label>
-      <label className={filters.wheelchair ? "pill check-pill on" : "pill check-pill"}>
-        <input type="checkbox" checked={filters.wheelchair}
-               onChange={(e) => set({ wheelchair: e.target.checked }, "wheelchair", e.target.checked)} />
-        <WheelchairIcon />
-        <span>{t("Wheelchair accessible")}</span>
-      </label>
-      <label className={filters.pets ? "pill check-pill on" : "pill check-pill"}>
-        <input type="checkbox" checked={filters.pets}
-               onChange={(e) => set({ pets: e.target.checked }, "pets", e.target.checked)} />
-        <PawIcon />
-        <span>{t("Pets allowed")}</span>
-      </label>
+      <Check className={filters.openNow ? "pill check-pill on" : "pill check-pill"}
+             checked={filters.openNow} onChange={(on) => set({ openNow: on }, "open", on)}
+             icon={<ClockIcon />}>
+        {t("Open now")}
+      </Check>
+      <Check className={filters.wheelchair ? "pill check-pill on" : "pill check-pill"}
+             checked={filters.wheelchair} onChange={(on) => set({ wheelchair: on }, "wheelchair", on)}
+             icon={<WheelchairIcon />}>
+        {t("Wheelchair accessible")}
+      </Check>
+      <Check className={filters.pets ? "pill check-pill on" : "pill check-pill"}
+             checked={filters.pets} onChange={(on) => set({ pets: on }, "pets", on)}
+             icon={<PawIcon />}>
+        {t("Pets allowed")}
+      </Check>
     </>
   );
 }

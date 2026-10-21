@@ -41,6 +41,7 @@ import type {
   Config, Model, OrgsDoc, Site, SiteCollection, SiteProperties,
 } from "../logic/types.ts";
 import { CategoryIcon } from "./CategoryIcon.tsx";
+import { Check } from "./Check.tsx";
 import { FilterDisclosure, FiltersButton, FiltersPanel } from "./Filters.tsx";
 import { keepClearOfList } from "./layout.ts";
 import { MapKey } from "./MapKey.tsx";
@@ -257,12 +258,11 @@ export default function App({ settings }: AppProps) {
               <FilterDisclosure label={t(model.config.filterLabel || "Organization type")}
                                 chosen={types.length}>
                 {orgTypes(model.features).map(({ type }) => (
-                  <label key={type} className="filter-check">
-                    <input type="checkbox" checked={types.includes(type)}
-                           onChange={(e) => toggleType(type, e.target.checked)} />
-                    {pinField === "org_type" && <TypeIcon style={pinStyles?.get(type)} />}
-                    <span>{type}</span>
-                  </label>
+                  <Check key={type} className="filter-check" checked={types.includes(type)}
+                         onChange={(on) => toggleType(type, on)}
+                         icon={pinField === "org_type" && <TypeIcon style={pinStyles?.get(type)} />}>
+                    {type}
+                  </Check>
                 ))}
               </FilterDisclosure>
             </FiltersPanel>
