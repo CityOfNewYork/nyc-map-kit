@@ -17,9 +17,9 @@ import { layers, namedFlavor } from "@protomaps/basemaps";
 import type { Flavor } from "@protomaps/basemaps";
 import type { ExpressionSpecification, LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, and, dotCityLine, flatBuildings, nameExpression, PARK_NAME_COLOR,
-  POSITRON_BUILDING, POSITRON_LAND, OUTSIDE, POSITRON_ROADS, greyOutsideCity,
-  warmTint,
+  addBoroughLabels, addLandmarkLabels, and, dotCityLine, flatBuildings, nameExpression,
+  PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND, OUTSIDE, POSITRON_ROADS,
+  greyOutsideCity, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -274,6 +274,7 @@ const POSITRON_ROAD_NAME_ZOOM = 12.2;
  *      parks, above the street names and below the place names. Protomaps names more
  *      streets than positron, so below the street names, as the other basemaps put
  *      them, few park names find room.
+ *   6. The Statue of Liberty and Ellis Island are named (addLandmarkLabels).
  *
  * Protomaps writes its filters in the legacy syntax, so the clauses added are legacy too.
  */
@@ -320,5 +321,6 @@ function placeLabels(style: StyleSpecification, lang: string) {
   const roads = style.layers.findIndex((l) => l.id === "roads_labels_major");
   style.layers.splice(roads < 0 ? style.layers.length : roads + 1, 0, parkNames);
 
+  addLandmarkLabels(style, lang);
   addBoroughLabels(style, lang, NEIGHBOURHOOD_ZOOM);
 }

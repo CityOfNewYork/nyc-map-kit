@@ -9,8 +9,8 @@
  */
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, and, greyOutsideCity, hideLabelsOutsideCity, loadBasemapStyle,
-  nameExpression, PARK_NAME_COLOR, warmTint,
+  addBoroughLabels, addLandmarkLabels, and, greyOutsideCity, hideLabelsOutsideCity,
+  loadBasemapStyle, nameExpression, PARK_NAME_COLOR, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -218,7 +218,8 @@ const ISLANDS_NAMED_FOR_BOROUGHS = ["Staten Island", "Manhattan Island"];
 /**
  * Rebalance the place labels for a map framed on New York City, in place.
  *
- * Three edits, each reversible on its own. (Outside the city nothing is named at all;
+ * Three edits, each reversible on its own, and the harbour's landmarks named
+ * (addLandmarkLabels). (Outside the city nothing is named at all;
  * see hideLabelsOutsideCity.)
  *   1. The boroughs are drawn from BOROUGH_LABELS below z14, where the tiles have
  *      nothing, and stop there because that is where real neighbourhood names take
@@ -250,6 +251,7 @@ export function balancePlaceLabels(
   const city = layer("label_city");
   if (city) city.filter = and(city.filter, ["!=", ["get", "name"], "New York"]);
 
+  addLandmarkLabels(style, lang);
   addBoroughLabels(style, lang, 14);
   style.metadata = Object.assign({}, style.metadata, {
     "nyc-map-kit:place-labels": "balanced",

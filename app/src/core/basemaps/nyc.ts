@@ -9,8 +9,8 @@
  */
 import type { StyleSpecification, SymbolLayerSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, and, flatBuildings, OUTSIDE, PARK_NAME_COLOR, POSITRON_LAND,
-  POSITRON_ROADS, reportUnmatched, warmTint,
+  addBoroughLabels, addLandmarkLabels, and, flatBuildings, OUTSIDE, PARK_NAME_COLOR,
+  POSITRON_LAND, POSITRON_ROADS, reportUnmatched, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -301,6 +301,7 @@ const NYC_NEIGHBOURHOOD_TYPE: SymbolLayerSpecification["layout"] = {
  *      outside the city are not named at all (quietNycRegion).
  *   4. Placeholders. A few features in the data are named "NO NAME", and the style
  *      prints the placeholder. Those labels are filtered out.
+ *   5. The Statue of Liberty and Ellis Island are named (addLandmarkLabels).
  *
  * Takes `lang` for the borough labels. Every other label is English: the tiles carry no
  * other language.
@@ -348,6 +349,7 @@ export function nycLabels(style: StyleSpecification, lang: string): StyleSpecifi
     neighbourhoods.minzoom = NYC_NEIGHBOURHOOD_ZOOM;
     neighbourhoods.layout = { ...neighbourhoods.layout, ...NYC_NEIGHBOURHOOD_TYPE };
   }
+  addLandmarkLabels(style, lang);
   addBoroughLabels(style, lang, NYC_NEIGHBOURHOOD_ZOOM);
 
   reportUnmatched(style, hits);
