@@ -43,6 +43,16 @@ export interface Config {
   card?: LabelledFieldRef[];
   /** The day a site's details were last checked, "2026-10-04". The data's date when absent. */
   updated?: FieldRef;
+  /** What the list is called, for screen readers. "Volunteer sites" when absent. */
+  listLabel?: string;
+  /** The count above the list, as a plural pair such as {"one": "{n} center", "other":
+   *  "{n} centers"}. Without it the list counts organizations and sites. */
+  count?: { one: string; other: string };
+  /** The heading over the filter of `org_type` values. "Organization type" when absent. */
+  filterLabel?: string;
+  /** Pins coloured by this property's values, from the pin stock in core/pins.ts, the most
+   *  common value first. One colour for every pin when absent. */
+  pins?: { field: string };
 }
 
 // ------------------------------------------------------------------------ point data

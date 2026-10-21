@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SNAP volunteer opportunities map</title>
+<!-- The data is a prototype snapshot, so the page stays out of search results. Remove this
+     once the map shows the City's own current data. -->
+<meta name="robots" content="noindex">
+
+<!--
+  The block (see index.html) showing SNAP volunteer opportunities, at <site>/app/snap.html.
+  It names no files on <body>, so it takes the defaults in app/public/: config.json,
+  sites.geojson and orgs.json. examples.html embeds it several times as a worked example.
+-->
+<!-- Fetched alongside the stylesheet rather than after it, so the text is set in Noto
+     Sans before the list first paints instead of swapping in under the reader. -->
+<link rel="preload" href="/fonts/noto-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+</head>
+
+<body>
+<!-- Plain HTML outside React, so it is on screen at first paint, even if the map fails to
+     load, and costs no layout shift. It travels with every frame that embeds the block.
+     main.tsx translates each data-t element's text. -->
+<p class="prototype-note"><strong data-t>Prototype, not a City service.</strong>
+<span data-t>For current information see the City's</span>
+<a href="https://www.nyc.gov/main/services/snap-benefits/abawd" target="_top" data-t>ABAWD volunteering page</a><span>.</span>
+<button class="note-close" type="button"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span class="visually-hidden" data-t>Close this note</span></button></p>
+<div id="root"></div>
+<script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

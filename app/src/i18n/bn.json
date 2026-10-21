@@ -1,5 +1,4 @@
 {
-  "Skip the list and go to the map": "তালিকা বাদ দিয়ে মানচিত্রে যান",
   "Organization type": "সংস্থার ধরন",
   "Volunteer sites": "স্বেচ্ছাসেবার স্থান",
   "The map could not load its data.": "মানচিত্র তার তথ্য লোড করতে পারেনি।",
@@ -29,7 +28,7 @@
   "{n} filters on": "{n}টি ফিল্টার চালু",
   "Show {n} locations": "{n}টি স্থান দেখান",
   "{n} chosen": "{n}টি নির্বাচিত",
-  "Address, neighborhood or ZIP code": "ঠিকানা, এলাকা বা জিপ কোড",
+  "Enter an address or neighborhood": "একটি ঠিকানা বা এলাকা লিখুন",
   "Neighborhood, borough or ZIP code": "এলাকা, বরো বা জিপ কোড",
   "Clear the search": "অনুসন্ধান মুছুন",
   "Use my location": "আমার অবস্থান ব্যবহার করুন",
@@ -48,6 +47,7 @@
   "ZIP code": "জিপ কোড",
   "and": "ও",
   "Show or hide the list": "তালিকা দেখান বা লুকান",
+  "Show list": "তালিকা দেখান",
   "The warming center data could not load.": "উষ্ণতা কেন্দ্রের তথ্য লোড করা যায়নি।",
   "Wheelchair accessible": "হুইলচেয়ারে প্রবেশযোগ্য",
   "Pets allowed": "পোষা প্রাণী আনা যায়",
@@ -99,5 +99,20 @@
   "How to get in": "কীভাবে ঢুকবেন",
   "Hospital": "হাসপাতাল",
   "Drop-in center": "ড্রপ-ইন সেন্টার",
-  "Warming bus": "উষ্ণতা বাস"
+  "Warming bus": "উষ্ণতা বাস",
+  "Computer centers": "কম্পিউটার কেন্দ্র",
+  "{n} centers": {
+    "one": "{n}টি কেন্দ্র",
+    "other": "{n}টি কেন্দ্র"
+  },
+  "Overseen by": "তত্ত্বাবধানে",
+  "Help and classes": "সহায়তা ও ক্লাস",
+  "Who it's for": "কাদের জন্য",
+  "Who can use it": "কারা ব্যবহার করতে পারেন",
+  "Computers": "কম্পিউটার",
+  "Devices": "ডিভাইস",
+  "Lends devices": "ডিভাইস ধার দেয়",
+  "Languages": "ভাষা",
+  "Operated by": "পরিচালনায়",
+  "public computer centers data": "পাবলিক কম্পিউটার কেন্দ্রের ডেটা"
 }

@@ -1,5 +1,4 @@
 {
-  "Skip the list and go to the map": "Pomiń listę i przejdź do mapy",
   "Organization type": "Rodzaj organizacji",
   "Volunteer sites": "Miejsca wolontariatu",
   "The map could not load its data.": "Nie udało się wczytać danych mapy.",
@@ -54,7 +53,7 @@
     "many": "Wybrano {n}",
     "other": "Wybrano {n}"
   },
-  "Address, neighborhood or ZIP code": "Adres, dzielnica lub kod pocztowy",
+  "Enter an address or neighborhood": "Wpisz adres lub dzielnicę",
   "Neighborhood, borough or ZIP code": "Dzielnica, okręg lub kod pocztowy",
   "Clear the search": "Wyczyść wyszukiwanie",
   "Use my location": "Użyj mojej lokalizacji",
@@ -73,6 +72,7 @@
   "ZIP code": "Kod pocztowy",
   "and": "i",
   "Show or hide the list": "Pokaż lub ukryj listę",
+  "Show list": "Pokaż listę",
   "The warming center data could not load.": "Nie udało się wczytać danych o ogrzewalniach.",
   "Wheelchair accessible": "Dostępne dla wózków inwalidzkich",
   "Pets allowed": "Zwierzęta dozwolone",
@@ -134,5 +134,22 @@
   "How to get in": "Jak wejść",
   "Hospital": "Szpital",
   "Drop-in center": "Centrum dzienne",
-  "Warming bus": "Autobus grzewczy"
+  "Warming bus": "Autobus grzewczy",
+  "Computer centers": "Centra komputerowe",
+  "{n} centers": {
+    "one": "{n} centrum",
+    "few": "{n} centra",
+    "many": "{n} centrów",
+    "other": "{n} centrum"
+  },
+  "Overseen by": "Nadzorowane przez",
+  "Help and classes": "Pomoc i zajęcia",
+  "Who it's for": "Dla kogo",
+  "Who can use it": "Kto może korzystać",
+  "Computers": "Komputery",
+  "Devices": "Urządzenia",
+  "Lends devices": "Wypożycza urządzenia",
+  "Languages": "Języki",
+  "Operated by": "Prowadzone przez",
+  "public computer centers data": "dane o publicznych centrach komputerowych"
 }

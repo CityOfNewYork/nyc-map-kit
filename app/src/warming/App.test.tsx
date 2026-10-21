@@ -22,9 +22,4 @@ describe("warming App", () => {
     test.todo("loads warming/centers.geojson once and gives it to both views");
     test.todo("shows an error message when the data fails to load");
   });
-
-  describe("skip link", () => {
-    test.todo("is rendered on the map view only");
-    test.todo("is outside the main area, so style.css keeps it off-screen until focused");
-  });
 });

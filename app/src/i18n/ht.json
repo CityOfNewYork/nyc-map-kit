@@ -1,5 +1,4 @@
 {
-  "Skip the list and go to the map": "Sote lis la epi ale nan kat la",
   "Organization type": "Kalite òganizasyon",
   "Volunteer sites": "Kote pou fè volontarya",
   "The map could not load its data.": "Kat la pa t ka chaje done li yo.",
@@ -29,7 +28,7 @@
   "{n} filters on": "{n} filtè aktive",
   "Show {n} locations": "Montre {n} kote",
   "{n} chosen": "{n} chwazi",
-  "Address, neighborhood or ZIP code": "Adrès, katye oswa kòd postal",
+  "Enter an address or neighborhood": "Antre yon adrès oswa yon katye",
   "Neighborhood, borough or ZIP code": "Katye, awondisman oswa kòd postal",
   "Clear the search": "Efase rechèch la",
   "Use my location": "Sèvi ak kote m ye a",
@@ -48,6 +47,7 @@
   "ZIP code": "Kòd postal",
   "and": "ak",
   "Show or hide the list": "Montre oswa kache lis la",
+  "Show list": "Montre lis la",
   "The warming center data could not load.": "Done sant chofaj yo pa t ka chaje.",
   "Wheelchair accessible": "Aksesib pou chèz woulant",
   "Pets allowed": "Bèt kay aksepte",
@@ -99,5 +99,20 @@
   "How to get in": "Kijan pou antre",
   "Hospital": "Lopital",
   "Drop-in center": "Sant akèy",
-  "Warming bus": "Bis chofaj"
+  "Warming bus": "Bis chofaj",
+  "Computer centers": "Sant òdinatè",
+  "{n} centers": {
+    "one": "{n} sant",
+    "other": "{n} sant"
+  },
+  "Overseen by": "Sipèvize pa",
+  "Help and classes": "Èd ak klas",
+  "Who it's for": "Pou ki moun",
+  "Who can use it": "Ki moun ki ka itilize l",
+  "Computers": "Òdinatè",
+  "Devices": "Aparèy",
+  "Lends devices": "Prete aparèy",
+  "Languages": "Lang",
+  "Operated by": "Jere pa",
+  "public computer centers data": "done sou sant òdinatè piblik yo"
 }

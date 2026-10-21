@@ -1,5 +1,4 @@
 {
-  "Skip the list and go to the map": "איבערשפּרינגען די רשימה און גיין צו דער מאַפּע",
   "Organization type": "סאָרט אָרגאַניזאַציע",
   "Volunteer sites": "וואָלונטיר־ערטער",
   "The map could not load its data.": "די מאַפּע האָט נישט געקענט אַרויפֿלאָדן אירע דאַטן.",
@@ -41,7 +40,7 @@
     "other": "ווײַזן {n} ערטער"
   },
   "{n} chosen": "{n} אויסגעקליבן",
-  "Address, neighborhood or ZIP code": "אַדרעס, געגנט אָדער פּאָסט־קאָד",
+  "Enter an address or neighborhood": "שרײַבט אַן אַדרעס אָדער געגנט",
   "Neighborhood, borough or ZIP code": "געגנט, באָראָ אָדער פּאָסט־קאָד",
   "Clear the search": "אויסמעקן דאָס זוכן",
   "Use my location": "ניצן מײַן אָרט",
@@ -60,6 +59,7 @@
   "ZIP code": "פּאָסט־קאָד",
   "and": "און",
   "Show or hide the list": "ווײַזן אָדער באַהאַלטן די רשימה",
+  "Show list": "ווײַזן די רשימה",
   "The warming center data could not load.": "די דאַטן פֿון די וואַרעמונג־צענטערס האָבן נישט געקענט אַרויפֿלאָדן.",
   "Wheelchair accessible": "צוטריטלעך פֿאַר רעדערשטולן",
   "Pets allowed": "שטוב־חיות ערלויבט",
@@ -117,5 +117,20 @@
   "How to get in": "ווי אַזוי אַרײַנצוגיין",
   "Hospital": "שפּיטאָל",
   "Drop-in center": "אַרײַנקום־צענטער",
-  "Warming bus": "וואַרעמונג־באַס"
+  "Warming bus": "וואַרעמונג־באַס",
+  "Computer centers": "קאָמפּיוטער־צענטערס",
+  "{n} centers": {
+    "one": "{n} צענטער",
+    "other": "{n} צענטערס"
+  },
+  "Overseen by": "אונטער דער השגחה פֿון",
+  "Help and classes": "הילף און קלאַסן",
+  "Who it's for": "פֿאַר וועמען",
+  "Who can use it": "ווער קען עס ניצן",
+  "Computers": "קאָמפּיוטערס",
+  "Devices": "מכשירים",
+  "Lends devices": "לײַט אויס מכשירים",
+  "Languages": "שפּראַכן",
+  "Operated by": "געפֿירט דורך",
+  "public computer centers data": "דאַטן וועגן עפֿנטלעכע קאָמפּיוטער־צענטערס"
 }

@@ -8,11 +8,11 @@ import type { Model, Site } from "../logic/types.ts";
 
 const METRES_PER_MILE = 1609.344;
 
-/** The bottom sheet's three heights on a phone; the handle cycles through them in order. */
-const SHEET_HEIGHTS = { collapsed: "48px", half: "45dvh", full: "85dvh" };
+/** The bottom sheet's two heights on a phone; the handle switches between them. At its
+ *  tallest the sheet stays lower than the card that opens over it as a panel (style.css). */
+const SHEET_HEIGHTS = { collapsed: "48px", half: "45dvh" };
 type SheetStep = keyof typeof SHEET_HEIGHTS;
-const NEXT_STEP: Record<SheetStep, SheetStep> =
-  { collapsed: "half", half: "full", full: "collapsed" };
+const NEXT_STEP: Record<SheetStep, SheetStep> = { collapsed: "half", half: "collapsed" };
 /** Wider than this the list is a panel, not a sheet (see style.css). */
 const DESKTOP = "(min-width: 768px)";
 
@@ -59,8 +59,9 @@ export function Panel({
 }: PanelProps) {
   const [step, setStep] = useState<SheetStep>("collapsed");
   const [dragging, setDragging] = useState(false);
-  // On a desktop the handle is the panel's top line, and hides the list under it or shows
-  // it again; on a phone it steps the sheet's height.
+  // On a desktop the handle is the panel's top line, and hides the list under it; the
+  // panel then shrinks to a box that says "Show list". On a phone it steps the sheet's
+  // height.
   const [desktop, setDesktop] = useState(() => matchMedia(DESKTOP).matches);
   const [shut, setShut] = useState(false);
   useEffect(() => {
@@ -105,7 +106,7 @@ export function Panel({
   }
   function onPointerMove(e: PointerEvent<HTMLButtonElement>) {
     if (!drag.current) return;
-    const h = Math.min(window.innerHeight * 0.9,
+    const h = Math.min(window.innerHeight * 0.45,
                        Math.max(48, drag.current.h + (drag.current.y - e.clientY)));
     panelRef.current!.style.height = `${h}px`;
   }
@@ -117,9 +118,12 @@ export function Panel({
     setDragging(false);
     panelRef.current!.style.height = "";
     if (moved < 8) return;                       // a tap; the click handler owns it
-    const frac = h / window.innerHeight;
-    setStep(frac < 0.2 ? "collapsed" : frac < 0.65 ? "half" : "full");
+    setStep(h / window.innerHeight < 0.2 ? "collapsed" : "half");
   }
+
+  // A collapsed sheet's rows are below the screen's edge: out of the tab order, and out of
+  // a screen reader's reach, until the handle opens it.
+  const hidden = !desktop && step === "collapsed";
 
   return (
     <nav className={["panel", dragging && "dragging", desktop && shut && "shut"]
@@ -131,14 +135,21 @@ export function Panel({
                 ? setShut((s) => !s) : setStep((s) => NEXT_STEP[s]))}
               onPointerDown={onPointerDown} onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}>
-        <span className="counts">{summary}</span>
-        <span className="chev" aria-hidden="true">
-          {(desktop ? shut : step === "full") ? "▼" : "▲"}
-        </span>
-        <span className="visually-hidden">{t("Show or hide the list")}</span>
+        {desktop && shut ? (
+          <>
+            <span className="chev" aria-hidden="true">▶</span>
+            <span className="counts">{t("Show list")}</span>
+          </>
+        ) : (
+          <>
+            <span className="counts">{summary}</span>
+            <span className="chev" aria-hidden="true">{step === "half" ? "▼" : "▲"}</span>
+            <span className="visually-hidden">{t("Show or hide the list")}</span>
+          </>
+        )}
       </button>
 
-      {header && <div className="list-head">{header}</div>}
+      {header && <div className="list-head" inert={hidden}>{header}</div>}
 
       {/*
         One row per site. Not per organization.
@@ -161,7 +172,7 @@ export function Panel({
         elements: the number, then "mi" for the eye and "miles" for a screen reader, then
         "away".
       */}
-      <div className="site-scroll" ref={scrollRef}>
+      <div className="site-scroll" ref={scrollRef} inert={hidden}>
         {intro && <div className="list-intro">{intro}</div>}
         <ul className="site-list" id="site-list">
           {sites.map(({ feature, metres }) => {

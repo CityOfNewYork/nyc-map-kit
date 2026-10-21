@@ -7,7 +7,10 @@ import App from "./ui/App.tsx";
 // rules win where the two overlap.
 import "./style.css";
 
-const params = readSettings(window.location.search, document.baseURI, window.location.origin);
+// The page names its files on <body>: data-config, data-data and data-orgs (see
+// index.html). The SNAP map's snap.html names none and takes the defaults.
+const params = readSettings(window.location.search, document.baseURI, window.location.origin,
+  document.body.dataset);
 // The interface's language: ?lang=, or in an embed the host page's (see logic/i18n.ts).
 const language = chooseLanguage(window.location.search, document.referrer);
 const settings = { ...params, lang: language };

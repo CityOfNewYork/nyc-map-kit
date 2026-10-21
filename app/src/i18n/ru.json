@@ -1,5 +1,4 @@
 {
-  "Skip the list and go to the map": "Пропустить список и перейти к карте",
   "Organization type": "Тип организации",
   "Volunteer sites": "Места для волонтёров",
   "The map could not load its data.": "Не удалось загрузить данные карты.",
@@ -54,7 +53,7 @@
     "many": "Выбрано {n}",
     "other": "Выбрано {n}"
   },
-  "Address, neighborhood or ZIP code": "Адрес, район или почтовый индекс",
+  "Enter an address or neighborhood": "Введите адрес или район",
   "Neighborhood, borough or ZIP code": "Район, округ или почтовый индекс",
   "Clear the search": "Очистить поиск",
   "Use my location": "Использовать моё местоположение",
@@ -73,6 +72,7 @@
   "ZIP code": "Почтовый индекс",
   "and": "и",
   "Show or hide the list": "Показать или скрыть список",
+  "Show list": "Показать список",
   "The warming center data could not load.": "Не удалось загрузить данные о пунктах обогрева.",
   "Wheelchair accessible": "Доступно для инвалидных колясок",
   "Pets allowed": "Можно с домашними животными",
@@ -134,5 +134,22 @@
   "How to get in": "Как войти",
   "Hospital": "Больница",
   "Drop-in center": "Дневной центр",
-  "Warming bus": "Автобус обогрева"
+  "Warming bus": "Автобус обогрева",
+  "Computer centers": "Компьютерные центры",
+  "{n} centers": {
+    "one": "{n} центр",
+    "few": "{n} центра",
+    "many": "{n} центров",
+    "other": "{n} центра"
+  },
+  "Overseen by": "Курирующее ведомство",
+  "Help and classes": "Помощь и занятия",
+  "Who it's for": "Для кого",
+  "Who can use it": "Кто может пользоваться",
+  "Computers": "Компьютеры",
+  "Devices": "Устройства",
+  "Lends devices": "Выдаёт устройства",
+  "Languages": "Языки",
+  "Operated by": "Оператор",
+  "public computer centers data": "данные о публичных компьютерных центрах"
 }

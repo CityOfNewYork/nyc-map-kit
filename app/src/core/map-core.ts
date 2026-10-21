@@ -145,8 +145,10 @@ export interface SelectInfo {
 export interface PinCategories {
   /** The property that holds the category, such as "type". */
   field: string;
-  /** Each value's colour, and its glyph as SVG path data on a 24-unit square (see pinImage). */
-  values: Record<string, { color: string; glyph: string }>;
+  /** Each value's colour, and its glyph as SVG path data on a 24-unit square (see pinImage).
+   *  A glyph is stroked, like an icon, unless `fill` makes it a solid mark (see pins.ts).
+   *  Without a glyph the pin has the default's hole. */
+  values: Record<string, { color: string; glyph?: string; fill?: boolean }>;
 }
 
 /** createMap's options. `P` is the client's feature properties. */
@@ -223,11 +225,13 @@ const BADGE = { radius: 7, stroke: 1.5, font: "700 10px 'Noto Sans', sans-serif"
 const HERE = "_here";
 
 /** One pin as ImageData, in `fill`, optionally ringed in `halo`, with `glyph` (SVG path
- *  data on a 24-unit square) stroked in white in its head, or else the hole, and `count`
- *  in a badge when it is above 1. The ring is drawn inside the same canvas — the pin
- *  shrinks to make room — so every state shares one geometry and the tip still lands on
- *  the coordinate. */
-function pinImage(fill: string, halo: string | null, glyph?: string, count = 1): ImageData {
+ *  data on a 24-unit square) in white in its head — stroked, or filled when `solid` — or
+ *  else the hole, and `count` in a badge when it is above 1. The ring is drawn inside the
+ *  same canvas — the pin shrinks to make room — so every state shares one geometry and the
+ *  tip still lands on the coordinate. */
+function pinImage(
+  fill: string, halo: string | null, glyph?: string, count = 1, solid = false,
+): ImageData {
   const { width: w, height: h, stroke, hole, halo: haloWidth } = PIN_SHAPE;
   const pad = count > 1 ? BADGE.pad : 0;
   const canvas = document.createElement("canvas");
@@ -266,10 +270,15 @@ function pinImage(fill: string, halo: string | null, glyph?: string, count = 1):
     ctx.save();
     ctx.translate(cx - size / 2, cy - size / 2);
     ctx.scale(size / 24, size / 24);
-    ctx.lineWidth = GLYPH.stroke;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.stroke(new Path2D(glyph));
+    if (solid) {
+      ctx.fillStyle = PIN.stroke;
+      ctx.fill(new Path2D(glyph), "evenodd");
+    } else {
+      ctx.lineWidth = GLYPH.stroke;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.stroke(new Path2D(glyph));
+    }
     ctx.restore();
   } else {
     ctx.beginPath();
@@ -502,7 +511,7 @@ export function createMap<P extends PointProperties>(
     const category = match[2] && categories ? categories.values[match[2]] : null;
     const shade = shades(category ? category.color : PIN.base);
     return pinImage(shade[state], state === "selected" ? shade.halo : null, category?.glyph,
-      count);
+      count, category?.fill);
   }
   map.on("styleimagemissing", (e) => {
     const image = imageFor(e.id);

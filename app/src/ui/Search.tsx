@@ -187,7 +187,7 @@ export function Search({ onFound, onClear }: SearchProps) {
                aria-describedby="search-status" />
         <label htmlFor="search-input" className={value ? "search-label filled" : "search-label"}>
           {GEOCLIENT_KEY
-            ? <span>{t("Address, neighborhood or ZIP code")}</span>
+            ? <span>{t("Enter an address or neighborhood")}</span>
             : <span>{t("Neighborhood, borough or ZIP code")}</span>}
         </label>
         {(value || status.type !== "idle") && (

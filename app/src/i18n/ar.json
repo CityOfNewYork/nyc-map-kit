@@ -1,5 +1,4 @@
 {
-  "Skip the list and go to the map": "تخطَّ القائمة وانتقل إلى الخريطة",
   "Organization type": "نوع المنظمة",
   "Volunteer sites": "مواقع التطوع",
   "The map could not load its data.": "تعذّر على الخريطة تحميل بياناتها.",
@@ -43,7 +42,7 @@
   "{n} filters on": "عوامل التصفية المفعّلة: {n}",
   "Show {n} locations": "عرض الأماكن ({n})",
   "{n} chosen": "المحدد: {n}",
-  "Address, neighborhood or ZIP code": "العنوان أو الحي أو الرمز البريدي",
+  "Enter an address or neighborhood": "أدخل عنوانًا أو حيًا",
   "Neighborhood, borough or ZIP code": "الحي أو المنطقة أو الرمز البريدي",
   "Clear the search": "مسح البحث",
   "Use my location": "استخدام موقعي",
@@ -62,6 +61,7 @@
   "ZIP code": "الرمز البريدي",
   "and": "و",
   "Show or hide the list": "إظهار القائمة أو إخفاؤها",
+  "Show list": "إظهار القائمة",
   "The warming center data could not load.": "تعذّر تحميل بيانات مراكز التدفئة.",
   "Wheelchair accessible": "يمكن الوصول بالكرسي المتحرك",
   "Pets allowed": "يُسمح بالحيوانات الأليفة",
@@ -120,5 +120,24 @@
   "How to get in": "كيفية الدخول",
   "Hospital": "مستشفى",
   "Drop-in center": "مركز استقبال",
-  "Warming bus": "حافلة تدفئة"
+  "Warming bus": "حافلة تدفئة",
+  "Computer centers": "مراكز الحاسوب",
+  "{n} centers": {
+    "zero": "{n} مراكز",
+    "one": "مركز واحد",
+    "two": "مركزان",
+    "few": "{n} مراكز",
+    "many": "{n} مركزًا",
+    "other": "{n} مركز"
+  },
+  "Overseen by": "تحت إشراف",
+  "Help and classes": "المساعدة والدروس",
+  "Who it's for": "لمن هو",
+  "Who can use it": "من يمكنه استخدامه",
+  "Computers": "أجهزة الحاسوب",
+  "Devices": "الأجهزة",
+  "Lends devices": "يُعير الأجهزة",
+  "Languages": "اللغات",
+  "Operated by": "تديره",
+  "public computer centers data": "بيانات مراكز الحاسوب العامة"
 }

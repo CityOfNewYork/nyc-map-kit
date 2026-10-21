@@ -7,9 +7,9 @@
  * labels are English only: every label layer prints a single `_name` field, so
  * setStyleLanguage has nothing to switch to and is not applied.
  */
-import type { StyleSpecification } from "maplibre-gl";
+import type { StyleSpecification, SymbolLayerSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, and, OUTSIDE, PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND,
+  addBoroughLabels, and, flatBuildings, OUTSIDE, PARK_NAME_COLOR, POSITRON_LAND,
   POSITRON_ROADS, reportUnmatched, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
@@ -62,8 +62,6 @@ const NYC_WATER = ["Ocean", "Inland Hydrography", "Region Hydrography"];
 const NYC_PARK = ["Parks", "Region Parks", "Plaza", "The High Line"];
 const NYC_LAND = ["Land/Land_NYC", "Land/Land_Region"];
 const NYC_LAND_COLOR = POSITRON_LAND;
-/** Buildings in positron's fill and outline. */
-const NYC_BUILDING = POSITRON_BUILDING;
 /** Walking paths: OTI's sidewalk layer, which also holds the paths through parks. It is
  *  drawn in the land colour, so sidewalks vanish into the blocks, and part-transparent,
  *  so a path through grass takes the tone of positron's paths rather than the land's. */
@@ -88,10 +86,11 @@ const NYC_STATION = "rgb(191,191,187)";
  * the region around the city a step darker; this block keeps positron's single ground,
  * and water already outlines most of the city.
  *
- * Buildings, landmarks included, are drawn flat in positron's fill and outline. The
- * style draws them a darker grey, and landmarks darker still, which suits a reference
- * map but at street level outweighs the pins; quietNycDetail drops the outlines and
- * drop shadows it draws them with. Station platforms are drawn darker than the buildings but not in
+ * Buildings, landmarks included, are drawn flat in positron's fill and outline, from the
+ * zoom flatBuildings sets rather than the style's z12. The style draws them a darker
+ * grey, and landmarks darker still, which suits a reference map but at street level
+ * outweighs the pins; quietNycDetail drops the outlines and drop shadows it draws them
+ * with. Station platforms are drawn darker than the buildings but not in
  * the style's dark grey, which along an elevated line like the 7 in Jackson Heights
  * is the heaviest thing at street level. A dark block reads as a mark on the map,
  * which is the pins' job.
@@ -111,7 +110,7 @@ export function nycBasemapPalette(
     const sourceLayer = layer["source-layer"] || "";
     if (sourceLayer === "Buildings" && layer.type === "fill") {
       hits.buildings++;
-      layer.paint = { "fill-color": NYC_BUILDING.fill, "fill-outline-color": NYC_BUILDING.outline };
+      flatBuildings(layer);
       continue;
     }
     if (layer.id === "Sidewalks/Sidewalk") {
@@ -278,21 +277,28 @@ const NYC_SHIELD_ZOOM = 11;
  *  useful names. */
 const NYC_NEIGHBOURHOOD_ZOOM = 12;
 
+/** Neighbourhood names in italic capitals, spaced a tenth of an em apart, as the Protomaps
+ *  basemap sets them, so the two name a neighbourhood alike. */
+const NYC_NEIGHBOURHOOD_TYPE: SymbolLayerSpecification["layout"] = {
+  "text-font": ["Noto Sans Italic"], "text-transform": "uppercase", "text-letter-spacing": 0.1,
+};
+
 /**
  * Bring the NYC basemap's labels in line with the rest of the block, in place.
  *
  *   1. Type. Every label is set in Noto Sans, the typeface of the list and the card:
  *      Regular, with water and park names in Italic and shield numbers in Bold, which
- *      is positron's scheme. Esri's font server carries Noto, so glyphs still come
- *      from the style's own `glyphs` URL.
+ *      is positron's scheme; neighbourhood names are Italic too (step 3). Esri's font
+ *      server carries Noto, so glyphs still come from the style's own `glyphs` URL.
  *   2. Colour. Each kind of label takes its NYC_LABEL_COLORS colour, on a white halo
  *      as positron's are. Highway shields keep theirs; the shield is the colour.
  *   3. Balance — the correction balancePlaceLabels makes to positron. At the opening
  *      zoom the tiles print neighbourhood names and borough names that land under the
  *      pins, all at once. So the tiles' borough names give way to BOROUGH_LABELS,
  *      anchored on open ground and translated, until neighbourhood names take over at
- *      NYC_NEIGHBOURHOOD_ZOOM, and county names are dropped. Highway shields wait until
- *      NYC_SHIELD_ZOOM. Places outside the city are not named at all (quietNycRegion).
+ *      NYC_NEIGHBOURHOOD_ZOOM, and county names are dropped. Neighbourhood names are set
+ *      in NYC_NEIGHBOURHOOD_TYPE. Highway shields wait until NYC_SHIELD_ZOOM. Places
+ *      outside the city are not named at all (quietNycRegion).
  *   4. Placeholders. A few features in the data are named "NO NAME", and the style
  *      prints the placeholder. Those labels are filtered out.
  *
@@ -337,9 +343,10 @@ export function nycLabels(style: StyleSpecification, lang: string): StyleSpecifi
   }
 
   const neighbourhoods = style.layers.find((l) => l.id === "Neighborhoods/label/Default");
-  if (neighbourhoods) {
+  if (neighbourhoods?.type === "symbol") {
     hits["Neighborhoods/label/Default"]++;
     neighbourhoods.minzoom = NYC_NEIGHBOURHOOD_ZOOM;
+    neighbourhoods.layout = { ...neighbourhoods.layout, ...NYC_NEIGHBOURHOOD_TYPE };
   }
   addBoroughLabels(style, lang, NYC_NEIGHBOURHOOD_ZOOM);
 

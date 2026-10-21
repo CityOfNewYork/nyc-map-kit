@@ -1,5 +1,4 @@
 {
-  "Skip the list and go to the map": "跳過列表，前往地圖",
   "Organization type": "機構類型",
   "Volunteer sites": "志工服務地點",
   "The map could not load its data.": "地圖無法載入資料。",
@@ -29,7 +28,7 @@
   "{n} filters on": "已啟用 {n} 個篩選條件",
   "Show {n} locations": "顯示 {n} 個地點",
   "{n} chosen": "已選 {n} 項",
-  "Address, neighborhood or ZIP code": "地址、社區或郵遞區號",
+  "Enter an address or neighborhood": "輸入地址或社區",
   "Neighborhood, borough or ZIP code": "社區、行政區或郵遞區號",
   "Clear the search": "清除搜尋",
   "Use my location": "使用我的位置",
@@ -48,6 +47,7 @@
   "ZIP code": "郵遞區號",
   "and": "和",
   "Show or hide the list": "顯示或隱藏列表",
+  "Show list": "顯示列表",
   "The warming center data could not load.": "無法載入取暖中心資料。",
   "Wheelchair accessible": "輪椅可通行",
   "Pets allowed": "允許攜帶寵物",
@@ -99,5 +99,17 @@
   "How to get in": "如何進入",
   "Hospital": "醫院",
   "Drop-in center": "免預約中心",
-  "Warming bus": "取暖巴士"
+  "Warming bus": "取暖巴士",
+  "Computer centers": "電腦中心",
+  "{n} centers": "{n} 個中心",
+  "Overseen by": "主管機構",
+  "Help and classes": "協助和課程",
+  "Who it's for": "服務對象",
+  "Who can use it": "使用條件",
+  "Computers": "電腦",
+  "Devices": "設備",
+  "Lends devices": "可借用設備",
+  "Languages": "語言",
+  "Operated by": "營運方",
+  "public computer centers data": "公共電腦中心資料"
 }
