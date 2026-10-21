@@ -600,6 +600,35 @@ body {
   clip-path: inset(50%);
   overflow: hidden;
 }
+/* The map's keys. Screen-reader-only until the map takes keyboard focus; then a black
+   pill at the foot of the map, above the attribution and centred in the part the list
+   leaves clear, so a reader who sees the screen learns them too. A mouse click on the map
+   does not show it. */
+.stage:has(.maplibregl-canvas:focus-visible) .map-keys {
+  position: absolute;
+  z-index: 2;
+  left: 340px;   /* .stage is always left to right; see "right to left" below */
+  right: 10px;
+  bottom: 44px;
+  width: fit-content;
+  height: auto;
+  max-width: calc(100% - 350px);
+  margin: 0 auto;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  clip-path: none;
+  overflow: visible;
+  white-space: normal;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 0.875rem;
+  text-align: center;
+  pointer-events: none;
+}
+.stage[data-list="off"]:has(.maplibregl-canvas:focus-visible) .map-keys {
+  inset-inline: 10px;
+  max-width: calc(100% - 20px);
+}
 /* MapLibre's zoom buttons default to 29 px. They are standalone controls, so the WCAG
    2.2 SC 2.5.8 exception for targets inline in a block of text does not cover them. */
 .maplibregl-ctrl-group button { width: 40px; height: 40px; }
@@ -1023,6 +1052,11 @@ body {
   /* Keep the zoom buttons and the attribution clear of the sheet. */
   .map .maplibregl-ctrl-bottom-left,
   .map .maplibregl-ctrl-bottom-right { bottom: var(--sheet-h, 48px); }
+  .stage:has(.maplibregl-canvas:focus-visible) .map-keys {
+    inset-inline: 10px;
+    bottom: calc(var(--sheet-h, 48px) + 44px);
+    max-width: calc(100% - 20px);
+  }
 
   /* Full 44 px targets where the pointer is a finger. */
   .maplibregl-ctrl-group button { width: 44px; height: 44px; }
@@ -1096,7 +1130,7 @@ body {
    to left. */
 [dir="rtl"] .stage { direction: ltr; }
 [dir="rtl"] .stage :is(.panel, .site-dialog, .filters-panel, .search, .search-status,
-  .search-choices) { direction: rtl; }
+  .search-choices, .map-keys) { direction: rtl; }
 [dir="rtl"] .search-bar {
   background: linear-gradient(to right, var(--ink) 28px, var(--surface) 28px);
 }

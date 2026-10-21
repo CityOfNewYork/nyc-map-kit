@@ -111,5 +111,7 @@
   "Lends devices": "기기 대여",
   "Languages": "언어",
   "Operated by": "운영 기관",
-  "public computer centers data": "공공 컴퓨터 센터 데이터"
+  "public computer centers data": "공공 컴퓨터 센터 데이터",
+  "Arrow keys move the map. Plus and minus zoom in and out.": "화살표 키로 지도를 이동합니다. 더하기와 빼기로 확대하고 축소합니다.",
+  "Every site on the map is also in the list.": "지도의 모든 장소는 목록에도 있습니다."
 }

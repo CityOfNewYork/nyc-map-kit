@@ -151,5 +151,7 @@
   "Lends devices": "Выдаёт устройства",
   "Languages": "Языки",
   "Operated by": "Оператор",
-  "public computer centers data": "данные о публичных компьютерных центрах"
+  "public computer centers data": "данные о публичных компьютерных центрах",
+  "Arrow keys move the map. Plus and minus zoom in and out.": "Клавиши со стрелками двигают карту. Плюс и минус приближают и отдаляют.",
+  "Every site on the map is also in the list.": "Каждое место на карте есть и в списке."
 }

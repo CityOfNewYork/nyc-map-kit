@@ -135,5 +135,7 @@
   "Lends devices": "Prête des appareils",
   "Languages": "Langues",
   "Operated by": "Géré par",
-  "public computer centers data": "données sur les centres informatiques publics"
+  "public computer centers data": "données sur les centres informatiques publics",
+  "Arrow keys move the map. Plus and minus zoom in and out.": "Les flèches du clavier déplacent la carte. Plus et moins zooment et dézooment.",
+  "Every site on the map is also in the list.": "Chaque site de la carte figure aussi dans la liste."
 }

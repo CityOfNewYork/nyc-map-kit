@@ -111,5 +111,7 @@
   "Lends devices": "可借用设备",
   "Languages": "语言",
   "Operated by": "运营方",
-  "public computer centers data": "公共电脑中心数据"
+  "public computer centers data": "公共电脑中心数据",
+  "Arrow keys move the map. Plus and minus zoom in and out.": "方向键可移动地图。加号和减号可放大和缩小。",
+  "Every site on the map is also in the list.": "地图上的每个地点也都在列表中。"
 }

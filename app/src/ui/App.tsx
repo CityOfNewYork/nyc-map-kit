@@ -131,6 +131,7 @@ export default function App({ settings }: AppProps) {
         data: model.data,
         categories,
         counts: true,
+        describedBy: "map-keys",
         onSelect: (feature, info) => onMapSelect(feature, info),
         onClusterExpand: () => {},
       });
@@ -266,6 +267,12 @@ export default function App({ settings }: AppProps) {
                  summary={<SiteCounts sites={listed && shown} count={model?.config.count} />}
                  row={(f) => siteRow(f, pinField === "org_type" ? pinStyles : null)} />
         </div>
+        {/* What the map's canvas reads out when it takes focus (map-core's describedBy),
+            and shows while it has keyboard focus (style.css, .map-keys). */}
+        <p className="map-keys visually-hidden" id="map-keys">
+          {t("Arrow keys move the map. Plus and minus zoom in and out.")}
+          {settings.list !== "off" && " " + t("Every site on the map is also in the list.")}
+        </p>
         {/* map-core fills this div; React only puts the loading and error notes in it. */}
         <div className="map" id="map" ref={containerRef}>
           {failed ? (

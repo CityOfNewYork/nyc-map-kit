@@ -114,5 +114,7 @@
   "Lends devices": "ডিভাইস ধার দেয়",
   "Languages": "ভাষা",
   "Operated by": "পরিচালনায়",
-  "public computer centers data": "পাবলিক কম্পিউটার কেন্দ্রের ডেটা"
+  "public computer centers data": "পাবলিক কম্পিউটার কেন্দ্রের ডেটা",
+  "Arrow keys move the map. Plus and minus zoom in and out.": "তীর কী দিয়ে মানচিত্র সরান। প্লাস ও মাইনাস দিয়ে জুম ইন ও জুম আউট করুন।",
+  "Every site on the map is also in the list.": "মানচিত্রের প্রতিটি স্থান তালিকাতেও আছে।"
 }
