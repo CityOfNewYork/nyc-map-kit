@@ -848,11 +848,11 @@ body {
   gap: 12px;
 }
 .card-fact-icon { flex: none; margin-top: 1px; }
-.card-facts dt {
+.card-fact-label {
   font-size: 1rem;
   font-weight: 700;
 }
-.card-facts dd {
+.card-fact-value {
   margin: 0;
   line-height: 1.5;
   overflow-wrap: anywhere;
@@ -1185,7 +1185,7 @@ body {
 }
 /* The data's own text, such as names and addresses, takes its direction from itself, so
    an English address keeps its house number in front in a right-to-left list. */
-.site-button :is(.name, .addr), #card-title, .card-facts dd, .card-section :is(p, li) {
+.site-button :is(.name, .addr), #card-title, .card-fact-value, .card-section :is(p, li) {
   unicode-bidi: plaintext;
 }
 

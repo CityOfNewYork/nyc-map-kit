@@ -71,7 +71,7 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
       <Buttons feature={feature} actions={cardActions(config, p, org)}
                directions={mapsLink(config, feature, org)} />
 
-      <dl className="card-facts">
+      <div className="card-facts">
         <Fact icon="pin" label={t("Address")}><span>{p.address}</span></Fact>
         {hours && <Fact icon="clock" label={t("Hours")}>{hours}</Fact>}
         {facts.map((fact) => (
@@ -79,7 +79,7 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
             <FieldValue field={fact} feature={feature} />
           </Fact>
         ))}
-      </dl>
+      </div>
 
       {sections.map((section) => (
         <section key={section.key} className="card-section">
@@ -146,7 +146,9 @@ function Buttons({ feature, actions, directions }: {
   );
 }
 
-/** One fact row: the icon, then the label over its value. */
+/** One fact row: the icon, then the label over its value. Plain blocks, not a <dl>:
+ *  VoiceOver reads a description list as "term, 1 of 6", "End of Address, term" and so
+ *  on, about four steps for each row a sighted reader takes in at once. */
 function Fact({ icon, label, children }: {
   icon: FactIcon | "pin"; label: string; children: ReactNode;
 }) {
@@ -154,8 +156,8 @@ function Fact({ icon, label, children }: {
     <div className="card-fact">
       <Icon name={icon} size={22} className="card-fact-icon" />
       <div>
-        <dt>{label}</dt>
-        <dd>{children}</dd>
+        <div className="card-fact-label">{label}</div>
+        <div className="card-fact-value">{children}</div>
       </div>
     </div>
   );

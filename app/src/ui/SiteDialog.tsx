@@ -84,7 +84,7 @@ export function SiteDialog(
             <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2.2"
                   strokeLinecap="round" />
           </svg>
-          <span className="visually-hidden">{t("Close this site")}</span>
+          <span className="visually-hidden">{t("Close card")}</span>
         </button>
       </div>
     </dialog>
