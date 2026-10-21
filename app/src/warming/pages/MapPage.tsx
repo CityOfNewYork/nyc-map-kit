@@ -5,6 +5,7 @@ import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { FiltersButton } from "../../ui/Filters.tsx";
 import { MapKey } from "../../ui/MapKey.tsx";
 import { Panel } from "../../ui/Panel.tsx";
+import { Pause } from "../../ui/Pause.tsx";
 import { PlaceName, Search } from "../../ui/Search.tsx";
 import { CodeBlueNotice } from "../components/CodeBlueNotice.tsx";
 import { FilterBar } from "../components/FilterBar.tsx";
@@ -139,8 +140,9 @@ function centerRow(feature: Site, minute: number) {
   return (
     <>
       <span className="name">{p.org}</span>
-      {kind && <span className="type">{t(kind.label)}</span>}
-      {status && <OpenStatusLine status={status} />}
+      {kind && <><Pause /><span className="type">{t(kind.label)}</span></>}
+      {status && <><Pause /><OpenStatusLine status={status} /></>}
+      <Pause />
       <span className="addr">{p.address}</span>
     </>
   );

@@ -45,6 +45,7 @@ import { FilterDisclosure, FiltersButton, FiltersPanel } from "./Filters.tsx";
 import { keepClearOfList } from "./layout.ts";
 import { MapKey } from "./MapKey.tsx";
 import { Panel } from "./Panel.tsx";
+import { Pause } from "./Pause.tsx";
 import { Search } from "./Search.tsx";
 import { SiteDialog } from "./SiteDialog.tsx";
 import { useLanguage } from "./useLanguage.ts";
@@ -369,11 +370,15 @@ function siteRow(feature: Site, styles: Map<string, PinStyle> | null) {
     <>
       <span className="name">{p.org}</span>
       {p.org_type && (
-        <span className="type">
-          {styles && <TypeIcon style={styles.get(p.org_type)} />}
-          <span>{p.org_type}</span>
-        </span>
+        <>
+          <Pause />
+          <span className="type">
+            {styles && <TypeIcon style={styles.get(p.org_type)} />}
+            <span>{p.org_type}</span>
+          </span>
+        </>
       )}
+      <Pause />
       <span className="addr">{p.address}</span>
     </>
   );
