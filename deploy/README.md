@@ -1,39 +1,28 @@
 # Containerized Deployment
 
+**NOTE**: All commands and file refererences below assume you are in the project's root directory.
 
 ## Docker
 
 ### Build App
 
- ```sh
- npm ci
- npm test
- npm run lint
- npm run build
- ```
+ Read the comments and then run `deploy/build.sh`.
  
- ### Build Docker Image
+ ### Build and Run Docker Image
 
- ```sh
- docker build -t nyc-map-kit:0.1.0 --build-arg TILEBUILD="nyc-20261019-3.pmtiles" -f deploy/Dockerfile .
- ```
+In this section, the following must be substituted with real values:
 
-### Run Docker Image Locally
+* `<version>` - the version for the Docker image (do NOT use "latest" for deployments to shared servers!)
+* `<timestamp>` - the timestamp used for `*.pmtiles` releases from GitHub repo
+* `<local-port>` - the local port use when running the container
 
-#### Blocks at the terminal
 
- ```sh
- docker run --rm --name nyc-map-kit -p 8088:80 nyc-map-kit:latest
- ```
+```sh
+# Build the image
+docker build -t nyc-map-kit:<version> --build-arg TILEBUILD=nyc-<timestamp>.pmtiles -f deploy/Dockerfile .
+```
 
-#### As a daemon
-
- ```sh
- docker run --rm -d --name nyc-map-kit -p 8088:80 nyc-map-kit:latest
- ```
-
-## Kubernetes
-
-### Helm Chart
-
-**TODO**
+```sh
+# Run the image
+docker run --rm --name nyc-map-kit -p <local-port>:80 nyc-map-kit:<version>
+```
