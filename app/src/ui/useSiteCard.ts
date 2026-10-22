@@ -63,7 +63,7 @@ export function useSiteCard({ model, style, categories = null, panel = false }: 
   // Bookkeeping that event handlers read and write but nothing renders: refs, not state.
   const selectedId = useRef<string | null>(null);   // what map-core has selected, readable at once
   const stepFocus = useRef<StepDirection | null>(null);  // while a stepper click is in flight
-  const returnFocusTo = useRef<HTMLElement | null>(null);  // the control that opened the card
+  const returnFocusTo = useRef<HTMLElement | null>(null);  // the row that opened the card; see closedCardFocus
   const pushed = useRef(false);        // the open card has a history entry of its own
   const urlDriven = useRef(false);     // the URL, not the reader, chose the site
   const mainMapRef = useRef<MapCore<SiteProperties> | null>(null);   // see attach
@@ -103,7 +103,11 @@ export function useSiteCard({ model, style, categories = null, panel = false }: 
     selectedId.current = p.id;
     recordInUrl(p.id);
     setSelection((s) => ({ feature, seq: s.seq + 1 }));
-    announceSelected(mainMap(), p);
+    // Opening a card moves focus into it, where the name is heard, so announcing it as
+    // well only says it twice. A stepper press leaves focus on the arrow, so the place
+    // stepped to is announced: through the card's own map when it is a pop-up, since
+    // the modal hides the main map's live region along with everything else behind it.
+    if (stepFocus.current) announceSelected(miniMapRef.current ?? mainMap(), p);
     if (info.via === "map") {
       returnFocusTo.current = null;
       track("map_pin_open", { org_id: p.org_id, site_id: p.id, via: "map" });
@@ -121,11 +125,13 @@ export function useSiteCard({ model, style, categories = null, panel = false }: 
     if (!panel) showMiniMap(feature);
 
     // Focus the card's heading so a keyboard or screen-reader user lands on the content
-    // they just asked for instead of being left behind in the list. The exception is a
-    // stepper click: focus goes back to the arrow they pressed, so a second press steps
-    // again.
-    const arrow = stepFocus.current &&
-      dialog.querySelector<HTMLElement>(`.step-${stepFocus.current}`);
+    // they just asked for instead of being left behind in the list. Where others share
+    // the location, focus starts on the stepper's Next arrow instead, as a sighted reader
+    // sees the stepper above the card: a screen reader hears the dialog's description,
+    // "1 of 2 at this location" (SiteDialog.tsx), then "Next site at this location,
+    // button", and reading on goes into the card. After a stepper click, focus goes back
+    // to the arrow they pressed, so a second press steps again.
+    const arrow = dialog.querySelector<HTMLElement>(`.step-${stepFocus.current ?? "next"}`);
     stepFocus.current = null;
     (arrow || dialog.querySelector<HTMLElement>("#card-title")!).focus();
   });
@@ -153,6 +159,16 @@ export function useSiteCard({ model, style, categories = null, panel = false }: 
         },
       });
       miniMap.raw.scrollZoom.disable();
+      // Out of screen readers' way and out of the tab order: the card's address says in
+      // words where this is, and the map ("Map, region") and its credits button ("Toggle
+      // attribution") were two stops between the stepper and the card. Its live region,
+      // which the stepper announces through, stays.
+      const canvas = miniMap.raw.getCanvas();
+      const controls = miniMap.raw.getContainer().querySelector(".maplibregl-control-container");
+      canvas.setAttribute("aria-hidden", "true");
+      canvas.tabIndex = -1;
+      controls?.setAttribute("aria-hidden", "true");
+      controls?.querySelector(".maplibregl-ctrl-attrib-button")?.setAttribute("tabindex", "-1");
       // MapLibre opens the compact attribution expanded until the first drag; on a map
       // this small it would cover the bottom third. Collapsed, it is the (i) button.
       miniMap.ready(() => miniMap!.raw.getContainer()
@@ -225,12 +241,15 @@ export function useSiteCard({ model, style, categories = null, panel = false }: 
   }
 
   function hideCard() {
+    const id = selectedId.current;     // before select(null) clears it
+    const dialog = dialogRef.current!;
     pushed.current = false;
-    if (dialogRef.current!.open) dialogRef.current!.close();
+    if (dialog.open) dialog.close();
     mainMap()?.select(null);           // clears the selection
     const back = returnFocusTo.current;
     returnFocusTo.current = null;
     if (back && document.contains(back)) back.focus();
+    else if (focusLost(dialog)) closedCardFocus(id)?.focus();
   }
 
   const onPopState = useEffectEvent(() => {
@@ -267,6 +286,24 @@ export function useSiteCard({ model, style, categories = null, panel = false }: 
     step,
     close,
   };
+}
+
+/** Whether closing `dialog` left focus nowhere: on the page itself, or still inside the
+ *  closed card. */
+function focusLost(dialog: HTMLDialogElement) {
+  const active = document.activeElement;
+  return !active || active === document.body || dialog.contains(active);
+}
+
+/** Where focus goes when a card closes that no list row opened — a link with ?site=, or a
+ *  pin: the site's row in the list, so the reader is left where it is in the list, or, if
+ *  the list is shut or off, the map's heading (the element marked data-card-return). */
+function closedCardFocus(id: string | null): HTMLElement | null {
+  const row = id
+    ? document.querySelector<HTMLElement>(`.site-button[data-site-id="${CSS.escape(id)}"]`)
+    : null;
+  if (row && row.getClientRects().length) return row;   // not in a shut list
+  return document.querySelector<HTMLElement>("[data-card-return]");
 }
 
 /** Announce a selection through the one live region map-core owns. */

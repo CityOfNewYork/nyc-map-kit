@@ -23,8 +23,8 @@
   "Link copied": "لنک کاپی ہو گیا",
   "Could not copy the link": "لنک کاپی نہیں ہو سکا",
   "Copy link": "لنک کاپی کریں",
-  "Close this site": "یہ جگہ بند کریں",
-  "Close this note": "یہ نوٹ بند کریں",
+  "Close card": "کارڈ بند کریں",
+  "Close prototype notice": "پروٹوٹائپ نوٹس بند کریں",
   "Previous site at this location": "اس مقام پر پچھلی جگہ",
   "{index} of {count} at this location": "اس مقام پر {count} میں سے {index}",
   "Next site at this location": "اس مقام پر اگلی جگہ",
@@ -100,7 +100,9 @@
   },
   "Prototype only.": "صرف ایک پروٹوٹائپ۔",
   "To find a warming center, call 311.": "گرمائش کا مرکز تلاش کرنے کے لیے 311 پر کال کریں۔",
-  "Card": "کارڈ",
+  "Detail card options:": "تفصیلی کارڈ کے اختیارات:",
+  "Detail cards now open in the sidebar.": "تفصیلی کارڈ اب سائیڈ بار میں کھلتے ہیں۔",
+  "Detail cards now open in a pop-up.": "تفصیلی کارڈ اب پاپ اپ میں کھلتے ہیں۔",
   "Sidebar": "سائیڈ بار",
   "Pop-up": "پاپ اپ",
   "Prototype, not a City service.": "پروٹوٹائپ، سٹی کی سروس نہیں۔",
@@ -132,5 +134,7 @@
   "Lends devices": "آلات مستعار دیتا ہے",
   "Languages": "زبانیں",
   "Operated by": "زیرِ انتظام",
-  "public computer centers data": "عوامی کمپیوٹر مراکز کا ڈیٹا"
+  "public computer centers data": "عوامی کمپیوٹر مراکز کا ڈیٹا",
+  "Arrow keys move the map. Plus and minus zoom in and out.": "تیر والی کلیدیں نقشے کو ہلاتی ہیں۔ جمع اور تفریق سے زوم اِن اور زوم آؤٹ کریں۔",
+  "Every site on the map is also in the list.": "نقشے کی ہر جگہ فہرست میں بھی ہے۔"
 }

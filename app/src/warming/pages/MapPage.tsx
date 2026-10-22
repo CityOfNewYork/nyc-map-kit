@@ -1,17 +1,20 @@
 import { useRef, useState } from "react";
 import type { Found } from "../../logic/places.ts";
 import type { Model, Site } from "../../logic/types.ts";
+import { CopyLink } from "../../ui/Card.tsx";
 import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { FiltersButton } from "../../ui/Filters.tsx";
+import { MapKey } from "../../ui/MapKey.tsx";
 import { Panel } from "../../ui/Panel.tsx";
+import { Pause } from "../../ui/Pause.tsx";
 import { PlaceName, Search } from "../../ui/Search.tsx";
+import { siteUrl } from "../../ui/useSiteCard.ts";
 import { CodeBlueNotice } from "../components/CodeBlueNotice.tsx";
 import { FilterBar } from "../components/FilterBar.tsx";
 import { FilterPanel } from "../components/FilterPanel.tsx";
-import { MapKey } from "../components/MapKey.tsx";
 import { OpenStatusLine } from "../components/OpenStatusLine.tsx";
 import { useNycMinute } from "../components/useNycMinute.ts";
-import { centerKind, centerStatus } from "../logic/centers.ts";
+import { CENTER_KINDS, centerKind, centerStatus } from "../logic/centers.ts";
 import { activeFilters, NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
 import { number, plural, t } from "../../logic/i18n.ts";
@@ -51,7 +54,8 @@ export function MapPage({
 
   return (
     <>
-      <h2 className="visually-hidden" id="map-heading" tabIndex={-1}>{t("Map of warming centers")}</h2>
+      <h2 className="visually-hidden" id="map-heading" tabIndex={-1}
+          data-card-return>{t("Map of warming centers")}</h2>
       <div className="toolbar">
         <div className="search-row">
           <Search onFound={onFound} onClear={onClear} />
@@ -70,6 +74,8 @@ export function MapPage({
                label={t("Warming centers")}
                summary={<ListCount total={model && model.features.length} shown={shown.length}
                                    filtered={active > 0} />}
+               action={<CopyLink key={JSON.stringify(filters)} url={resultsUrl}
+                                 payload={{ via: "list" }} />}
                row={(feature) => centerRow(feature, minute)} marker={centerMarker}
                header={(
                  <ListHead total={model && model.features.length} shown={shown.length}
@@ -77,9 +83,19 @@ export function MapPage({
                            onClearFilters={() => onFilters(NO_FILTERS)} />
                )} />
       </div>
-      <MapKey />
+      <MapKey items={[...CENTER_KINDS.values()].map(({ label, color, glyph }) => (
+        { label: t(label), color, glyph }))} />
     </>
   );
+}
+
+/** The map view as it is now, with its filters, language and card style, but without an
+ *  open center's card, which has a Copy link of its own: what the list's Copy link
+ *  copies. */
+function resultsUrl(): URL {
+  const url = siteUrl(null);
+  url.searchParams.set("view", "map");
+  return url;
 }
 
 /** How many centers there are, or with filters on how many of how many: the list's top
@@ -138,8 +154,9 @@ function centerRow(feature: Site, minute: number) {
   return (
     <>
       <span className="name">{p.org}</span>
-      {kind && <span className="type">{t(kind.label)}</span>}
-      {status && <OpenStatusLine status={status} />}
+      {kind && <><Pause /><span className="type">{t(kind.label)}</span></>}
+      {status && <><Pause /><OpenStatusLine status={status} /></>}
+      <Pause />
       <span className="addr">{p.address}</span>
     </>
   );

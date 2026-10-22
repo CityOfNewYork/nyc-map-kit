@@ -562,6 +562,28 @@ body {
 .site-button:focus-visible { outline-offset: -4px; }
 /* Inside the handle too: the panel clips anything outside it. */
 .sheet-handle:focus-visible { outline-offset: -4px; }
+/* The list's top line. The handle spans it, and an app's control (Copy link) sits over
+   it, between the handle's summary and its chevron. The handle shares the line's columns
+   (subgrid), so a long summary wraps before it reaches the control. */
+.panel-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 10px;
+}
+.panel-top > .sheet-handle {
+  grid-area: 1 / 1 / 2 / -1;
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+.sheet-handle .counts { grid-column: 1; }
+.sheet-handle .chev { grid-column: 3; }
+.panel-action { grid-area: 1 / 2; }
+/* Its ring inside it too, clear of the label. */
+.panel-action .copy-link { padding: 0 6px; }
+.panel-action .copy-link:focus-visible { outline-offset: -4px; }
 /* With a mark, such as an icon, beside the lines rather than above them. */
 .site-button.marked { flex-direction: row; gap: 12px; }
 .site-marker { flex: none; display: flex; }
@@ -600,6 +622,73 @@ body {
   clip-path: inset(50%);
   overflow: hidden;
 }
+/* The map's keys. Screen-reader-only until the map takes keyboard focus; then a black
+   pill at the foot of the map, above the attribution and centred in the part the list
+   leaves clear, so a reader who sees the screen learns them too. A mouse click on the map
+   does not show it. */
+.stage:has(.maplibregl-canvas:focus-visible) .map-keys {
+  position: absolute;
+  z-index: 2;
+  left: 340px;   /* .stage is always left to right; see "right to left" below */
+  right: 10px;
+  bottom: 44px;
+  width: fit-content;
+  height: auto;
+  max-width: calc(100% - 350px);
+  margin: 0 auto;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  clip-path: none;
+  overflow: visible;
+  white-space: normal;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 0.875rem;
+  text-align: center;
+  pointer-events: none;
+}
+.stage[data-list="off"]:has(.maplibregl-canvas:focus-visible) .map-keys {
+  inset-inline: 10px;
+  max-width: calc(100% - 20px);
+}
+/* The map's key (ui/MapKey.tsx), on the same white card as the list: top right, left of
+   the zoom buttons and level with them. On a phone, where the search bar takes the top,
+   it is still level with them, below the bar (see the media query below). */
+.map-key {
+  position: absolute;
+  top: 10px;
+  right: calc(10px + 40px + 10px);
+  z-index: 3;
+  max-width: 240px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  font-size: 0.875rem;
+}
+.map-key summary {
+  padding: 10px 14px;
+  line-height: 20px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.map-key-caption {
+  margin: 0;
+  padding: 0 14px 8px;
+  color: var(--ink-muted);
+}
+.map-key ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0 14px 12px;
+  list-style: none;
+}
+.map-key li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.map-key .category-icon { flex: none; width: 22px; height: 22px; }
 /* MapLibre's zoom buttons default to 29 px. They are standalone controls, so the WCAG
    2.2 SC 2.5.8 exception for targets inline in a block of text does not cover them. */
 .maplibregl-ctrl-group button { width: 40px; height: 40px; }
@@ -781,11 +870,11 @@ body {
   gap: 12px;
 }
 .card-fact-icon { flex: none; margin-top: 1px; }
-.card-facts dt {
+.card-fact-label {
   font-size: 1rem;
   font-weight: 700;
 }
-.card-facts dd {
+.card-fact-value {
   margin: 0;
   line-height: 1.5;
   overflow-wrap: anywhere;
@@ -943,10 +1032,14 @@ body {
 /* ------------------------------------------------------------- phone layout ------ */
 
 @media (max-width: 767px) {
+  /* Two rows: a white bar across the top with the search box and the Filters button,
+     then the map, as the warming centers map lays out a phone. */
   .stage {
+    --bar-h: calc(var(--search-h) + 20px);
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
+    grid-template-rows: var(--bar-h) minmax(0, 1fr);
   }
+  .stage > .map { grid-area: 2 / 1; }
 
   /* Bottom sheet. Two heights; the handle switches between collapsed and half. */
   .panel {
@@ -991,17 +1084,23 @@ body {
   .sheet-handle .counts { flex: 1; font-size: 0.875rem; }
   .sheet-handle .chev { color: var(--ink-muted); }
 
-  /* The column drops out: the list is the bottom sheet, and the search box runs across
-     the top of the map, stopping 10 px short of the zoom buttons in the top-right corner.
-     Above the sheet, so its choices are not hidden when the sheet is pulled up. */
+  /* The column drops out: the list is the bottom sheet, and the search row is the bar
+     above the map. The bar keeps its height; what the search box has to say opens under
+     it, over the map. Above the sheet, so its choices are not hidden when the sheet is
+     pulled up. */
   .side { display: contents; }
   .side > .search-row {
     position: relative;
     z-index: 5;
     grid-area: 1 / 1;
-    align-self: start;
-    margin: 10px calc(10px + 44px + 10px) 10px 10px;
+    min-height: 0;
+    margin: 0;
+    padding: 10px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
   }
+  /* The list's sheet stops under the bar at its tallest. */
+  .stage .panel { max-height: calc(100% - var(--bar-h)); }
 
   /* The filters as a modal card in the middle of the screen, over the blurred map, as the
      site card opens. */
@@ -1023,6 +1122,12 @@ body {
   /* Keep the zoom buttons and the attribution clear of the sheet. */
   .map .maplibregl-ctrl-bottom-left,
   .map .maplibregl-ctrl-bottom-right { bottom: var(--sheet-h, 48px); }
+  .map-key { top: calc(var(--bar-h) + 10px); right: calc(10px + 44px + 10px); }
+  .stage:has(.maplibregl-canvas:focus-visible) .map-keys {
+    inset-inline: 10px;
+    bottom: calc(var(--sheet-h, 48px) + 44px);
+    max-width: calc(100% - 20px);
+  }
 
   /* Full 44 px targets where the pointer is a finger. */
   .maplibregl-ctrl-group button { width: 44px; height: 44px; }
@@ -1062,24 +1167,25 @@ body {
     min-height: 44px;
     padding: 0 16px;
     border: 0;
-    border-bottom: 1px solid var(--line);
     background: none;
     font: inherit;
     color: var(--ink-muted);
     text-align: left;
     cursor: pointer;
   }
+  .panel-top { border-bottom: 1px solid var(--line); }
   .sheet-handle:hover { background: var(--hover); }
   .sheet-handle .counts { flex: 1; font-size: 0.875rem; font-weight: 600; }
   /* Shut, the list is its own small box, as an app's closed map key is: a triangle and
      "Show list", in the key's type. */
   .panel.shut { flex: none; align-self: flex-start; }
-  .panel.shut > :not(.sheet-handle) { display: none; }
+  .panel.shut > :not(.panel-top) { display: none; }
+  .panel.shut .panel-top { display: block; border-bottom: 0; }
   .panel.shut .sheet-handle {
+    display: flex;
     gap: 8px;
     min-height: 0;
     padding: 10px 14px;
-    border-bottom: 0;
     line-height: 20px;
     color: var(--ink);
   }
@@ -1096,13 +1202,13 @@ body {
    to left. */
 [dir="rtl"] .stage { direction: ltr; }
 [dir="rtl"] .stage :is(.panel, .site-dialog, .filters-panel, .search, .search-status,
-  .search-choices) { direction: rtl; }
+  .search-choices, .map-keys, .map-key) { direction: rtl; }
 [dir="rtl"] .search-bar {
   background: linear-gradient(to right, var(--ink) 28px, var(--surface) 28px);
 }
 /* The data's own text, such as names and addresses, takes its direction from itself, so
    an English address keeps its house number in front in a right-to-left list. */
-.site-button :is(.name, .addr), #card-title, .card-facts dd, .card-section :is(p, li) {
+.site-button :is(.name, .addr), #card-title, .card-fact-value, .card-section :is(p, li) {
   unicode-bidi: plaintext;
 }
 

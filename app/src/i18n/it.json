@@ -23,8 +23,8 @@
   "Link copied": "Link copiato",
   "Could not copy the link": "Impossibile copiare il link",
   "Copy link": "Copia link",
-  "Close this site": "Chiudi questa sede",
-  "Close this note": "Chiudi questa nota",
+  "Close card": "Chiudi la scheda",
+  "Close prototype notice": "Chiudi l’avviso del prototipo",
   "Previous site at this location": "Sede precedente in questo luogo",
   "{index} of {count} at this location": "{index} di {count} in questo luogo",
   "Next site at this location": "Sede successiva in questo luogo",
@@ -103,7 +103,9 @@
   },
   "Prototype only.": "Solo un prototipo.",
   "To find a warming center, call 311.": "Per trovare un centro di riscaldamento, chiama il 311.",
-  "Card": "Scheda",
+  "Detail card options:": "Opzioni della scheda dettagli:",
+  "Detail cards now open in the sidebar.": "Le schede dettagli ora si aprono nella barra laterale.",
+  "Detail cards now open in a pop-up.": "Le schede dettagli ora si aprono in una finestra.",
   "Sidebar": "Barra laterale",
   "Pop-up": "Finestra",
   "Prototype, not a City service.": "Prototipo, non un servizio della Città.",
@@ -135,5 +137,7 @@
   "Lends devices": "Presta dispositivi",
   "Languages": "Lingue",
   "Operated by": "Gestito da",
-  "public computer centers data": "dati sui centri informatici pubblici"
+  "public computer centers data": "dati sui centri informatici pubblici",
+  "Arrow keys move the map. Plus and minus zoom in and out.": "I tasti freccia spostano la mappa. Più e meno ingrandiscono e riducono.",
+  "Every site on the map is also in the list.": "Ogni sede sulla mappa è anche nell'elenco."
 }

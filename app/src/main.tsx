@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { chooseLanguage, loadLanguage, translateMarked } from "./logic/i18n.ts";
 import { readSettings } from "./logic/params.ts";
 import App from "./ui/App.tsx";
+import { wireNoteClose } from "./ui/note.ts";
 // After the components, which bring map-core and with it MapLibre's stylesheet, so these
 // rules win where the two overlap.
 import "./style.css";
@@ -18,9 +19,8 @@ const settings = { ...params, lang: language };
 await loadLanguage(language);
 translateMarked();
 
-// The note's × removes it until the page loads again, and the block takes its height.
-const note = document.querySelector(".prototype-note");
-note?.querySelector(".note-close")?.addEventListener("click", () => note.remove());
+// The note's ×.
+wireNoteClose();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

@@ -1,5 +1,6 @@
 import { clockTime } from "../logic/hours.ts";
 import type { OpenStatus } from "../logic/hours.ts";
+import { Pause } from "../../ui/Pause.tsx";
 import { t } from "../../logic/i18n.ts";
 
 /** "Open 24 hours", "Open until 5 AM" or "Closed · Opens at 10 PM", with a check or a
@@ -28,7 +29,7 @@ export function OpenStatusLine({ status }: { status: OpenStatus }) {
         )}
         {status.state === "closed" && (
           <>
-            <span>{t("Closed")}</span>{" "}<span aria-hidden="true">·</span>{" "}
+            <span>{t("Closed")}</span><Pause />{" "}<span aria-hidden="true">·</span>{" "}
             <span>{t("Opens at {time}", { time: clockTime(status.opens) })}</span>
           </>
         )}

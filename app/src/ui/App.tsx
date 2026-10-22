@@ -40,15 +40,19 @@ import type { Found } from "../logic/places.ts";
 import type {
   Config, Model, OrgsDoc, Site, SiteCollection, SiteProperties,
 } from "../logic/types.ts";
+import { CopyLink } from "./Card.tsx";
 import { CategoryIcon } from "./CategoryIcon.tsx";
+import { Check } from "./Check.tsx";
 import { FilterDisclosure, FiltersButton, FiltersPanel } from "./Filters.tsx";
 import { keepClearOfList } from "./layout.ts";
+import { MapKey } from "./MapKey.tsx";
 import { Panel } from "./Panel.tsx";
+import { Pause } from "./Pause.tsx";
 import { Search } from "./Search.tsx";
 import { SiteDialog } from "./SiteDialog.tsx";
 import { useLanguage } from "./useLanguage.ts";
 import { useMapCore } from "./useMapCore.ts";
-import { useSiteCard } from "./useSiteCard.ts";
+import { siteUrl, useSiteCard } from "./useSiteCard.ts";
 import { plural, t } from "../logic/i18n.ts";
 
 /** The heading until config.json or `?title=` names the map: the page's own <title>. */
@@ -131,6 +135,7 @@ export default function App({ settings }: AppProps) {
         data: model.data,
         categories,
         counts: true,
+        describedBy: "map-keys",
         onSelect: (feature, info) => onMapSelect(feature, info),
         onClusterExpand: () => {},
       });
@@ -228,9 +233,13 @@ export default function App({ settings }: AppProps) {
         leave an iframe whose document has no heading outline at all; it is what a screen
         reader announces on entering the frame, which is the only way a non-sighted user
         learns what the frame contains; and it is the landmark the list and map sit under.
+
+        It also takes focus when a card closes that no list row opened and the list is shut or off
+        (useSiteCard.ts, closedCardFocus), so focus is not left on nothing.
       */}
       <header className="block-header">
-        <h1 id="block-title" className="visually-hidden">{title || DEFAULT_TITLE}</h1>
+        <h1 id="block-title" className="visually-hidden" tabIndex={-1}
+            data-card-return>{title || DEFAULT_TITLE}</h1>
       </header>
 
       <div className="stage" id="stage" data-list={model ? settings.list : "on"}>
@@ -250,12 +259,11 @@ export default function App({ settings }: AppProps) {
               <FilterDisclosure label={t(model.config.filterLabel || "Organization type")}
                                 chosen={types.length}>
                 {orgTypes(model.features).map(({ type }) => (
-                  <label key={type} className="filter-check">
-                    <input type="checkbox" checked={types.includes(type)}
-                           onChange={(e) => toggleType(type, e.target.checked)} />
-                    {pinField === "org_type" && <TypeIcon style={pinStyles?.get(type)} />}
-                    <span>{type}</span>
-                  </label>
+                  <Check key={type} className="filter-check" checked={types.includes(type)}
+                         onChange={(on) => toggleType(type, on)}
+                         icon={pinField === "org_type" && <TypeIcon style={pinStyles?.get(type)} />}>
+                    {type}
+                  </Check>
                 ))}
               </FilterDisclosure>
             </FiltersPanel>
@@ -264,8 +272,21 @@ export default function App({ settings }: AppProps) {
                  selectedId={feature && feature.properties.id} onOpen={card.openFromList}
                  label={t(model?.config.listLabel || "Volunteer sites")}
                  summary={<SiteCounts sites={listed && shown} count={model?.config.count} />}
+                 action={<CopyLink key={types.join()} url={() => siteUrl(null)}
+                                   payload={{ via: "list" }} />}
                  row={(f) => siteRow(f, pinField === "org_type" ? pinStyles : null)} />
         </div>
+        {/* What the map's canvas reads out when it takes focus (map-core's describedBy),
+            and shows while it has keyboard focus (style.css, .map-keys). */}
+        <p className="map-keys visually-hidden" id="map-keys">
+          {t("Arrow keys move the map. Plus and minus zoom in and out.")}
+          {settings.list !== "off" && " " + t("Every site on the map is also in the list.")}
+        </p>
+        {model && pinStyles && (
+          <MapKey caption={t(model.config.filterLabel || "Organization type")}
+                  items={[...pinStyles].map(([type, { color, glyph }]) => (
+                    { label: type, color, glyph, fill: true }))} />
+        )}
         {/* map-core fills this div; React only puts the loading and error notes in it. */}
         <div className="map" id="map" ref={containerRef}>
           {failed ? (
@@ -356,11 +377,15 @@ function siteRow(feature: Site, styles: Map<string, PinStyle> | null) {
     <>
       <span className="name">{p.org}</span>
       {p.org_type && (
-        <span className="type">
-          {styles && <TypeIcon style={styles.get(p.org_type)} />}
-          <span>{p.org_type}</span>
-        </span>
+        <>
+          <Pause />
+          <span className="type">
+            {styles && <TypeIcon style={styles.get(p.org_type)} />}
+            <span>{p.org_type}</span>
+          </span>
+        </>
       )}
+      <Pause />
       <span className="addr">{p.address}</span>
     </>
   );

@@ -17,8 +17,8 @@
   "Link copied": "লিংক কপি হয়েছে",
   "Could not copy the link": "লিংক কপি করা যায়নি",
   "Copy link": "লিংক কপি করুন",
-  "Close this site": "এই স্থানটি বন্ধ করুন",
-  "Close this note": "এই নোটটি বন্ধ করুন",
+  "Close card": "কার্ড বন্ধ করুন",
+  "Close prototype notice": "প্রোটোটাইপ বিজ্ঞপ্তি বন্ধ করুন",
   "Previous site at this location": "এই জায়গার আগের স্থান",
   "{index} of {count} at this location": "এই জায়গায় {count}টির মধ্যে {index}",
   "Next site at this location": "এই জায়গার পরের স্থান",
@@ -82,7 +82,9 @@
   "{n} locations": "{n}টি স্থান",
   "Prototype only.": "শুধু একটি প্রোটোটাইপ।",
   "To find a warming center, call 311.": "উষ্ণতা কেন্দ্র খুঁজতে 311-এ কল করুন।",
-  "Card": "কার্ড",
+  "Detail card options:": "বিস্তারিত কার্ডের বিকল্প:",
+  "Detail cards now open in the sidebar.": "বিস্তারিত কার্ড এখন সাইডবারে খোলে।",
+  "Detail cards now open in a pop-up.": "বিস্তারিত কার্ড এখন পপ-আপে খোলে।",
   "Sidebar": "সাইডবার",
   "Pop-up": "পপ-আপ",
   "Prototype, not a City service.": "প্রোটোটাইপ, সিটির কোনো পরিষেবা নয়।",
@@ -114,5 +116,7 @@
   "Lends devices": "ডিভাইস ধার দেয়",
   "Languages": "ভাষা",
   "Operated by": "পরিচালনায়",
-  "public computer centers data": "পাবলিক কম্পিউটার কেন্দ্রের ডেটা"
+  "public computer centers data": "পাবলিক কম্পিউটার কেন্দ্রের ডেটা",
+  "Arrow keys move the map. Plus and minus zoom in and out.": "তীর কী দিয়ে মানচিত্র সরান। প্লাস ও মাইনাস দিয়ে জুম ইন ও জুম আউট করুন।",
+  "Every site on the map is also in the list.": "মানচিত্রের প্রতিটি স্থান তালিকাতেও আছে।"
 }

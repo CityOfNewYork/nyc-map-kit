@@ -186,6 +186,61 @@ export function addBoroughLabels(
   return style;
 }
 
+/**
+ * Two landmarks in the harbour, as label points: the Statue of Liberty and Ellis Island.
+ * No basemap's tiles name them as places: Protomaps and OpenFreeMap carry them as points
+ * of interest, which the block does not draw, and OTI's tiles name only the statue's
+ * building, from z17. Names and translations are OpenStreetMap's, lifted from the
+ * Protomaps tiles' points, as BOROUGH_LABELS' are; the points are the statue and the
+ * middle of Ellis Island.
+ */
+const LANDMARK_LABELS: FeatureCollection<Point> = {
+  type: "FeatureCollection",
+  features: [
+    { type: "Feature", geometry: { type: "Point", coordinates: [-74.0445, 40.6893] },
+      properties: { name: "Statue of Liberty", "name:es": "Estatua de la Libertad",
+        "name:zh": "自由女神像", "name:ru": "Статуя Свободы", "name:ko": "자유의 여신상",
+        "name:ar": "تمثال الحرية", "name:ur": "مجسمہ آزادی", "name:fr": "Statue de la Liberté",
+        "name:pl": "Statua Wolności", "name:it": "Statua della Libertà" } },
+    { type: "Feature", geometry: { type: "Point", coordinates: [-74.0397, 40.6990] },
+      properties: { name: "Ellis Island", "name:es": "Isla Ellis", "name:ru": "Остров Эллис" } },
+  ],
+};
+
+/** The landmarks are named from this zoom, the one the Protomaps tiles name them from. */
+const LANDMARK_ZOOM = 13;
+
+/**
+ * Add the LANDMARK_LABELS names as a top label layer, in place, from LANDMARK_ZOOM: grey
+ * italic, as the other basemaps' street and building names are grey and park names
+ * italic.
+ */
+export function addLandmarkLabels(style: StyleSpecification, lang: string): StyleSpecification {
+  const layers = style.layers || [];
+  if (layers.some((l) => l.id === "landmark_label")) return style;
+  style.sources = Object.assign({}, style.sources, {
+    landmarks: { type: "geojson" as const, data: LANDMARK_LABELS },
+  });
+  layers.push({
+    id: "landmark_label",
+    type: "symbol",
+    source: "landmarks",
+    minzoom: LANDMARK_ZOOM,
+    layout: {
+      "text-field": nameExpression(lang),
+      "text-font": ["Noto Sans Italic"],
+      "text-size": 12,
+      "text-max-width": 7,
+    },
+    paint: {
+      "text-color": "#666",
+      "text-halo-color": "rgba(255, 255, 255, 0.8)",
+      "text-halo-width": 1,
+    },
+  });
+  return style;
+}
+
 /* ---------------------------------------------------------------- warm tint
 
  * WHY THIS EXISTS

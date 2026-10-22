@@ -27,8 +27,8 @@
   "Link copied": "Skopiowano link",
   "Could not copy the link": "Nie udało się skopiować linku",
   "Copy link": "Kopiuj link",
-  "Close this site": "Zamknij to miejsce",
-  "Close this note": "Zamknij tę notatkę",
+  "Close card": "Zamknij kartę",
+  "Close prototype notice": "Zamknij informację o prototypie",
   "Previous site at this location": "Poprzednie miejsce pod tym adresem",
   "{index} of {count} at this location": "{index} z {count} pod tym adresem",
   "Next site at this location": "Następne miejsce pod tym adresem",
@@ -117,7 +117,9 @@
   },
   "Prototype only.": "Tylko prototyp.",
   "To find a warming center, call 311.": "Aby znaleźć ogrzewalnię, zadzwoń pod 311.",
-  "Card": "Karta",
+  "Detail card options:": "Opcje karty szczegółów:",
+  "Detail cards now open in the sidebar.": "Karty szczegółów otwierają się teraz w panelu bocznym.",
+  "Detail cards now open in a pop-up.": "Karty szczegółów otwierają się teraz w oknie.",
   "Sidebar": "Panel boczny",
   "Pop-up": "Okno",
   "Prototype, not a City service.": "Prototyp, nie usługa miasta.",
@@ -151,5 +153,7 @@
   "Lends devices": "Wypożycza urządzenia",
   "Languages": "Języki",
   "Operated by": "Prowadzone przez",
-  "public computer centers data": "dane o publicznych centrach komputerowych"
+  "public computer centers data": "dane o publicznych centrach komputerowych",
+  "Arrow keys move the map. Plus and minus zoom in and out.": "Klawisze strzałek przesuwają mapę. Plus i minus przybliżają i oddalają.",
+  "Every site on the map is also in the list.": "Każde miejsce na mapie jest też na liście."
 }

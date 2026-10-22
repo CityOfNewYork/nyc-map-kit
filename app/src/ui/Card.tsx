@@ -71,7 +71,7 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
       <Buttons feature={feature} actions={cardActions(config, p, org)}
                directions={mapsLink(config, feature, org)} />
 
-      <dl className="card-facts">
+      <div className="card-facts">
         <Fact icon="pin" label={t("Address")}><span>{p.address}</span></Fact>
         {hours && <Fact icon="clock" label={t("Hours")}>{hours}</Fact>}
         {facts.map((fact) => (
@@ -79,7 +79,7 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
             <FieldValue field={fact} feature={feature} />
           </Fact>
         ))}
-      </dl>
+      </div>
 
       {sections.map((section) => (
         <section key={section.key} className="card-section">
@@ -90,7 +90,7 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
 
       <div className="card-foot">
         <Updated date={cardUpdated(config, p, org, model.generated)} />
-        <CopyLink key={p.id} id={p.id} />
+        <CopyLink key={p.id} url={() => siteUrl(p.id)} payload={{ site_id: p.id, via: "card" }} />
       </div>
     </div>
   );
@@ -146,7 +146,9 @@ function Buttons({ feature, actions, directions }: {
   );
 }
 
-/** One fact row: the icon, then the label over its value. */
+/** One fact row: the icon, then the label over its value. Plain blocks, not a <dl>:
+ *  VoiceOver reads a description list as "term, 1 of 6", "End of Address, term" and so
+ *  on, about four steps for each row a sighted reader takes in at once. */
 function Fact({ icon, label, children }: {
   icon: FactIcon | "pin"; label: string; children: ReactNode;
 }) {
@@ -154,8 +156,8 @@ function Fact({ icon, label, children }: {
     <div className="card-fact">
       <Icon name={icon} size={22} className="card-fact-icon" />
       <div>
-        <dt>{label}</dt>
-        <dd>{children}</dd>
+        <div className="card-fact-label">{label}</div>
+        <div className="card-fact-value">{children}</div>
       </div>
     </div>
   );
@@ -211,15 +213,19 @@ function Updated({ date }: { date: string }) {
   );
 }
 
-/** Copies the card's own address, ?site=<id>, and says it did. Inside an iframe that is
- *  the frame's address (see useSiteCard). */
-function CopyLink({ id }: { id: string }) {
+/** Copies `url()`, read at the press, and says it did: the card copies its own address,
+ *  ?site=<id>. Inside an iframe that is the frame's address (see useSiteCard). `payload`
+ *  goes with the analytics event. Give it a `key` that changes with what the link
+ *  carries, so the button says "Copy link" again for a new one. */
+export function CopyLink({ url, payload }: {
+  url: () => URL; payload: Record<string, unknown>;
+}) {
   const [result, setResult] = useState<"copied" | "failed" | null>(null);
   async function copy() {
     try {
-      await navigator.clipboard.writeText(siteUrl(id).href);
+      await navigator.clipboard.writeText(url().href);
       setResult("copied");
-      track("map_copy_link", { site_id: id });
+      track("map_copy_link", payload);
     } catch {
       setResult("failed");
     }

@@ -17,7 +17,7 @@ export function TopBar() {
   return (
     <header className="site-header">
       <div className="header-bar">
-        <h1>
+        <h1 tabIndex={-1}>
           <svg className="nyc-logo" aria-hidden="true" viewBox="0 0 440 139">
             <path d={NYC_LOGO} fill="currentColor" />
           </svg>

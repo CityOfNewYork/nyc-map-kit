@@ -31,8 +31,8 @@
   "Link copied": "تم نسخ الرابط",
   "Could not copy the link": "تعذّر نسخ الرابط",
   "Copy link": "نسخ الرابط",
-  "Close this site": "إغلاق هذا الموقع",
-  "Close this note": "إغلاق هذه الملاحظة",
+  "Close card": "إغلاق البطاقة",
+  "Close prototype notice": "إغلاق إشعار النموذج الأولي",
   "Previous site at this location": "الموقع السابق في هذا المكان",
   "{index} of {count} at this location": "{index} من {count} في هذا المكان",
   "Next site at this location": "الموقع التالي في هذا المكان",
@@ -103,7 +103,9 @@
   },
   "Prototype only.": "نموذج أولي فقط.",
   "To find a warming center, call 311.": "للعثور على مركز تدفئة، اتصل بالرقم 311.",
-  "Card": "البطاقة",
+  "Detail card options:": "خيارات بطاقة التفاصيل:",
+  "Detail cards now open in the sidebar.": "تُفتح بطاقات التفاصيل الآن في الشريط الجانبي.",
+  "Detail cards now open in a pop-up.": "تُفتح بطاقات التفاصيل الآن في نافذة منبثقة.",
   "Sidebar": "شريط جانبي",
   "Pop-up": "نافذة منبثقة",
   "Prototype, not a City service.": "نموذج أولي، وليس خدمة تابعة للمدينة.",
@@ -139,5 +141,7 @@
   "Lends devices": "يُعير الأجهزة",
   "Languages": "اللغات",
   "Operated by": "تديره",
-  "public computer centers data": "بيانات مراكز الحاسوب العامة"
+  "public computer centers data": "بيانات مراكز الحاسوب العامة",
+  "Arrow keys move the map. Plus and minus zoom in and out.": "مفاتيح الأسهم تحرّك الخريطة. زرّا الجمع والطرح للتكبير والتصغير.",
+  "Every site on the map is also in the list.": "كل موقع على الخريطة موجود أيضًا في القائمة."
 }

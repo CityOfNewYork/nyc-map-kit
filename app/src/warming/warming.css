@@ -152,13 +152,22 @@
 /* With something to say, it is the count's subtext: the line sits right under the count,
    with the rule under both. */
 @media (min-width: 768px) {
-  .panel:not(.shut) .sheet-handle:has(+ .list-head :is(.list-empty, .list-closest p)) {
+  .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p)) {
+    border-bottom: 0;
+  }
+  .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p))
+    > .sheet-handle {
     min-height: 0;
     padding-top: 12px;
     padding-bottom: 2px;
-    border-bottom: 0;
   }
-  .sheet-handle + .list-head { padding-top: 0; padding-bottom: 12px; }
+  /* Copy link keeps its 44 px target, reaching 10 px into the subtext's line, so its
+     label stays level with the count and the count's line keeps its height. */
+  .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p))
+    > .panel-action {
+    margin-bottom: -10px;
+  }
+  .panel-top + .list-head { padding-top: 0; padding-bottom: 12px; }
 }
 .list-head p { margin: 0; }
 .list-closest { font-size: 0.8125rem; }
@@ -331,42 +340,10 @@
 
 /* ------------------------------------------------------------------ map key ------ */
 
-/* Top right, left of the zoom buttons and level with them, on the same white card. */
-.map-key {
-  position: absolute;
-  top: calc(var(--bar-h) + 10px);
-  right: calc(10px + 40px + 10px);
-  z-index: 3;
-  max-width: 240px;
-  border-radius: var(--radius-card);
-  background: var(--surface);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-  font-size: 0.875rem;
-}
-.map-key summary {
-  padding: 10px 14px;
-  line-height: 20px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.map-key ul {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0 14px 12px;
-  list-style: none;
-}
-.map-key li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.map-key .category-icon { width: 22px; height: 22px; }
-
-/* On a phone the zoom buttons are 44 px wide. */
-@media (max-width: 767px) {
-  .map-key { right: calc(10px + 44px + 10px); }
-}
+/* The key's card is style.css's. Here the search box is in the bar, not over the map, so
+   the key stays left of the zoom buttons and level with them at every width, below the
+   bar. style.css places it the same way on a phone. */
+.map-key { top: calc(var(--bar-h) + 10px); }
 
 /* ------------------------------------------------------------------ landing ------ */
 
