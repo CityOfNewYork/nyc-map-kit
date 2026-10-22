@@ -129,20 +129,48 @@ export function nearestIds(features: Site[], center: Position): string[] {
  * A record joins a group only if it is within the radius of EVERY member already in it,
  * not just the nearest one. Single-link grouping would chain — A near B, B near C — into
  * a group whose ends are further apart than the radius. Data order decides the seed, so
- * the grouping is deterministic.
+ * the grouping is deterministic: a record joins the earliest-made group it fits.
+ *
+ * Only groups with a member in the record's square of a grid, or one of the eight around
+ * it, can fit, since every member must be within the radius. The squares are at least
+ * `radius` wide everywhere in the data, so no group that fits is missed, and the work
+ * grows with the number of records rather than with its square.
  *
  * Returns a map from each site id to every feature in its group, itself included.
  */
 export function indexByLocation(
   features: Site[], radius = CO_LOCATION_RADIUS_M,
 ): Map<string, Site[]> {
+  // A degree of longitude is shortest at the northernmost record, so squares wide enough
+  // there are wide enough everywhere (see metresBetween).
+  let north = 0;
+  for (const f of features) north = Math.max(north, Math.abs(f.geometry.coordinates[1]) || 0);
+  const width = radius / (Math.cos((north * Math.PI) / 180) * 111320);
+  const height = radius / 110540;
+
   const groups: Site[][] = [];
+  const inSquare = new Map<string, number[]>();   // "x,y" -> groups with a member there
   for (const f of features) {
     const here = f.geometry.coordinates;
-    const group = groups.find((g) => g.every(
-      (other) => metresBetween(here, other.geometry.coordinates) <= radius));
-    if (group) group.push(f);
-    else groups.push([f]);
+    const x = Math.floor(here[0] / width);
+    const y = Math.floor(here[1] / height);
+    let joined = -1;
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (const i of inSquare.get(`${x + dx},${y + dy}`) ?? []) {
+          if ((joined < 0 || i < joined) && groups[i].every(
+            (other) => metresBetween(here, other.geometry.coordinates) <= radius)) joined = i;
+        }
+      }
+    }
+    if (joined < 0) {
+      joined = groups.length;
+      groups.push([]);
+    }
+    groups[joined].push(f);
+    const square = `${x},${y}`;
+    const there = inSquare.get(square) ?? [];
+    if (!there.includes(joined)) inSquare.set(square, [...there, joined]);
   }
   const at = new Map<string, Site[]>();
   for (const group of groups) {
