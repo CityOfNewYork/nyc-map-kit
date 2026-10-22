@@ -152,13 +152,22 @@
 /* With something to say, it is the count's subtext: the line sits right under the count,
    with the rule under both. */
 @media (min-width: 768px) {
-  .panel:not(.shut) .sheet-handle:has(+ .list-head :is(.list-empty, .list-closest p)) {
+  .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p)) {
+    border-bottom: 0;
+  }
+  .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p))
+    > .sheet-handle {
     min-height: 0;
     padding-top: 12px;
     padding-bottom: 2px;
-    border-bottom: 0;
   }
-  .sheet-handle + .list-head { padding-top: 0; padding-bottom: 12px; }
+  /* Copy link keeps its 44 px target, reaching 10 px into the subtext's line, so its
+     label stays level with the count and the count's line keeps its height. */
+  .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p))
+    > .panel-action {
+    margin-bottom: -10px;
+  }
+  .panel-top + .list-head { padding-top: 0; padding-bottom: 12px; }
 }
 .list-head p { margin: 0; }
 .list-closest { font-size: 0.8125rem; }

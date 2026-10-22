@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
 import type { Found } from "../../logic/places.ts";
 import type { Model, Site } from "../../logic/types.ts";
+import { CopyLink } from "../../ui/Card.tsx";
 import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { FiltersButton } from "../../ui/Filters.tsx";
 import { MapKey } from "../../ui/MapKey.tsx";
 import { Panel } from "../../ui/Panel.tsx";
 import { Pause } from "../../ui/Pause.tsx";
 import { PlaceName, Search } from "../../ui/Search.tsx";
+import { siteUrl } from "../../ui/useSiteCard.ts";
 import { CodeBlueNotice } from "../components/CodeBlueNotice.tsx";
 import { FilterBar } from "../components/FilterBar.tsx";
 import { FilterPanel } from "../components/FilterPanel.tsx";
@@ -72,6 +74,8 @@ export function MapPage({
                label={t("Warming centers")}
                summary={<ListCount total={model && model.features.length} shown={shown.length}
                                    filtered={active > 0} />}
+               action={<CopyLink key={JSON.stringify(filters)} url={resultsUrl}
+                                 payload={{ via: "list" }} />}
                row={(feature) => centerRow(feature, minute)} marker={centerMarker}
                header={(
                  <ListHead total={model && model.features.length} shown={shown.length}
@@ -83,6 +87,15 @@ export function MapPage({
         { label: t(label), color, glyph }))} />
     </>
   );
+}
+
+/** The map view as it is now, with its filters, language and card style, but without an
+ *  open center's card, which has a Copy link of its own: what the list's Copy link
+ *  copies. */
+function resultsUrl(): URL {
+  const url = siteUrl(null);
+  url.searchParams.set("view", "map");
+  return url;
 }
 
 /** How many centers there are, or with filters on how many of how many: the list's top

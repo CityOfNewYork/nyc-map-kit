@@ -28,6 +28,9 @@ interface PanelProps {
   label: string;
   /** What the phone sheet's handle says about the list, such as how many sites it holds. */
   summary: ReactNode;
+  /** A control on the handle's line, between the summary and the chevron, such as Copy
+   *  link. Nothing unless given; hidden while the list is shut. */
+  action?: ReactNode;
   /** A row's lines above the distance. The site's name and address unless given. */
   row?: (feature: Site) => ReactNode;
   /** Shown above the rows and kept in view, such as a count of the sites. Nothing unless
@@ -55,7 +58,7 @@ interface PanelProps {
  * nothing in it responds.
  */
 export function Panel({
-  model, list, selectedId, origin, onOpen, label, summary, row, header, intro, marker,
+  model, list, selectedId, origin, onOpen, label, summary, action, row, header, intro, marker,
 }: PanelProps) {
   const [step, setStep] = useState<SheetStep>("collapsed");
   const [dragging, setDragging] = useState(false);
@@ -129,25 +132,30 @@ export function Panel({
     <nav className={["panel", dragging && "dragging", desktop && shut && "shut"]
                       .filter(Boolean).join(" ")}
          id="panel" ref={panelRef} aria-label={label}>
-      <button className="sheet-handle" id="sheet-handle" type="button"
-              aria-expanded={desktop ? !shut : step !== "collapsed"} aria-controls="site-list"
-              onClick={() => model && (desktop
-                ? setShut((s) => !s) : setStep((s) => NEXT_STEP[s]))}
-              onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}>
-        {desktop && shut ? (
-          <>
-            <span className="chev" aria-hidden="true">▶</span>
-            <span className="counts">{t("Show list")}</span>
-          </>
-        ) : (
-          <>
-            <span className="counts">{summary}</span>
-            <span className="chev" aria-hidden="true">{step === "half" ? "▼" : "▲"}</span>
-            <span className="visually-hidden">{t("Show or hide the list")}</span>
-          </>
-        )}
-      </button>
+      {/* The handle spans the line; an app's control sits over it, a button of its own
+          rather than one inside the handle (see .panel-top in style.css). */}
+      <div className="panel-top">
+        <button className="sheet-handle" id="sheet-handle" type="button"
+                aria-expanded={desktop ? !shut : step !== "collapsed"} aria-controls="site-list"
+                onClick={() => model && (desktop
+                  ? setShut((s) => !s) : setStep((s) => NEXT_STEP[s]))}
+                onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}>
+          {desktop && shut ? (
+            <>
+              <span className="chev" aria-hidden="true">▶</span>
+              <span className="counts">{t("Show list")}</span>
+            </>
+          ) : (
+            <>
+              <span className="counts">{summary}</span>
+              <span className="chev" aria-hidden="true">{step === "half" ? "▼" : "▲"}</span>
+              <span className="visually-hidden">{t("Show or hide the list")}</span>
+            </>
+          )}
+        </button>
+        {action && !(desktop && shut) && <div className="panel-action">{action}</div>}
+      </div>
 
       {header && <div className="list-head" inert={hidden}>{header}</div>}
 

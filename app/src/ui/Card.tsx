@@ -90,7 +90,7 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
 
       <div className="card-foot">
         <Updated date={cardUpdated(config, p, org, model.generated)} />
-        <CopyLink key={p.id} id={p.id} />
+        <CopyLink key={p.id} url={() => siteUrl(p.id)} payload={{ site_id: p.id, via: "card" }} />
       </div>
     </div>
   );
@@ -213,15 +213,19 @@ function Updated({ date }: { date: string }) {
   );
 }
 
-/** Copies the card's own address, ?site=<id>, and says it did. Inside an iframe that is
- *  the frame's address (see useSiteCard). */
-function CopyLink({ id }: { id: string }) {
+/** Copies `url()`, read at the press, and says it did: the card copies its own address,
+ *  ?site=<id>. Inside an iframe that is the frame's address (see useSiteCard). `payload`
+ *  goes with the analytics event. Give it a `key` that changes with what the link
+ *  carries, so the button says "Copy link" again for a new one. */
+export function CopyLink({ url, payload }: {
+  url: () => URL; payload: Record<string, unknown>;
+}) {
   const [result, setResult] = useState<"copied" | "failed" | null>(null);
   async function copy() {
     try {
-      await navigator.clipboard.writeText(siteUrl(id).href);
+      await navigator.clipboard.writeText(url().href);
       setResult("copied");
-      track("map_copy_link", { site_id: id });
+      track("map_copy_link", payload);
     } catch {
       setResult("failed");
     }

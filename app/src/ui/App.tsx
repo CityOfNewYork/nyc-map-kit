@@ -40,6 +40,7 @@ import type { Found } from "../logic/places.ts";
 import type {
   Config, Model, OrgsDoc, Site, SiteCollection, SiteProperties,
 } from "../logic/types.ts";
+import { CopyLink } from "./Card.tsx";
 import { CategoryIcon } from "./CategoryIcon.tsx";
 import { Check } from "./Check.tsx";
 import { FilterDisclosure, FiltersButton, FiltersPanel } from "./Filters.tsx";
@@ -51,7 +52,7 @@ import { Search } from "./Search.tsx";
 import { SiteDialog } from "./SiteDialog.tsx";
 import { useLanguage } from "./useLanguage.ts";
 import { useMapCore } from "./useMapCore.ts";
-import { useSiteCard } from "./useSiteCard.ts";
+import { siteUrl, useSiteCard } from "./useSiteCard.ts";
 import { plural, t } from "../logic/i18n.ts";
 
 /** The heading until config.json or `?title=` names the map: the page's own <title>. */
@@ -271,6 +272,8 @@ export default function App({ settings }: AppProps) {
                  selectedId={feature && feature.properties.id} onOpen={card.openFromList}
                  label={t(model?.config.listLabel || "Volunteer sites")}
                  summary={<SiteCounts sites={listed && shown} count={model?.config.count} />}
+                 action={<CopyLink key={types.join()} url={() => siteUrl(null)}
+                                   payload={{ via: "list" }} />}
                  row={(f) => siteRow(f, pinField === "org_type" ? pinStyles : null)} />
         </div>
         {/* What the map's canvas reads out when it takes focus (map-core's describedBy),

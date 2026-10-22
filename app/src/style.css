@@ -562,6 +562,28 @@ body {
 .site-button:focus-visible { outline-offset: -4px; }
 /* Inside the handle too: the panel clips anything outside it. */
 .sheet-handle:focus-visible { outline-offset: -4px; }
+/* The list's top line. The handle spans it, and an app's control (Copy link) sits over
+   it, between the handle's summary and its chevron. The handle shares the line's columns
+   (subgrid), so a long summary wraps before it reaches the control. */
+.panel-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 10px;
+}
+.panel-top > .sheet-handle {
+  grid-area: 1 / 1 / 2 / -1;
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+.sheet-handle .counts { grid-column: 1; }
+.sheet-handle .chev { grid-column: 3; }
+.panel-action { grid-area: 1 / 2; }
+/* Its ring inside it too, clear of the label. */
+.panel-action .copy-link { padding: 0 6px; }
+.panel-action .copy-link:focus-visible { outline-offset: -4px; }
 /* With a mark, such as an icon, beside the lines rather than above them. */
 .site-button.marked { flex-direction: row; gap: 12px; }
 .site-marker { flex: none; display: flex; }
@@ -1145,24 +1167,25 @@ body {
     min-height: 44px;
     padding: 0 16px;
     border: 0;
-    border-bottom: 1px solid var(--line);
     background: none;
     font: inherit;
     color: var(--ink-muted);
     text-align: left;
     cursor: pointer;
   }
+  .panel-top { border-bottom: 1px solid var(--line); }
   .sheet-handle:hover { background: var(--hover); }
   .sheet-handle .counts { flex: 1; font-size: 0.875rem; font-weight: 600; }
   /* Shut, the list is its own small box, as an app's closed map key is: a triangle and
      "Show list", in the key's type. */
   .panel.shut { flex: none; align-self: flex-start; }
-  .panel.shut > :not(.sheet-handle) { display: none; }
+  .panel.shut > :not(.panel-top) { display: none; }
+  .panel.shut .panel-top { display: block; border-bottom: 0; }
   .panel.shut .sheet-handle {
+    display: flex;
     gap: 8px;
     min-height: 0;
     padding: 10px 14px;
-    border-bottom: 0;
     line-height: 20px;
     color: var(--ink);
   }
