@@ -12,6 +12,7 @@ import { TopBar } from "./components/TopBar.tsx";
 import { useNycMinute } from "./components/useNycMinute.ts";
 import { WarmingMap } from "./components/WarmingMap.tsx";
 import { CENTER_CONFIG, CENTER_PINS } from "./logic/centers.ts";
+import { DATASETS, datasetFromUrl } from "./logic/dataset.ts";
 import { filtersFromUrl, passes, withFilters } from "./logic/filters.ts";
 import type { Filters } from "./logic/filters.ts";
 import { viewFromUrl } from "./logic/view.ts";
@@ -20,11 +21,6 @@ import { LandingPage } from "./pages/LandingPage.tsx";
 import { MapPage } from "./pages/MapPage.tsx";
 import { t } from "../logic/i18n.ts";
 import { useLanguage } from "../ui/useLanguage.ts";
-
-// Sample centers: real sites mixed with invented ones, with made-up phone numbers, entry
-// instructions and dates (the file's description says which parts). centers.geojson is
-// the list in 311 article KA-03702, retrieved 2026-10-15.
-const DATA_URL = "warming/sample-centers.geojson";
 
 /** How long the hero takes to fold away: .hero's transition in warming.css. */
 const HERO_EXIT_MS = 300;
@@ -76,11 +72,14 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
   const card = useSiteCard({ model, style, categories: CENTER_PINS, panel });
   const { attach, selectingFromUrl, dialogElement, miniMapElement } = card;
 
+  // The sample centers ?dataset= names (logic/dataset.ts). The note's switch loads the
+  // page again to change them, so they are read once.
   useEffect(() => {
     let cancelled = false;
-    fetch(DATA_URL)
+    const url = DATASETS[datasetFromUrl(window.location.search)];
+    fetch(url)
       .then((resp) => {
-        if (!resp.ok) throw new Error(`${DATA_URL} returned ${resp.status}`);
+        if (!resp.ok) throw new Error(`${url} returned ${resp.status}`);
         return resp.json() as Promise<SiteCollection>;
       })
       .then((data) => {
