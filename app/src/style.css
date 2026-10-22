@@ -584,6 +584,44 @@ body {
 /* Its ring inside it too, clear of the label. */
 .panel-action .copy-link { padding: 0 6px; }
 .panel-action .copy-link:focus-visible { outline-offset: -4px; }
+/* Under the count: the place the rows are ordered from after a search, or that no site
+   matches the filters. Nothing to show, it takes no room. */
+.list-head {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-muted);
+}
+.list-head:not(:has(.list-empty, .list-closest p)) { padding: 0; border-bottom: 0; }
+.list-head p { margin: 0; }
+.list-empty { font-size: 0.875rem; color: var(--ink); }
+.list-closest { font-size: 0.8125rem; }
+/* With something to say, it is the count's subtext: the line sits right under the count,
+   with the rule under both. The list's line names the place, so the search box's does
+   not; its live region stays in place, empty, for what the search says next. */
+@media (min-width: 768px) {
+  .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p)) {
+    border-bottom: 0;
+  }
+  .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p))
+    > .sheet-handle {
+    min-height: 0;
+    padding-top: 12px;
+    padding-bottom: 2px;
+  }
+  /* Copy link keeps its 44 px target, reaching 10 px into the subtext's line, so its
+     label stays level with the count and the count's line keeps its height. */
+  .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p))
+    > .panel-action {
+    margin-bottom: -10px;
+  }
+  .panel-top + .list-head { padding-top: 0; padding-bottom: 12px; }
+  .stage .search-found { display: none; }
+  .stage .search-status:has(> .search-found) { margin: 0; padding: 0; box-shadow: none; }
+}
+/* On a phone the search box keeps its line, and the sheet's handle the count. */
+@media (max-width: 767px) {
+  .list-head { display: none; }
+}
 /* With a mark, such as an icon, beside the lines rather than above them. */
 .site-button.marked { flex-direction: row; gap: 12px; }
 .site-marker { flex: none; display: flex; }

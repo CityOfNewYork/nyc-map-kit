@@ -141,47 +141,6 @@
 .side { width: 360px; }
 .site-marker .category-icon { width: 26px; height: 26px; }
 
-/* Under the count: the place the rows are ordered from after a search, or that no
-   center matches the filters. Nothing to show, it takes no room. */
-.list-head {
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--line);
-  color: var(--ink-muted);
-}
-.list-head:not(:has(.list-empty, .list-closest p)) { padding: 0; border-bottom: 0; }
-/* With something to say, it is the count's subtext: the line sits right under the count,
-   with the rule under both. */
-@media (min-width: 768px) {
-  .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p)) {
-    border-bottom: 0;
-  }
-  .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p))
-    > .sheet-handle {
-    min-height: 0;
-    padding-top: 12px;
-    padding-bottom: 2px;
-  }
-  /* Copy link keeps its 44 px target, reaching 10 px into the subtext's line, so its
-     label stays level with the count and the count's line keeps its height. */
-  .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p))
-    > .panel-action {
-    margin-bottom: -10px;
-  }
-  .panel-top + .list-head { padding-top: 0; padding-bottom: 12px; }
-}
-.list-head p { margin: 0; }
-.list-closest { font-size: 0.8125rem; }
-
-/* On a desktop the list's header names the place, so the search box does not. Only the
-   line goes: its live region stays in place, empty, for what the search says next. */
-@media (min-width: 768px) {
-  .stage .search-found { display: none; }
-  .stage .search-status:has(> .search-found) { padding: 0; border-top: 0; }
-}
-@media (max-width: 767px) {
-  .list-head { display: none; }
-}
-
 /* At the top of the rows, scrolling away with them. */
 .list-intro { padding: 12px 16px 2px; }
 @media (max-width: 767px) {
@@ -329,7 +288,6 @@
 
 /* Open now, wheelchair access and pets, as the bar shows them, wrapping as they need. */
 .filter-toggles { display: flex; flex-wrap: wrap; gap: 8px; }
-.list-empty { margin-top: 6px; font-size: 0.875rem; color: var(--ink); }
 
 @media (max-width: 767px) {
   /* Across the bar. */

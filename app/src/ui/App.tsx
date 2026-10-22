@@ -268,7 +268,8 @@ export default function App({ settings }: AppProps) {
               </FilterDisclosure>
             </FiltersPanel>
           )}
-          <Panel model={listed} list={settings.list} origin={found && found.center}
+          <Panel model={listed} list={settings.list} found={found}
+                 onClearFilters={types.length ? clearTypes : undefined}
                  selectedId={feature && feature.properties.id} onOpen={card.openFromList}
                  label={t(model?.config.listLabel || "Volunteer sites")}
                  summary={<SiteCounts sites={listed && shown} count={model?.config.count} />}
