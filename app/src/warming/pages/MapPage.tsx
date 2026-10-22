@@ -7,7 +7,7 @@ import { FiltersButton } from "../../ui/Filters.tsx";
 import { MapKey } from "../../ui/MapKey.tsx";
 import { Panel } from "../../ui/Panel.tsx";
 import { Pause } from "../../ui/Pause.tsx";
-import { PlaceName, Search } from "../../ui/Search.tsx";
+import { Search } from "../../ui/Search.tsx";
 import { siteUrl } from "../../ui/useSiteCard.ts";
 import { CodeBlueNotice } from "../components/CodeBlueNotice.tsx";
 import { FilterBar } from "../components/FilterBar.tsx";
@@ -69,7 +69,8 @@ export function MapPage({
           <FilterPanel id="filters" filters={filters} shown={shown.length}
                        onChange={onFilters} onClose={closeFilters} />
         )}
-        <Panel model={listed} list="on" origin={found && found.center} selectedId={selectedId}
+        <Panel model={listed} list="on" found={found} selectedId={selectedId}
+               onClearFilters={active > 0 ? () => onFilters(NO_FILTERS) : undefined}
                onOpen={onOpen} intro={<CodeBlueNotice />}
                label={t("Warming centers")}
                summary={<ListCount total={model && model.features.length} shown={shown.length}
@@ -78,9 +79,12 @@ export function MapPage({
                                  payload={{ via: "list" }} />}
                row={(feature) => centerRow(feature, minute)} marker={centerMarker}
                header={(
-                 <ListHead total={model && model.features.length} shown={shown.length}
-                           filtered={active > 0} found={found}
-                           onClearFilters={() => onFilters(NO_FILTERS)} />
+                 // The count again, as a live region the eye does not see, so a screen
+                 // reader hears what a filter on the bar left.
+                 <p className="visually-hidden" role="status">
+                   <ListCount total={model && model.features.length} shown={shown.length}
+                              filtered={active > 0} />
+                 </p>
                )} />
       </div>
       <MapKey items={[...CENTER_KINDS.values()].map(({ label, color, glyph }) => (
@@ -109,39 +113,6 @@ function ListCount({ total, shown, filtered }: {
         { shown: number(shown) })}
     </span>
   ) : <CenterCount count={total} />;
-}
-
-/**
- * Above the rows, on a desktop, under the count: after a search, the place they are
- * ordered from. The count is repeated here as a live region the eye does not see, so a
- * screen reader hears what a filter left. The place line stands in for the search box's
- * own (see warming.css), so it is a live region too, and a screen reader hears it without
- * leaving the input. On a phone the search box keeps its line, so this is hidden. The
- * Code Blue notice is the list's intro, at the top of the rows and scrolling away with
- * them.
- */
-function ListHead({ total, shown, filtered, found, onClearFilters }: {
-  total: number | null; shown: number; filtered: boolean; found: Found | null;
-  onClearFilters: () => void;
-}) {
-  return (
-    <>
-      <p className="visually-hidden" role="status">
-        <ListCount total={total} shown={shown} filtered={filtered} />
-      </p>
-      {filtered && shown === 0 && (
-        <p className="list-empty">
-          <span>{t("No locations match your filters.")}</span>{" "}
-          <button type="button" className="filters-clear" onClick={onClearFilters}>
-            <span>{t("Clear filters")}</span>
-          </button>
-        </p>
-      )}
-      <div className="list-closest" role="status">
-        {found && <p><span>{t("Closest to")}</span>{" "}<PlaceName place={found} inline /></p>}
-      </div>
-    </>
-  );
 }
 
 /** A row's lines: the center's name, what kind of center it is, whether it is open at

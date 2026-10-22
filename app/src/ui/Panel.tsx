@@ -3,8 +3,9 @@ import type { PointerEvent, ReactNode } from "react";
 import { compareSites, metresBetween } from "../logic/data.ts";
 import { number, t } from "../logic/i18n.ts";
 import type { Settings } from "../logic/params.ts";
-import type { LngLat } from "../logic/places.ts";
+import type { Found } from "../logic/places.ts";
 import type { Model, Site } from "../logic/types.ts";
+import { PlaceName } from "./Search.tsx";
 
 const METRES_PER_MILE = 1609.344;
 
@@ -20,8 +21,12 @@ interface PanelProps {
   model: Model | null;
   list: Settings["list"];
   selectedId: string | null;
-  /** Where the reader searched for, or null. The list is ordered nearest-first from it. */
-  origin: LngLat | null;
+  /** The place the search box found, or null. The list is ordered nearest-first from it,
+   *  and says so under the count. */
+  found: Found | null;
+  /** Clears the filters; given while any are on. With no site left, the list says so and
+   *  offers this. */
+  onClearFilters?: () => void;
   /** A row was chosen: the button that was pressed, and its site. */
   onOpen: (button: HTMLElement, feature: Site) => void;
   /** The list's name to a screen reader: "Volunteer sites". */
@@ -33,8 +38,8 @@ interface PanelProps {
   action?: ReactNode;
   /** A row's lines above the distance. The site's name and address unless given. */
   row?: (feature: Site) => ReactNode;
-  /** Shown above the rows and kept in view, such as a count of the sites. Nothing unless
-   *  given. */
+  /** Shown above the rows and kept in view, before the place found, such as a count of
+   *  the sites. Nothing unless given. */
   header?: ReactNode;
   /** Shown at the top of the rows and scrolled away with them, such as a notice. Nothing
    *  unless given. */
@@ -58,8 +63,11 @@ interface PanelProps {
  * nothing in it responds.
  */
 export function Panel({
-  model, list, selectedId, origin, onOpen, label, summary, action, row, header, intro, marker,
+  model, list, selectedId, found, onClearFilters, onOpen, label, summary, action, row, header,
+  intro, marker,
 }: PanelProps) {
+  const origin = found && found.center;
+  const empty = model && onClearFilters && model.features.length === 0;
   const [step, setStep] = useState<SheetStep>("collapsed");
   const [dragging, setDragging] = useState(false);
   // On a desktop the handle is the panel's top line, and hides the list under it; the
@@ -157,7 +165,24 @@ export function Panel({
         {action && !(desktop && shut) && <div className="panel-action">{action}</div>}
       </div>
 
-      {header && <div className="list-head" inert={hidden}>{header}</div>}
+      {/* Under the count, on a desktop: that no site matches the filters, and after a
+          search, the place the rows are ordered from. The place line stands in for the
+          search box's own (see style.css), so it is a live region too, and a screen reader
+          hears it without leaving the input. */}
+      <div className="list-head" inert={hidden}>
+        {header}
+        {empty && (
+          <p className="list-empty">
+            <span>{t("No locations match your filters.")}</span>{" "}
+            <button type="button" className="filters-clear" onClick={onClearFilters}>
+              <span>{t("Clear filters")}</span>
+            </button>
+          </p>
+        )}
+        <div className="list-closest" role="status">
+          {found && <p><span>{t("Closest to")}</span>{" "}<PlaceName place={found} inline /></p>}
+        </div>
+      </div>
 
       {/*
         One row per site. Not per organization.
