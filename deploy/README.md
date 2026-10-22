@@ -15,7 +15,7 @@
  ### Build Docker Image
 
  ```sh
- docker build -t nyc-map-kit:latest -f deploy/Dockerfile .
+ docker build -t nyc-map-kit:0.1.0 --build-arg TILEBUILD="nyc-20261019-3.pmtiles" -f deploy/Dockerfile .
  ```
 
 ### Run Docker Image Locally
