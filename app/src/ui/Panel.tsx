@@ -106,6 +106,20 @@ export function Panel({
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [origin]);
 
+  // The open card's row, brought to the middle of the list however the card was opened
+  // (a pin, a link, Back), unless it already shows whole. Only the list scrolls, not the
+  // page.
+  useEffect(() => {
+    const scroll = scrollRef.current;
+    const row = selectedId && scroll?.querySelector<HTMLElement>(
+      `.site-button[data-site-id="${CSS.escape(selectedId)}"]`);
+    if (!scroll || !row) return;
+    const view = scroll.getBoundingClientRect();
+    const box = row.getBoundingClientRect();
+    if (box.top >= view.top && box.bottom <= view.bottom) return;
+    scroll.scrollTop += (box.top + box.bottom) / 2 - (view.top + view.bottom) / 2;
+  }, [selectedId]);
+
   // Drag, in addition to tap. Pointer events cover mouse, touch and pen with one path.
   // While dragging, the height is set directly on the element rather than through state,
   // so the sheet follows the finger without a render per pointer move.
