@@ -22,9 +22,9 @@
  *    is what goes stale or crashes under a translator.
  *
  * 2. ACCESSIBILITY. The list is the text alternative to the map. Every site the map
- *    draws is reachable from it by keyboard, selection moves focus to the card, and
- *    closing the card puts focus back where it came from. A search re-orders the list;
- *    it never removes a site from it.
+ *    draws is reachable from it by keyboard, a page of rows at a time (ui/Panel.tsx).
+ *    Selection moves focus to the card, and closing the card puts focus back where it
+ *    came from. A search re-orders the list; it never removes a site from it.
  */
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
