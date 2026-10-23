@@ -6,7 +6,7 @@
  * "05:00" is open from 10 PM to 5 AM the next morning. "00:00" to "24:00" is open all day.
  */
 
-import { language } from "../../logic/i18n.ts";
+import { formatter, language } from "../../logic/i18n.ts";
 
 /** A center's status at one minute of the day. Times are minutes past midnight. */
 export type OpenStatus =
@@ -52,9 +52,10 @@ export function clockTime(minutes: number): string {
   const hour = Math.floor(minutes / 60) % 24;
   const minute = minutes % 60;
   if (language() !== "en") {
-    return new Intl.DateTimeFormat(language(), {
-      hour: "numeric", minute: minute ? "2-digit" : undefined, timeZone: "UTC",
-    }).format(Date.UTC(2000, 0, 1, hour, minute));
+    return formatter(`time ${language()} ${minute ? "h:mm" : "h"}`, () =>
+      new Intl.DateTimeFormat(language(), {
+        hour: "numeric", minute: minute ? "2-digit" : undefined, timeZone: "UTC",
+      })).format(Date.UTC(2000, 0, 1, hour, minute));
   }
   const h12 = hour % 12 === 0 ? 12 : hour % 12;
   return `${h12}${minute ? `:${String(minute).padStart(2, "0")}` : ""} ${hour < 12 ? "AM" : "PM"}`;
