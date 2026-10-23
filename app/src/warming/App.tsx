@@ -72,8 +72,8 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
   const card = useSiteCard({ model, style, categories: CENTER_PINS, panel });
   const { attach, selectingFromUrl, dialogElement, miniMapElement } = card;
 
-  // The sample centers ?dataset= names (logic/dataset.ts). The note's switch loads the
-  // page again to change them, so they are read once.
+  // The sample centers ?dataset= names (logic/dataset.ts), read once: changing them
+  // means loading the page again.
   useEffect(() => {
     let cancelled = false;
     const url = DATASETS[datasetFromUrl(window.location.search)];
