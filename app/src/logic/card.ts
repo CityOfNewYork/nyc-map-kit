@@ -99,6 +99,9 @@ export function cardActions(config: Config, p: SiteProperties, org: OrgFields): 
   return out;
 }
 
+/** What Google searches for when config.json names no fields. */
+const ADDRESS: FieldRef[] = [{ key: "address", source: "site" }];
+
 /**
  * The text to hand Google for this site, or null to fall back to its coordinate.
  *
@@ -136,16 +139,14 @@ export function cardActions(config: Config, p: SiteProperties, org: OrgFields): 
  *
  * Which fields compose the query is config, like the rest of the card: `openInMaps.query`
  * is a list of field references, joined with commas — a dataset that keeps street, city and
- * state in separate columns lists all three. Setting `openInMaps` to `true` instead of an
- * object keeps the coordinate, which is the right choice for a dataset whose addresses are
- * too rough to hand to a global geocoder.
+ * state in separate columns lists all three. Without a `query`, it is the site's `address`.
+ * The coordinate is the fallback only for a site with nothing in those fields.
  */
 export function mapsQuery(
   openInMaps: Config["openInMaps"], p: SiteProperties, org: OrgFields,
 ): string | null {
-  const parts = ((openInMaps || {}) as { query?: FieldRef[] }).query;
-  if (!Array.isArray(parts)) return null;              // `true` => use the coordinate
   if (p.maps_query) return p.maps_query;               // hand fix from overrides.json
+  const parts = ((openInMaps || {}) as { query?: FieldRef[] }).query || ADDRESS;
 
   const out: string[] = [];
   for (const part of parts) {

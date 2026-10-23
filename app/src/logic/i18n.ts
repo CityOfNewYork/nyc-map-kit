@@ -135,7 +135,8 @@ export function plural(
   const all = { n: number(n), ...vars };
   if (typeof entry === "string") return fill(entry, all);
   if (entry) {
-    const form = entry[new Intl.PluralRules(current).select(n)] ?? entry.other;
+    const rules = formatter(`plural ${current}`, () => new Intl.PluralRules(current));
+    const form = entry[rules.select(n)] ?? entry.other;
     if (form) return fill(form, all);
   }
   return fill(n === 1 ? one : other, all);
@@ -152,6 +153,16 @@ export function translateMarked(root: ParentNode = document): void {
 
 /** `n` as the language being shown writes numbers. */
 export function number(n: number, fractionDigits = 0): string {
-  return new Intl.NumberFormat(current,
-    { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }).format(n);
+  return formatter(`number ${current} ${fractionDigits}`, () => new Intl.NumberFormat(current,
+    { minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits })).format(n);
+}
+
+const formatters = new Map<string, unknown>();
+
+/** What `make` builds, built once for each `key`, which names the language and the
+ *  options. Intl's formatters are slow to build and quick to use, and a list formats a
+ *  number or a time in each of its rows, of which there can be thousands. */
+export function formatter<T>(key: string, make: () => T): T {
+  if (!formatters.has(key)) formatters.set(key, make());
+  return formatters.get(key) as T;
 }

@@ -560,6 +560,24 @@ body {
 .site-button:hover .name { text-decoration: underline; }
 /* Inside the row: the list scrolls, and a ring outside the row would be clipped. */
 .site-button:focus-visible { outline-offset: -4px; }
+/* After the rows, while more remain: the next page. A row's size, in the link's colour. */
+.list-more {
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 14px 16px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--link);
+  text-align: start;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.list-more:hover { background: var(--hover); color: var(--link-hover); }
+.list-more:focus-visible { outline-offset: -4px; }
 /* Inside the handle too: the panel clips anything outside it. */
 .sheet-handle:focus-visible { outline-offset: -4px; }
 /* The list's top line. The handle spans it, and an app's control (Copy link) sits over

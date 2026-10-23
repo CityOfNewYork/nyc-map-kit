@@ -751,12 +751,13 @@ export function createMap<P extends PointProperties>(
   });
 
   // Until the reader moves the map, the view keeps within OPENING_BOUNDS, also when its
-  // frame changes size, as when a page's layout around it changes.
+  // frame changes size, as when a page's layout around it changes. A camera move already
+  // under way, such as framing a search, is left to finish: jumpTo would stop it short.
   let readerMoved = false;
   map.on("movestart", (e) => { if (e.originalEvent) readerMoved = true; });
   map.on("resize", () => keepWithinOpening());
   function keepWithinOpening(): void {
-    if (readerMoved) return;
+    if (readerMoved || map.isMoving()) return;
     const { clientWidth: width, clientHeight: height } = map.getContainer();
     if (!width || !height) return;
     // Web Mercator x and y, in the units of a 512 px world at zoom 0.
@@ -778,10 +779,22 @@ export function createMap<P extends PointProperties>(
     map.jumpTo({ zoom, center: [lng, lat] });
   }
 
+  // MapLibre frames for the container size it last measured, and its ResizeObserver
+  // measures a frame or more after a layout change. A client that changes the layout
+  // around the map and frames a place in the same step would be framed for the old size,
+  // so a frame measures the container first.
+  function measure(): void {
+    const box = map.getContainer(), canvas = map.getCanvas();
+    if (box.clientWidth !== canvas.clientWidth || box.clientHeight !== canvas.clientHeight) {
+      map.resize();
+    }
+  }
+
   function fitToIds(ids: string[], duration: number): void {
     const list = (ids && ids.length ? ids.map((i) => byId.get(i)) : [...byId.values()])
       .filter(Boolean) as Feature<Point, P>[];
     if (!list.length) return;
+    measure();
     if (list.length === 1) {
       map.easeTo({
         center: list[0].geometry.coordinates as LngLat, zoom: STREET_ZOOM, duration,
@@ -896,6 +909,7 @@ export function createMap<P extends PointProperties>(
           type: "Feature", properties: {}, geometry: { type: "Point", coordinates: place.center },
         } : EMPTY);
         if (!place) return;
+        measure();
         const near = ids.map((id) => byId.get(id)).filter(Boolean) as Feature<Point, P>[];
         if (!place.bbox && !near.length) {
           map.easeTo({ center: place.center, zoom: STREET_ZOOM, duration: 700 });

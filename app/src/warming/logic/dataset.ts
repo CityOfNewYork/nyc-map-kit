@@ -12,7 +12,7 @@ export const DATASETS = {
 export type Dataset = keyof typeof DATASETS;
 
 /** The 28, which a page with no ?dataset= loads. */
-export const DEFAULT_DATASET: Dataset = "28";
+const DEFAULT_DATASET: Dataset = "28";
 
 /** The set ?dataset= names, or the 28 for anything else. */
 export function datasetFromUrl(search: string): Dataset {

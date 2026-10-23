@@ -63,7 +63,7 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
   const [filters, setFilters] = useState<Filters>(() => filtersFromUrl(window.location.search));
   const minute = useNycMinute();
   // The centers the filters leave: the list and the map show these, and only these. The
-  // clock only matters to Open now, so without it the list is not worked out every minute.
+  // clock only matters to Open now, so without it the list is not worked out each half hour.
   const clock = filters.openNow ? minute : 0;
   const shown = useMemo(
     () => (model ? model.features.filter((f) => passes(f, filters, clock)) : []),
@@ -72,8 +72,8 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
   const card = useSiteCard({ model, style, categories: CENTER_PINS, panel });
   const { attach, selectingFromUrl, dialogElement, miniMapElement } = card;
 
-  // The sample centers ?dataset= names (logic/dataset.ts). The note's switch loads the
-  // page again to change them, so they are read once.
+  // The sample centers ?dataset= names (logic/dataset.ts), read once: changing them
+  // means loading the page again.
   useEffect(() => {
     let cancelled = false;
     const url = DATASETS[datasetFromUrl(window.location.search)];

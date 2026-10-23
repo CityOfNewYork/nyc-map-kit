@@ -42,9 +42,19 @@ describe("mapsQuery and mapsLink", () => {
   test("a hand fix from overrides.json wins", () => {
     expect(mapsQuery(byAddress, { ...p, maps_query: "Fixed" }, org)).toBe("Fixed");
   });
-  test("`true` means the coordinate", () => {
-    expect(mapsQuery(true, p, org)).toBeNull();
-    expect(mapsLink({ openInMaps: true }, feature, org))
+  test("searches the address when config names no fields", () => {
+    expect(mapsQuery(undefined, p, org)).toBe("1 Centre St, New York, NY");
+    expect(mapsQuery(true, p, org)).toBe("1 Centre St, New York, NY");
+    expect(mapsLink({}, feature, org)).toBe(
+      "https://www.google.com/maps/search/?api=1&query=1%20Centre%20St%2C%20New%20York%2C%20NY");
+  });
+  test("a hand fix wins when config names no fields", () => {
+    expect(mapsQuery(undefined, { ...p, maps_query: "Fixed" }, org)).toBe("Fixed");
+  });
+  test("the coordinate only when there is no address", () => {
+    const noAddress: Site = { ...feature, properties: { ...p, address: " " } };
+    expect(mapsQuery(undefined, noAddress.properties, org)).toBeNull();
+    expect(mapsLink({}, noAddress, org))
       .toBe("https://www.google.com/maps/search/?api=1&query=40.7%2C-74");
   });
   test("repeated values are joined once", () => {

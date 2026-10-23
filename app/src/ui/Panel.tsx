@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent, ReactNode } from "react";
+import { track } from "../logic/analytics.ts";
 import { compareSites, metresBetween } from "../logic/data.ts";
 import { number, t } from "../logic/i18n.ts";
 import type { Settings } from "../logic/params.ts";
@@ -8,6 +9,11 @@ import type { Model, Site } from "../logic/types.ts";
 import { PlaceName } from "./Search.tsx";
 
 const METRES_PER_MILE = 1609.344;
+
+/** How many rows the list shows at first, and how many more each "Show more" adds. Every
+ *  row is a Tab stop and part of the page's layout, so a list of thousands of sites drawn
+ *  whole is slow, and long to Tab through. */
+const LIST_PAGE = 50;
 
 /** The bottom sheet's two heights on a phone; the handle switches between them. At its
  *  tallest the sheet stays lower than the card that opens over it as a panel (style.css). */
@@ -51,13 +57,14 @@ interface PanelProps {
 /**
  * The list of sites: a panel floating over the map on a desktop, a bottom sheet on a phone.
  *
- * The list is a TEXT ALTERNATIVE to the map, not a finder: it holds every site the map
- * draws, and an app that filters the map filters this list the same way. It exists so
- * that everything the map shows is reachable without a pointer and without sight. After
- * a search (ui/Search.tsx) it is ordered nearest-first from the place found, with each
- * site's distance; otherwise north to south. Focus order is title -> search -> list ->
- * map controls, which is why it sits before the map in the DOM. The card is a modal and
- * takes focus when it opens.
+ * The list is a TEXT ALTERNATIVE to the map, not a finder: it reaches every site the map
+ * draws, LIST_PAGE rows at a time with "Show more" for the next, and an app that filters
+ * the map filters this list the same way. It exists so that everything the map shows is
+ * reachable without a pointer and without sight. After a search (ui/Search.tsx) it is
+ * ordered nearest-first from the place found, with each site's distance, so the first
+ * rows are the nearest; otherwise north to south. Focus order is title -> search ->
+ * list -> map controls, which is why it sits before the map in the DOM. The card is a
+ * modal and takes focus when it opens.
  *
  * `model` is null until the data has loaded; until then the panel shows its frame and
  * nothing in it responds.
@@ -91,20 +98,58 @@ export function Panel({
     if (model) document.documentElement.style.setProperty("--sheet-h", SHEET_HEIGHTS[step]);
   }, [model, step]);
 
+  // Sorted again only when the sites or the place searched change. The apps hand over a
+  // new `model` on each of their renders, but the same `features` until a filter changes.
+  const features = model && list !== "off" ? model.features : null;
   const sites = useMemo(() => {
-    if (!model || list === "off") return [];
-    const rows = model.features.map((feature) => ({
+    if (!features) return [];
+    const rows = features.map((feature) => ({
       feature,
       metres: origin ? metresBetween(origin, feature.geometry.coordinates) : null,
     }));
     return rows.sort((a, b) =>
       (a.metres ?? 0) - (b.metres ?? 0) || compareSites(a.feature, b.feature));
-  }, [model, list, origin]);
+  }, [features, origin]);
+
+  // How many rows show: a page, and a page more for each "Show more". The count is kept
+  // with the order it was for, so a new order (a search, a filter) starts again at one
+  // page.
+  const [more, setMore] = useState({ sites, count: LIST_PAGE });
+  const count = more.sites === sites ? more.count : LIST_PAGE;
+  const firstNew = useRef<number | null>(null);   // the row "Show more" moves focus to
+
+  function showMore() {
+    firstNew.current = count;
+    setMore({ sites, count: count + LIST_PAGE });
+    track("map_list_more", { shown: Math.min(count + LIST_PAGE, sites.length) });
+  }
+
+  // Focus goes to the first new row, so a keyboard or screen-reader user reads on from
+  // where the new rows start.
+  useEffect(() => {
+    if (firstNew.current === null) return;
+    scrollRef.current?.querySelectorAll<HTMLElement>(".site-button")[firstNew.current]?.focus();
+    firstNew.current = null;
+  }, [count]);
 
   // A new order starts at the top, where the nearest site now is.
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [origin]);
+
+  // The open card's row, brought to the middle of the list however the card was opened
+  // (a pin, a link, Back), unless it already shows whole. Only the list scrolls, not the
+  // page.
+  useEffect(() => {
+    const scroll = scrollRef.current;
+    const row = selectedId && scroll?.querySelector<HTMLElement>(
+      `.site-button[data-site-id="${CSS.escape(selectedId)}"]`);
+    if (!scroll || !row) return;
+    const view = scroll.getBoundingClientRect();
+    const box = row.getBoundingClientRect();
+    if (box.top >= view.top && box.bottom <= view.bottom) return;
+    scroll.scrollTop += (box.top + box.bottom) / 2 - (view.top + view.bottom) / 2;
+  }, [selectedId]);
 
   // Drag, in addition to tap. Pointer events cover mouse, touch and pen with one path.
   // While dragging, the height is set directly on the element rather than through state,
@@ -208,7 +253,7 @@ export function Panel({
       <div className="site-scroll" ref={scrollRef} inert={hidden}>
         {intro && <div className="list-intro">{intro}</div>}
         <ul className="site-list" id="site-list">
-          {sites.map(({ feature, metres }) => {
+          {sites.slice(0, count).map(({ feature, metres }) => {
             const p = feature.properties;
             const lines = (
               <>
@@ -245,6 +290,11 @@ export function Panel({
             );
           })}
         </ul>
+        {count < sites.length && (
+          <button type="button" className="list-more" onClick={showMore}>
+            <span>{t("Show more")}</span>
+          </button>
+        )}
       </div>
     </nav>
   );
