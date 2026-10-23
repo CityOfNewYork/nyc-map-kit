@@ -26,6 +26,18 @@ export function model(
   return { config, data, ...prepareData(config, data, orgs) };
 }
 
+/** <dialog>'s show, showModal and close, which jsdom lacks: each sets or removes `open`. */
+export function stubDialog() {
+  const open = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
+  const methods = {
+    show: vi.fn(open),
+    showModal: vi.fn(open),
+    close: vi.fn(function (this: HTMLDialogElement) { this.removeAttribute("open"); }),
+  };
+  Object.assign(HTMLDialogElement.prototype, methods);
+  return methods;
+}
+
 /** A screen that is wide enough for the list panel (768 px), or not, and can be resized,
  *  and that does or does not ask for reduced motion. Neither Node nor jsdom has matchMedia;
  *  undo with vi.unstubAllGlobals(). */
