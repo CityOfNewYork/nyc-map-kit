@@ -2,25 +2,8 @@
 
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { MapCore, PointProperties } from "../core/map-core.ts";
+import { stubScreen } from "../test/fixtures.ts";
 import { keepClearOfList } from "./layout.ts";
-
-/** A screen that is wide enough for the list panel, or not, and can be resized. Neither
- *  Node nor jsdom has matchMedia. */
-function stubScreen(desktop: boolean, reducedMotion = false) {
-  const listeners = new Set<() => void>();
-  const screen = {
-    matches: desktop,
-    addEventListener: (_: string, listener: () => void) => listeners.add(listener),
-    removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
-    resize(toDesktop: boolean) {
-      screen.matches = toDesktop;
-      for (const listener of listeners) listener();
-    },
-  };
-  const motion = { matches: reducedMotion, addEventListener() {}, removeEventListener() {} };
-  vi.stubGlobal("matchMedia", (query: string) => (query.includes("min-width") ? screen : motion));
-  return screen;
-}
 
 /** The parts of a MapLibre map keepClearOfList uses. */
 function fakeMap() {
