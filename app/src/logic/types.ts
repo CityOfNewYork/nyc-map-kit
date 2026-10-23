@@ -35,7 +35,7 @@ export interface LabelledFieldRef extends FieldRef {
 export interface Config {
   title?: string;
   coLocationRadiusM?: number;
-  /** false drops the link; true links the coordinate; `query` searches for those fields. */
+  /** false drops the link; `query` searches for those fields, the address when absent. */
   openInMaps?: boolean | { query: FieldRef[] };
   actions?: LabelledFieldRef[];
   /** Short facts in rows under the address, each beside its icon. */
