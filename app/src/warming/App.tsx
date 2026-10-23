@@ -63,7 +63,7 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
   const [filters, setFilters] = useState<Filters>(() => filtersFromUrl(window.location.search));
   const minute = useNycMinute();
   // The centers the filters leave: the list and the map show these, and only these. The
-  // clock only matters to Open now, so without it the list is not worked out every minute.
+  // clock only matters to Open now, so without it the list is not worked out each half hour.
   const clock = filters.openNow ? minute : 0;
   const shown = useMemo(
     () => (model ? model.features.filter((f) => passes(f, filters, clock)) : []),
