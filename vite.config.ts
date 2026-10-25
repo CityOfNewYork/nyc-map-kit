@@ -29,9 +29,18 @@ export default defineConfig({
 
       exclude: [
         "src/**/*.test.{ts,tsx}",
+        "src/test/**",
         "src/main.tsx",
         "src/warming/main.tsx"
-      ]
+      ],
+
+      // The pure logic may not fall below a little under what its tests reach, so new
+      // logic there comes with tests. Components have no floor: a percentage says little
+      // about what a reader can do with them.
+      thresholds: {
+        "src/logic/**": { statements: 95, branches: 85, functions: 95, lines: 95 },
+        "src/warming/logic/**": { statements: 95, branches: 95, functions: 95, lines: 95 },
+      }
     }
   },
   root: "app",
