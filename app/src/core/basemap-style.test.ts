@@ -30,15 +30,15 @@ test("show labels only inside the city, except the ones kept", () => {
   expect(layer("shields")).not.toHaveProperty("filter");
 });
 
-test("draw the subway's stations from the MTA's file as the top layer, named from z15", () => {
+test("draw the subway's stations from the MTA's file as the top layer, named from z14", () => {
   const s = addSubwayStations(addSubwayStations(style()));
   expect(s.sources.subway).toMatchObject({ type: "geojson", data: "subway-stations.geojson" });
   expect(JSON.stringify(s.sources.subway)).toMatch(/Subway stations: .*MTA/);
   expect(s.layers.filter((l) => l.id === "subway_station")).toHaveLength(1);
   const stations = s.layers.at(-1)!;
-  expect(stations).toMatchObject({ id: "subway_station", minzoom: 14 });
+  expect(stations).toMatchObject({ id: "subway_station", minzoom: 13 });
   expect(stations.layout).toMatchObject({
     "icon-image": STATION_ICON, "text-optional": true,
-    "text-field": ["step", ["zoom"], "", 15, ["get", "name"]],
+    "text-field": ["step", ["zoom"], "", 14, ["get", "name"]],
   });
 });
