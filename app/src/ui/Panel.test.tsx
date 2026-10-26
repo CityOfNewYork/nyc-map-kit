@@ -82,7 +82,7 @@ describe("Panel", () => {
     expect(window.dataLayer).toEqual([
       { event: "map_list_more", shown: 100 }, { event: "map_list_more", shown: 120 },
     ]);
-  });
+  }, 15_000);   // 120 rows take seconds to render under coverage, beside the other files
 
   test("on a desktop the handle hides the list and shows it again", () => {
     renderPanel();

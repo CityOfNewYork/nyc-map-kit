@@ -124,7 +124,8 @@ describe("App", () => {
     history.replaceState(null, "", "/app/?site=b");
     await renderApp("?site=b");
     expect(mainMap().select).toHaveBeenCalledWith("b");
-    expect(document.getElementById("site-dialog")).toHaveAttribute("open");
+    // The card opens once the selection renders, a step after the map is made.
+    await waitFor(() => expect(document.getElementById("site-dialog")).toHaveAttribute("open"));
   });
 
   test("filters by organization type in the list, on the map and in the address", async () => {
