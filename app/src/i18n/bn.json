@@ -114,5 +114,12 @@
   "Operated by": "পরিচালনায়",
   "public computer centers data": "পাবলিক কম্পিউটার কেন্দ্রের ডেটা",
   "Arrow keys move the map. Plus and minus zoom in and out.": "তীর কী দিয়ে মানচিত্র সরান। প্লাস ও মাইনাস দিয়ে জুম ইন ও জুম আউট করুন।",
-  "Every site on the map is also in the list.": "মানচিত্রের প্রতিটি স্থান তালিকাতেও আছে।"
+  "Every site on the map is also in the list.": "মানচিত্রের প্রতিটি স্থান তালিকাতেও আছে।",
+  "Restaurants": "রেস্তোরাঁ",
+  "Cuisine": "রান্নার ধরন",
+  "{n} restaurants": {
+    "one": "{n}টি রেস্তোরাঁ",
+    "other": "{n}টি রেস্তোরাঁ"
+  },
+  "wheelchair friendly restaurant finder": "হুইলচেয়ার-বান্ধব রেস্তোরাঁ খোঁজার পৃষ্ঠা"
 }

@@ -6,7 +6,8 @@ import { defineConfig } from "vitest/config";
 // address a host page's iframe points at too; it shows the public computer centers, and
 // <site>/app/computer-centers.html is the same page. <site>/app/snap.html is the same block
 // on a second dataset, <site>/app/examples.html embeds that one at several sizes, and
-// <site>/app/compare.html shows two basemaps side by side.
+// <site>/app/compare.html shows two basemaps side by side. <site>/app/wheelchair-friendly.html
+// is the block on the City's wheelchair friendly restaurants.
 //
 // `base: "./"` makes every built URL relative. The block has to work at localhost, under
 // the GitHub Pages subpath, and wherever a city host puts it, without a rebuild per host.
@@ -60,6 +61,7 @@ export default defineConfig({
         compare: resolve(import.meta.dirname, "app/compare.html"),
         warming: resolve(import.meta.dirname, "app/warming.html"),
         "computer-centers": resolve(import.meta.dirname, "app/computer-centers.html"),
+        "wheelchair-friendly": resolve(import.meta.dirname, "app/wheelchair-friendly.html"),
       },
     },
   },

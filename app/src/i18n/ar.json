@@ -139,5 +139,16 @@
   "Operated by": "تديره",
   "public computer centers data": "بيانات مراكز الحاسوب العامة",
   "Arrow keys move the map. Plus and minus zoom in and out.": "مفاتيح الأسهم تحرّك الخريطة. زرّا الجمع والطرح للتكبير والتصغير.",
-  "Every site on the map is also in the list.": "كل موقع على الخريطة موجود أيضًا في القائمة."
+  "Every site on the map is also in the list.": "كل موقع على الخريطة موجود أيضًا في القائمة.",
+  "Restaurants": "مطاعم",
+  "Cuisine": "المطبخ",
+  "{n} restaurants": {
+    "zero": "{n} مطعم",
+    "one": "مطعم واحد",
+    "two": "مطعمان",
+    "few": "{n} مطاعم",
+    "many": "{n} مطعمًا",
+    "other": "{n} مطعم"
+  },
+  "wheelchair friendly restaurant finder": "صفحة البحث عن المطاعم الملائمة للكراسي المتحركة التابعة للمدينة"
 }

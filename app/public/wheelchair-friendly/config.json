@@ -1,0 +1,16 @@
+{
+  "_README": "The wheelchair friendly restaurants map's configuration; app/public/config.json explains each part. Every field is read off the restaurant's own properties (`source: \"site\"`), which build/wheelchair-friendly.py writes. `org_type` holds the cuisine, so the filter and each list row show it. The pins are one colour.",
+  "title": "Wheelchair friendly restaurants",
+  "listLabel": "Restaurants",
+  "count": { "one": "{n} restaurant", "other": "{n} restaurants" },
+  "filterLabel": "Cuisine",
+  "coLocationRadiusM": 35,
+  "openInMaps": {
+    "query": [
+      { "key": "address", "source": "site" }
+    ]
+  },
+  "facts": [
+    { "key": "org_type", "source": "site", "label": "Cuisine", "icon": "info" }
+  ]
+}

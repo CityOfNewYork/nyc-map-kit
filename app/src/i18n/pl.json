@@ -151,5 +151,14 @@
   "Operated by": "Prowadzone przez",
   "public computer centers data": "dane o publicznych centrach komputerowych",
   "Arrow keys move the map. Plus and minus zoom in and out.": "Klawisze strzałek przesuwają mapę. Plus i minus przybliżają i oddalają.",
-  "Every site on the map is also in the list.": "Każde miejsce na mapie jest też na liście."
+  "Every site on the map is also in the list.": "Każde miejsce na mapie jest też na liście.",
+  "Restaurants": "Restauracje",
+  "Cuisine": "Kuchnia",
+  "{n} restaurants": {
+    "one": "{n} restauracja",
+    "few": "{n} restauracje",
+    "many": "{n} restauracji",
+    "other": "{n} restauracji"
+  },
+  "wheelchair friendly restaurant finder": "stronie wyszukiwarki restauracji dostępnych dla wózków inwalidzkich"
 }
