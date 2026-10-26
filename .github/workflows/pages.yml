@@ -32,7 +32,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npm test
+      # The tests, and the coverage floor vite.config.ts sets for the pure logic.
+      - run: npm run test:coverage
       # The Protomaps basemap is too large for git. Each deploy downloads one pinned file,
       # cut by build/protomaps.sh and kept at BASEMAP_URL; the checksum makes sure it is
       # that file. A newer basemap is cut on purpose and the two lines below updated (see
