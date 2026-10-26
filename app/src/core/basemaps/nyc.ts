@@ -9,8 +9,8 @@
  */
 import type { StyleSpecification, SymbolLayerSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, addLandmarkLabels, and, flatBuildings, OUTSIDE, PARK_NAME_COLOR,
-  POSITRON_LAND, POSITRON_ROADS, reportUnmatched, warmTint,
+  addBoroughLabels, addLandmarkLabels, addSubwayStations, and, flatBuildings, OUTSIDE,
+  PARK_NAME_COLOR, POSITRON_LAND, POSITRON_ROADS, reportUnmatched, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -349,6 +349,7 @@ export function nycLabels(style: StyleSpecification, lang: string): StyleSpecifi
     neighbourhoods.minzoom = NYC_NEIGHBOURHOOD_ZOOM;
     neighbourhoods.layout = { ...neighbourhoods.layout, ...NYC_NEIGHBOURHOOD_TYPE };
   }
+  addSubwayStations(style);
   addLandmarkLabels(style, lang);
   addBoroughLabels(style, lang, NYC_NEIGHBOURHOOD_ZOOM);
 

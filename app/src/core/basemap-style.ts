@@ -23,6 +23,7 @@ import type {
 } from "maplibre-gl";
 import CITY_LIMITS from "./city-limits.json";
 import CITY_LINE from "./city-line.json";
+import { STATION_COLOR, STATION_ICON } from "./station-icon.ts";
 
 /** The label fields a text-field expression may read. If an expression mentions any of
  *  these, it is a name label and we rewrite it. `ref` (highway shields) is not one. */
@@ -236,6 +237,68 @@ export function addLandmarkLabels(style: StyleSpecification, lang: string): Styl
       "text-color": "#666",
       "text-halo-color": "rgba(255, 255, 255, 0.8)",
       "text-halo-width": 1,
+    },
+  });
+  return style;
+}
+
+/* ---------------------------------------------------------------- subway stations */
+
+/** One point per station complex, from build/subway-stations.py. MapLibre resolves it
+ *  against the page and fetches it alongside the tiles, so the map does not wait for it. */
+export const SUBWAY_STATIONS = "subway-stations.geojson";
+
+/** Stations show from this zoom, and are named from the next, where there is room: the
+ *  zoom the default basemap names its side streets from. */
+const STATION_ZOOM = 14;
+const STATION_NAME_ZOOM = 15;
+
+/**
+ * Add the subway's stations, in place: an icon at each station complex, from
+ * STATION_ZOOM, and its name beside it where there is room.
+ *
+ * Where a basemap's tiles have stations, they have one per platform: Fulton St is four
+ * stations in OTI's tiles, which its published style hides, and in OpenStreetMap's, whose
+ * points of interest the block does not draw. So this draws the MTA's own list instead,
+ * one point per complex, the same on every basemap. The icon follows OTI's: a train in
+ * a ring. The layer sits above the basemap's other labels, so a station is placed before
+ * the street names around it; the pins are drawn above it and keep their place.
+ */
+export function addSubwayStations(
+  style: StyleSpecification, url = SUBWAY_STATIONS,
+): StyleSpecification {
+  const layers = style.layers || [];
+  if (layers.some((l) => l.id === "subway_station")) return style;
+  style.sources = Object.assign({}, style.sources, {
+    subway: {
+      type: "geojson" as const, data: url,
+      attribution: 'Subway stations: <a href="https://data.ny.gov/d/5f5g-n3cz">MTA</a>',
+    },
+  });
+  layers.push({
+    id: "subway_station",
+    type: "symbol",
+    source: "subway",
+    minzoom: STATION_ZOOM,
+    layout: {
+      "icon-image": STATION_ICON,
+      // Smaller until they are named, while they are many to the screen, so the pins stay
+      // the loudest.
+      "icon-size": ["interpolate", ["linear"], ["zoom"], STATION_ZOOM, 0.7, STATION_NAME_ZOOM, 1],
+      "text-field": ["step", ["zoom"], "", STATION_NAME_ZOOM, ["get", "name"]],
+      "text-font": ["Noto Sans Regular"],
+      "text-size": 11,
+      "text-max-width": 8,
+      // Right of the icon first, as transit maps put it; then wherever there is room.
+      "text-variable-anchor": ["left", "right", "top", "bottom"],
+      "text-radial-offset": 0.9,
+      "text-justify": "auto",
+      "text-optional": true,
+    },
+    paint: {
+      "text-color": STATION_COLOR,
+      "text-halo-color": "#ffffff",
+      "text-halo-width": 1.2,
     },
   });
   return style;

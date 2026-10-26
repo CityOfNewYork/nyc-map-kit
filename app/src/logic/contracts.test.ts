@@ -4,6 +4,7 @@
  * from a build script would otherwise hide a card row or misplace a pin without an error.
  */
 import { readFileSync, readdirSync } from "node:fs";
+import type { FeatureCollection, Point } from "geojson";
 import { describe, expect, test } from "vitest";
 import { CENTER_CONFIG, CENTER_KINDS } from "../warming/logic/centers.ts";
 import { DATASETS } from "../warming/logic/dataset.ts";
@@ -57,6 +58,16 @@ describe("each dataset", () => {
     const outside = features.filter(({ geometry: { type, coordinates: [lon, lat] } }) =>
       type !== "Point" || lon < west || lon > east || lat < south || lat > north);
     expect(outside.map((f) => f.properties.id)).toEqual([]);
+  });
+
+  test("subway-stations.geojson: a named point in the city for each station complex", () => {
+    const features = json<FeatureCollection<Point, { name: string; routes: string; ada: number }>>(
+      "public/subway-stations.geojson").features;
+    expect(features.length).toBeGreaterThan(400);
+    const bad = features.filter(({ geometry: { type, coordinates: [lon, lat] }, properties: p }) =>
+      type !== "Point" || lon < west || lon > east || lat < south || lat > north
+      || !p.name || !p.routes || ![0, 1, 2].includes(p.ada));
+    expect(bad.map((f) => f.properties.name)).toEqual([]);
   });
 
   test("every SNAP site's organization is in orgs.json", () => {

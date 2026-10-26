@@ -9,6 +9,12 @@ const made = vi.hoisted(() => ({
   options: {} as Record<string, unknown>,
   touchRotationOff: false,
   keyboardRotationOff: false,
+  handlers: {} as Record<string, () => void>,
+  images: [] as unknown[][],
+}));
+// jsdom has no canvas to draw the station icon on.
+vi.mock("./station-icon.ts", async (actual) => ({
+  ...await actual<typeof import("./station-icon.ts")>(), stationIcon: () => "the icon",
 }));
 
 vi.mock("maplibre-gl", () => ({
@@ -21,7 +27,9 @@ vi.mock("maplibre-gl", () => ({
     keyboard = { disableRotation: () => { made.keyboardRotationOff = true; } };
     constructor(options: Record<string, unknown>) { made.options = options; }
     addControl() {}
-    on() {}
+    on(type: string, handler: () => void) { made.handlers[type] = handler; }
+    hasImage() { return false; }
+    addImage(...args: unknown[]) { made.images.push(args); }
     getCanvas() { return document.createElement("canvas"); }
   },
 }));
@@ -31,6 +39,12 @@ test("the map stays north-up and flat: no gesture or key turns or tilts it", () 
   expect(made.options).toMatchObject({ dragRotate: false, touchPitch: false });
   expect(made.touchRotationOff).toBe(true);
   expect(made.keyboardRotationOff).toBe(true);
+});
+
+test("the subway stations' icon is added with the style, before any tile is laid out", () => {
+  createMap(document.createElement("div"), {});
+  made.handlers["style.load"]();
+  expect(made.images).toEqual([["subway-station", "the icon", { pixelRatio: 2 }]]);
 });
 
 test("a searched place is the middle of its frame, whichever side of it the sites are", () => {

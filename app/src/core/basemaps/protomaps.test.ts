@@ -59,6 +59,10 @@ describe("the Protomaps basemap", () => {
     expect(layer("borough_label")?.maxzoom).toBe(13);
   });
 
+  test("draws the subway's stations above its own labels, under the landmarks and boroughs", () => {
+    expect(ids.slice(-3)).toEqual(["subway_station", "landmark_label", "borough_label"]);
+  });
+
   test("names neighbourhoods from the file build/neighborhoods.py writes, in English", () => {
     expect(style.sources.neighbourhoods).toEqual({ type: "geojson", data: "neighborhoods.geojson" });
     expect(layer("places_subplace")).toMatchObject({ source: "neighbourhoods",

@@ -89,6 +89,7 @@ import type { ExpressionSpecification, GeoJSONSource, StyleSpecification } from 
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { FetchSource, PMTiles, Protocol } from "pmtiles";
+import { STATION_ICON, STATION_ICON_DPR, stationIcon } from "./station-icon.ts";
 
 /**
  * A FetchSource that reads once more, past the browser's cache, when a read fails.
@@ -540,6 +541,13 @@ export function createMap<P extends PointProperties>(
   map.on("styleimagemissing", (e) => {
     const image = imageFor(e.id);
     if (image && !map.hasImage(e.id)) map.addImage(e.id, image, { pixelRatio: PIN_DPR });
+  });
+  // The basemaps' subway stations (basemap-style.ts): their icon, added with the style,
+  // before any tile is laid out, so no station is drawn without it.
+  map.on("style.load", () => {
+    if (!map.hasImage(STATION_ICON)) {
+      map.addImage(STATION_ICON, stationIcon(), { pixelRatio: STATION_ICON_DPR });
+    }
   });
 
   // State is carried by which pin image is drawn and how big, rather than by a fill
