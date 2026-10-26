@@ -1,19 +1,20 @@
 # nyc-map-kit — Azure Pipelines. Mirrors deploy/build.sh: install, lint, test, fetch the
 # pinned Protomaps basemap and Clash Grotesk, then `npm run build`. The build output (dist/)
 # is published as the `dist` pipeline artifact; the Package stage bakes it into a container
-# image (deploy/Dockerfile) and pushes it to the registry for the chosen environment; the
-# Deploy stage renders deploy/deployment.yaml and applies it to that environment's cluster.
+# image (deploy/images/Dockerfile) and pushes it to the registry for the chosen environment; the
+# Deploy stage renders deploy/manifests/deployment.yaml and service.yaml and applies them to that
+# environment's cluster.
 #
 # Choosing the environment: the `environment` parameter (nonprod or prod). Queue a run by
 # hand and pick one; CI and PR runs use the default (nonprod). It selects which file,
-# deploy/vars-nonprod.yml or deploy/vars-prod.yml, defines the environment-agnostic variables
-# (registry, registrySecret, ingressHost, tlsSecret, ...) that deploy/deployment.yaml refers to.
+# deploy/ci/vars-nonprod.yml or deploy/ci/vars-prod.yml, defines the environment-agnostic variables
+# (registry, registrySecret, ingressHost, tlsSecret, ...) that the manifests in deploy/manifests refer to.
 #
 # Choosing the color: the `color` parameter (blue or green, default blue) becomes the `color`
-# variable, which deploy/deployment.yaml uses as a suffix on the Deployment and Service names.
+# variable, which deployment.yaml and service.yaml use as a suffix on the Deployment and Service names.
 #
 # Cutting over: a normal run builds, packages and deploys the Deployment and Service for the
-# chosen color, but leaves the Ingress (deploy/ingress.yaml) alone, so traffic does not move.
+# chosen color, but leaves the Ingress (deploy/manifests/ingress.yaml) alone, so traffic does not move.
 # After verifying the new Service, queue a run with cutover = true and the same color and
 # environment: it runs only the Cutover stage, which points the Ingress at that color's Service.
 #
@@ -65,23 +66,23 @@ variables:
     value: app/public/nyc.pmtiles
   - name: npm_config_cache
     value: $(Pipeline.Workspace)/.npm
-  # The timestamp part of basemapUrl's nyc-<tileBuild>.pmtiles; labels the image (deploy/Dockerfile).
+  # The timestamp part of basemapUrl's nyc-<tileBuild>.pmtiles; labels the image (deploy/images/Dockerfile).
   - name: tileBuild
     value: 20261019-3
 
   # Container image
   - name: imageRepository
     value: static/nyc-map-kit
-  # Deployed by build ID, not "latest": deploy/deployment.yaml uses imagePullPolicy IfNotPresent,
+  # Deployed by build ID, not "latest": deploy/manifests/deployment.yaml uses imagePullPolicy IfNotPresent,
   # so a moving tag would never be re-pulled.
   - name: imageVersion
     value: $(Build.BuildId)
 
   # Per-environment settings (registry, registrySecret, registryServiceConnection,
   # clusterServiceConnection, ingressHost, tlsSecret): one file per `environment` value.
-  - template: deploy/vars-${{ parameters.environment }}.yml
+  - template: vars-${{ parameters.environment }}.yml
 
-  # Suffix for the Kubernetes object names in deploy/deployment.yaml.
+  # Suffix for the Kubernetes object names in deploy/manifests/deployment.yaml and service.yaml.
   - name: color
     value: ${{ parameters.color }}
 
@@ -165,7 +166,7 @@ stages:
               command: build
               containerRegistry: $(registryServiceConnection)
               repository: $(imageRepository)
-              dockerfile: deploy/Dockerfile
+              dockerfile: deploy/images/Dockerfile
               buildContext: $(Build.SourcesDirectory)
               arguments: --build-arg TILEBUILD=$(tileBuild)
               tags: |
@@ -190,7 +191,7 @@ stages:
       # A deployment job targets an Azure DevOps Environment, where approvals and checks
       # can be required (Pipelines > Environments). Create nyc-map-kit-nonprod and nyc-map-kit-prod.
       - deployment: Deploy
-        displayName: Apply deploy/deployment.yaml
+        displayName: Apply deployment.yaml and service.yaml
         environment: nyc-map-kit-${{ parameters.environment }}
         strategy:
           runOnce:
@@ -205,10 +206,12 @@ stages:
                 - bash: |
                     set -euo pipefail
                     mkdir -p "$(Pipeline.Workspace)/manifests"
-                    perl -pe 's/\$\(([A-Za-z_]+)\)/defined $ENV{uc $1} ? $ENV{uc $1} : die "undefined variable: $1\n"/ge' \
-                      deploy/deployment.yaml > "$(Pipeline.Workspace)/manifests/deployment.yaml"
-                    cat "$(Pipeline.Workspace)/manifests/deployment.yaml"
-                  displayName: Render deployment.yaml
+                    for f in deployment service; do
+                      perl -pe 's/\$\(([A-Za-z_]+)\)/defined $ENV{uc $1} ? $ENV{uc $1} : die "undefined variable: $1\n"/ge' \
+                        "deploy/manifests/$f.yaml" > "$(Pipeline.Workspace)/manifests/$f.yaml"
+                      cat "$(Pipeline.Workspace)/manifests/$f.yaml"
+                    done
+                  displayName: Render deployment.yaml and service.yaml
 
                 - task: KubernetesManifest@1
                   displayName: Deploy to cluster
@@ -216,7 +219,9 @@ stages:
                     action: deploy
                     connectionType: kubernetesServiceConnection
                     kubernetesServiceConnection: $(clusterServiceConnection)
-                    manifests: $(Pipeline.Workspace)/manifests/deployment.yaml
+                    manifests: |
+                      $(Pipeline.Workspace)/manifests/deployment.yaml
+                      $(Pipeline.Workspace)/manifests/service.yaml
 
   # Manual cutover: points the Ingress at the Service of the chosen color. Run it by itself
   # (cutover = true) after verifying the new Deployment and Service; it skips every other stage.
@@ -227,7 +232,7 @@ stages:
     condition: and(eq('${{ parameters.cutover }}', 'true'), ne(variables['Build.Reason'], 'PullRequest'))
     jobs:
       - deployment: Cutover
-        displayName: Apply deploy/ingress.yaml
+        displayName: Apply deploy/manifests/ingress.yaml
         environment: nyc-map-kit-${{ parameters.environment }}
         strategy:
           runOnce:
@@ -240,7 +245,7 @@ stages:
                     set -euo pipefail
                     mkdir -p "$(Pipeline.Workspace)/manifests"
                     perl -pe 's/\$\(([A-Za-z_]+)\)/defined $ENV{uc $1} ? $ENV{uc $1} : die "undefined variable: $1\n"/ge' \
-                      deploy/ingress.yaml > "$(Pipeline.Workspace)/manifests/ingress.yaml"
+                      deploy/manifests/ingress.yaml > "$(Pipeline.Workspace)/manifests/ingress.yaml"
                     cat "$(Pipeline.Workspace)/manifests/ingress.yaml"
                   displayName: Render ingress.yaml
 

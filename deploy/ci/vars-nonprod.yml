@@ -1,4 +1,4 @@
-# Nonprod settings. Included by azure-pipelines.yml when the `environment` parameter is nonprod.
+# Nonprod settings. Included by deploy/ci/azure-pipelines.yml when the `environment` parameter is nonprod.
 # Service connections are in Project settings > Service connections.
 variables:
   - name: registry
@@ -12,4 +12,4 @@ variables:
   - name: ingressHost
     value: finder-dev.nyc.gov
   - name: tlsSecret
-    value: finder-dev.nyc.gov-secret
+    value: finder-dev-nyc-gov

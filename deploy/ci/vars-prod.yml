@@ -1,4 +1,4 @@
-# Prod settings. Included by azure-pipelines.yml when the `environment` parameter is prod.
+# Prod settings. Included by deploy/ci/azure-pipelines.yml when the `environment` parameter is prod.
 # Service connections are in Project settings > Service connections.
 variables:
   - name: registry
@@ -12,4 +12,4 @@ variables:
   - name: ingressHost
     value: finder.nyc.gov
   - name: tlsSecret
-    value: finder.nyc.gov-secret
+    value: finder-nyc-gov

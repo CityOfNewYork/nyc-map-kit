@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# nyc-map-kit — builds the app the way .github/workflows/pages.yml does for main: install,
-# lint, test, fetch the pinned Protomaps basemap and Clash Grotesk, then `npm run build`.
+# nyc-map-kit — builds the app the way .github/workflows/pages.yml does for main and
+# deploy/ci/azure-pipelines.yml does for its Build stage: install, lint, test, fetch the
+# pinned Protomaps basemap and Clash Grotesk, then `npm run build`.
 #
 #     deploy/build.sh
 #
-# The app's search search box uses the Geoclient v2 REST API for geocoding hosted
-# on the NYC API Developers Postal. A subscription key must provided with each
-# call which is currently sent in an HTTP header.
+# The app's search box uses the Geoclient v2 REST API, hosted on the NYC API Developer
+# Portal, to geocode addresses. A subscription key must be sent with each call (currently
+# in an HTTP header).
 #
-# The npm build requires that VITE_GEOCLIENT_KEY be defined in file app/.env.local.
-# If this file does not exist, the build will fail. If it exists but
-# VITE_GEOCLIENT_KEY is undefined or invalid, the search box will not work.
+# The key is read at build time from VITE_GEOCLIENT_KEY, which can be set in the
+# environment (it takes precedence) or in app/.env.local. This script requires both that
+# app/.env.local exists and that the key is non-empty, and stops before building if not.
+# An invalid key still builds, but address search will not work.
 #
-# The file app/.env.local should not be committed to git and .gitignore has a
-# pattern definition which will enforce this. See the app/.env.example file for
-# more information.
-# 
+# app/.env.local must not be committed to git; .gitignore enforces this. See
+# app/.env.example for more information.
 #
 # Each step is named; if one fails the script stops and says which, with its exit code.
 set -euo pipefail
@@ -32,7 +32,8 @@ trap 'code=$?; echo "Error: build failed during \"${STEP}\" (exit code ${code}, 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# Keep in step with the workflow (and build/protomaps.sh) when a newer basemap is cut.
+# Keep in step with the workflow, deploy/ci/azure-pipelines.yml (and build/protomaps.sh)
+# when a newer basemap is cut.
 BASEMAP_URL="https://github.com/CityOfNewYork/nyc-map-kit/releases/download/basemap-20261019-3/nyc-20261019-3.pmtiles"
 BASEMAP_SHA256="b36c554f9ed888292c924c24ab7b9e6738b6c58212586337ea2df000b28ad2ca"
 BASEMAP_OUT="app/public/nyc.pmtiles"
@@ -50,6 +51,16 @@ else
 fi
 
 [[ -x build/clash-grotesk.sh ]] || fail "build/clash-grotesk.sh is missing or not executable."
+[[ -f app/.env.local ]] || fail "app/.env.local is missing; copy app/.env.example to it and set VITE_GEOCLIENT_KEY."
+
+# Same precedence as Vite: a VITE_GEOCLIENT_KEY in the environment wins over app/.env.local.
+GEOCLIENT_KEY="${VITE_GEOCLIENT_KEY:-}"
+if [[ -z "$GEOCLIENT_KEY" ]]; then
+  GEOCLIENT_KEY="$(tr -d '\r' < app/.env.local \
+    | sed -n -E "s/^[[:space:]]*VITE_GEOCLIENT_KEY[[:space:]]*=[[:space:]]*//p" \
+    | tail -n 1 | sed -E "s/^[\"']//; s/[\"']\$//")"
+fi
+[[ -n "$GEOCLIENT_KEY" ]] || fail "VITE_GEOCLIENT_KEY is unset or empty; set it in the environment or in app/.env.local."
 
 STEP="npm ci"
 npm ci

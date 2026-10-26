@@ -8,4 +8,4 @@ WORKDIR /app
 
 COPY ./dist/app .
 
-COPY ./deploy/nginx.conf /etc/nginx/nginx.conf
+COPY ./deploy/images/nginx.conf /etc/nginx/nginx.conf

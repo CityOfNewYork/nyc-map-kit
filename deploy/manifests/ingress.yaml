@@ -1,5 +1,5 @@
 ---
-# Applied only by the Cutover stage (azure-pipelines.yml), after the Service of the chosen
+# Applied only by the Cutover stage (ci/azure-pipelines.yml), after the Service of the chosen
 # color has been verified. $(color) selects the Service that receives traffic.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
