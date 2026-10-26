@@ -375,6 +375,15 @@ function track(event: string, payload: Record<string, unknown>): void {
   console.log("[dataLayer]", row);
 }
 
+/** The smallest box centred on `center` that holds every one of `points`: each point is
+ *  taken with its mirror image across the centre. Mirrored in degrees rather than on
+ *  screen, which differ by metres across a borough. */
+export function centredOn(center: LngLat, points: LngLat[]): [LngLat, LngLat] {
+  const dx = Math.max(...points.map(([x]) => Math.abs(x - center[0])));
+  const dy = Math.max(...points.map(([, y]) => Math.abs(y - center[1])));
+  return [[center[0] - dx, center[1] - dy], [center[0] + dx, center[1] + dy]];
+}
+
 export function createMap<P extends PointProperties>(
   container: HTMLElement, options: MapCoreOptions<P> = {},
 ): MapCore<P> {
@@ -909,7 +918,8 @@ export function createMap<P extends PointProperties>(
     },
 
     /** Mark a place and frame it together with the sites in `ids` (the client picks
-     *  which: the nearest few, say). Pass null to remove the mark; the camera stays. */
+     *  which: the nearest few, say), with the place in the middle. Pass null to remove
+     *  the mark; the camera stays. */
     showPlace(place, ids = []) {
       whenReady(() => {
         const marked = place && place.mark !== false;
@@ -923,11 +933,12 @@ export function createMap<P extends PointProperties>(
           map.easeTo({ center: place.center, zoom: STREET_ZOOM, duration: 700 });
           return;
         }
-        const b = new maplibregl.LngLatBounds();
-        if (place.bbox) b.extend(place.bbox);
-        else b.extend(place.center);
-        for (const f of near) b.extend(f.geometry.coordinates as LngLat);
-        map.fitBounds(b, { padding: 60, maxZoom: STREET_ZOOM, duration: 700 });
+        // The place is the middle of the frame, which reaches out as far as the area, if
+        // the place is one, and the sites, on whichever side of it they are.
+        const reach = near.map((f) => f.geometry.coordinates as LngLat);
+        if (place.bbox) reach.push([place.bbox[0], place.bbox[1]], [place.bbox[2], place.bbox[3]]);
+        map.fitBounds(centredOn(place.center, reach),
+          { padding: 60, maxZoom: STREET_ZOOM, duration: 700 });
       });
       return api;
     },
