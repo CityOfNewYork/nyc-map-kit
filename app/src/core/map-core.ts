@@ -413,7 +413,15 @@ export function createMap<P extends PointProperties>(
     minZoom: 9,
     maxZoom: 18,
     attributionControl: { compact: true },
+    // North stays up and the map stays flat. By default MapLibre turns and tilts it on a
+    // right-drag or Ctrl-drag (on a trackpad, a two-finger click that moves), a two-finger
+    // twist or drag on a touchscreen, and Shift with an arrow key; with no compass, nothing
+    // on the map turns it back.
+    dragRotate: false,
+    touchPitch: false,
   });
+  map.touchZoomRotate.disableRotation();   // a pinch still zooms
+  map.keyboard.disableRotation();          // the arrow keys still pan, + and − still zoom
   // The canvas is a single tab stop that pans with the arrow keys. Everything a keyboard
   // user actually needs — every site — is reachable from the client's list; the zoom
   // buttons, unless the client leaves them out, are real <button>s and take focus in order.
