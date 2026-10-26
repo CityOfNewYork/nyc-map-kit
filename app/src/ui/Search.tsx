@@ -15,8 +15,9 @@ type Status =
   | { type: "idle" }
   | { type: "searching" }
   | { type: "found"; place: Found }
-  | { type: "choices"; matches: Found[] }
-  | { type: "suggest"; suggestions: Suggestion[] }
+  // `active`: the choice the arrow keys are on, or -1 for none.
+  | { type: "choices"; matches: Found[]; active: number }
+  | { type: "suggest"; suggestions: Suggestion[]; active: number }
   | { type: "none" }
   | { type: "error" }
   | { type: "locating" }
@@ -36,7 +37,11 @@ interface SearchProps {
  * It searches on Enter and not while typing. Boroughs, neighborhoods and ZIP codes are
  * matched in the page from places.json (logic/places.ts); anything else goes to Geoclient
  * (logic/geocode.ts). When Geoclient finds the address in more than one borough, or has
- * a close spelling to suggest, the choices appear under the box as buttons.
+ * a close spelling to suggest, the choices appear under the box.
+ *
+ * The box and its choices are a combobox (WAI-ARIA APG combobox pattern). Down and Up
+ * move through the choices while focus stays in the box, Enter picks one, and Escape
+ * closes them and then, pressed again, clears the box. A click or tap picks one too.
  *
  * The status line under the box is a live region, so a screen reader hears "Searching…",
  * the result, or why there is none, without leaving the input. The hint in the empty box
@@ -106,9 +111,9 @@ export function Search({ onFound, onClear }: SearchProps) {
         return show(result.matches[0], via);
       }
       if (result.type === "found") {
-        settle({ type: "choices", matches: result.matches });
+        settle({ type: "choices", matches: result.matches, active: -1 });
       } else if (result.type === "suggest") {
-        settle({ type: "suggest", suggestions: result.suggestions });
+        settle({ type: "suggest", suggestions: result.suggestions, active: -1 });
       } else {
         settle({ type: "none" });
       }
@@ -170,7 +175,46 @@ export function Search({ onFound, onClear }: SearchProps) {
     inputRef.current!.focus();
   }
 
+  // The choices under the box: what each one says, and what picking it does.
+  const choices =
+    status.type === "choices" ? status.matches.map((m) => ({
+      key: `${m.center[0]},${m.center[1]}`,
+      label: <PlaceName place={m} />,
+      pick: () => choose(m),
+    })) :
+    status.type === "suggest" ? status.suggestions.map((s) => ({
+      key: s.query,
+      label: <>
+        <span className="place-name"><span>{s.house}</span> <span>{s.street}</span></span>
+        <span className="place-boro">{s.borough}</span>
+      </>,
+      pick: () => retry(s),
+    })) :
+    [];
+  const active = status.type === "choices" || status.type === "suggest" ? status.active : -1;
+
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (status.type === "choices" || status.type === "suggest") {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        // From the box, Down goes to the first choice and Up to the last; then round.
+        const n = choices.length;
+        const step = e.key === "ArrowDown" ? 1 : -1;
+        const next = active < 0 ? (step > 0 ? 0 : n - 1) : (active + step + n) % n;
+        setStatus({ ...status, active: next });
+        return;
+      }
+      if (e.key === "Enter" && active >= 0) {
+        e.preventDefault();
+        choices[active].pick();
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        settle({ type: "idle" });
+        return;
+      }
+    }
     if (e.key === "Escape" && (value || status.type !== "idle")) {
       e.preventDefault();
       clear();
@@ -184,6 +228,9 @@ export function Search({ onFound, onClear }: SearchProps) {
                value={value} onChange={(e) => setValue(e.target.value)}
                onFocus={loadPlaces} onKeyDown={onKeyDown}
                autoComplete="off" autoCapitalize="off" enterKeyHint="search"
+               role="combobox" aria-expanded={choices.length > 0}
+               aria-controls={choices.length > 0 ? "search-choices" : undefined}
+               aria-activedescendant={active >= 0 ? `search-choice-${active}` : undefined}
                aria-describedby="search-status" />
         <label htmlFor="search-input" className={value ? "search-label filled" : "search-label"}>
           {GEOCLIENT_KEY
@@ -218,35 +265,25 @@ export function Search({ onFound, onClear }: SearchProps) {
         </button>
       </div>
 
-      <div className="search-status" id="search-status" role="status">
-        <StatusLine status={status} />
-      </div>
+      {/* What opens under the box, in one piece, so a page can float it over what is below
+          (see warming.css). */}
+      <div className="search-drop">
+        <div className="search-status" id="search-status" role="status">
+          <StatusLine status={status} />
+        </div>
 
-      {status.type === "choices" && (
-        <ul className="search-choices" id="search-choices">
-          {status.matches.map((m) => (
-            <li key={`${m.center[0]},${m.center[1]}`}>
-              <button type="button" className="search-choice" onClick={() => choose(m)}>
-                <PlaceName place={m} />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {status.type === "suggest" && (
-        <ul className="search-choices" id="search-choices">
-          {status.suggestions.map((s) => (
-            <li key={s.query}>
-              <button type="button" className="search-choice" onClick={() => retry(s)}>
-                <span className="place-name">
-                  <span>{s.house}</span> <span>{s.street}</span>
-                </span>
-                <span className="place-boro">{s.borough}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+        {choices.length > 0 && (
+          <ul className="search-choices" id="search-choices" role="listbox"
+              aria-labelledby="search-status">
+            {choices.map((c, i) => (
+              <li key={c.key} id={`search-choice-${i}`} className="search-choice" role="option"
+                  aria-selected={i === active} onClick={c.pick}>
+                {c.label}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </form>
   );
 }

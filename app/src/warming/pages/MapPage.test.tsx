@@ -95,7 +95,7 @@ describe("MapPage", () => {
   describe("search", () => {
     test("a search is handed to the app", async () => {
       const { onFound } = renderPage();
-      const input = screen.getByRole("textbox");
+      const input = screen.getByRole("combobox");
       fireEvent.focus(input);
       fireEvent.change(input, { target: { value: "Bronx" } });
       fireEvent.submit(input.closest("form")!);

@@ -48,7 +48,7 @@ describe("LandingPage", () => {
 
   test("a search result calls onFound with the place", async () => {
     const { onFound } = renderLanding();
-    const input = screen.getByRole("textbox");
+    const input = screen.getByRole("combobox");
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: "Harlem" } });
     fireEvent.submit(input.closest("form")!);

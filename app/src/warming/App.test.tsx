@@ -140,7 +140,7 @@ describe("warming App", () => {
   describe("search", () => {
     test("a search from the landing view opens the map view with that place marked", async () => {
       renderApp();
-      const input = screen.getByRole("textbox");
+      const input = screen.getByRole("combobox");
       fireEvent.focus(input);
       fireEvent.change(input, { target: { value: "Bronx" } });
       fireEvent.submit(input.closest("form")!);

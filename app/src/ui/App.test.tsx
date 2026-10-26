@@ -152,7 +152,7 @@ describe("App", () => {
 
   test("a search marks the place on the map with the sites nearest it", async () => {
     await renderApp();
-    const input = screen.getByRole("textbox");
+    const input = screen.getByRole("combobox");
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: "Bronx" } });
     fireEvent.submit(input.closest("form")!);

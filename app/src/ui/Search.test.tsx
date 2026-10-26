@@ -16,7 +16,7 @@ function renderSearch() {
   const onFound = vi.fn();
   const onClear = vi.fn();
   render(<Search onFound={onFound} onClear={onClear} />);
-  return { onFound, onClear, input: screen.getByRole("textbox") };
+  return { onFound, onClear, input: screen.getByRole("combobox") };
 }
 function search(input: HTMLElement, text: string) {
   fireEvent.focus(input);
