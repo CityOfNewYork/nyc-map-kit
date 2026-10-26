@@ -3,6 +3,7 @@ import type { FocusEvent, KeyboardEvent, ReactNode } from "react";
 import { track } from "../../logic/analytics.ts";
 import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { Check } from "../../ui/Check.tsx";
+import { Toggle } from "../../ui/Toggle.tsx";
 import { CENTER_KINDS } from "../logic/centers.ts";
 import type { Filters } from "../logic/filters.ts";
 import { ClockIcon, PawIcon, WheelchairIcon } from "./FeatureIcons.tsx";
@@ -15,8 +16,8 @@ interface FilterBarProps {
 
 /**
  * The filters as a row of buttons beside the search box on a wide screen: Location type
- * opens a short menu, and open now, wheelchair access and pets are checkboxes of their
- * own. A button is tinted while its filter is on. Each change applies at once, to
+ * opens a short menu, and open now, wheelchair access and pets are toggle buttons of
+ * their own. A button is tinted while its filter is on. Each change applies at once, to
  * the list and the map together. Narrower screens use the Filters button and FilterPanel
  * instead (see warming.css).
  */
@@ -58,21 +59,18 @@ export function FilterToggles({ filters, set }: {
 }) {
   return (
     <>
-      <Check className={filters.openNow ? "pill check-pill on" : "pill check-pill"}
-             checked={filters.openNow} onChange={(on) => set({ openNow: on }, "open", on)}
-             icon={<ClockIcon />}>
+      <Toggle className="pill toggle-pill" pressed={filters.openNow}
+              onChange={(on) => set({ openNow: on }, "open", on)} icon={<ClockIcon />}>
         {t("Open now")}
-      </Check>
-      <Check className={filters.wheelchair ? "pill check-pill on" : "pill check-pill"}
-             checked={filters.wheelchair} onChange={(on) => set({ wheelchair: on }, "wheelchair", on)}
-             icon={<WheelchairIcon />}>
+      </Toggle>
+      <Toggle className="pill toggle-pill" pressed={filters.wheelchair}
+              onChange={(on) => set({ wheelchair: on }, "wheelchair", on)} icon={<WheelchairIcon />}>
         {t("Wheelchair accessible")}
-      </Check>
-      <Check className={filters.pets ? "pill check-pill on" : "pill check-pill"}
-             checked={filters.pets} onChange={(on) => set({ pets: on }, "pets", on)}
-             icon={<PawIcon />}>
+      </Toggle>
+      <Toggle className="pill toggle-pill" pressed={filters.pets}
+              onChange={(on) => set({ pets: on }, "pets", on)} icon={<PawIcon />}>
         {t("Pets allowed")}
-      </Check>
+      </Toggle>
     </>
   );
 }

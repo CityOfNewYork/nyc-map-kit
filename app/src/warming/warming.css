@@ -198,16 +198,22 @@
 }
 .pill:hover { background: var(--hover); }
 /* A filter that is on: tinted, in the primary blue. */
-.pill.on {
+.pill.on,
+.pill[aria-pressed="true"] {
   border-color: var(--primary);
   background: #e6efff;
   color: #050560;
   font-weight: 600;
 }
 .pill[aria-expanded="true"] svg { transform: rotate(180deg); }
-.check-pill input { width: 18px; height: 18px; margin: 0; accent-color: var(--ink); }
-.check-pill:has(input:focus-visible) { outline: 2px dashed var(--ink); outline-offset: 2px; }
-.check-pill input:focus-visible { outline: none; }
+/* The toggle's drawn box: an empty grey square, then a black one with a white tick
+   while it is pressed. The grey is 4.5:1 on white, past the 3:1 a control's edge needs. */
+.toggle-box { flex: none; }
+.toggle-box rect { fill: var(--surface); stroke: #767676; }
+.toggle-box path { fill: none; stroke: none; stroke-width: 2.25; stroke-linecap: round;
+                   stroke-linejoin: round; }
+.pill[aria-pressed="true"] .toggle-box rect { fill: var(--ink); stroke: var(--ink); }
+.pill[aria-pressed="true"] .toggle-box path { stroke: var(--surface); }
 
 /* A filter button's menu, under it, over the map and the list. */
 .dropdown { position: relative; }
