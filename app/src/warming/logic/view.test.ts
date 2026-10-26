@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { viewFromUrl } from "./view.ts";
+import { sideCardFromUrl, viewFromUrl } from "./view.ts";
 
 describe("viewFromUrl", () => {
   test("?view=map opens the map view", () => {
@@ -17,5 +17,13 @@ describe("viewFromUrl", () => {
   });
   test("a link to one center's card opens the map view", () => {
     expect(viewFromUrl("?site=jacobi")).toBe("map");
+  });
+});
+
+describe("sideCardFromUrl", () => {
+  test("a center's card is a pop-up unless the address asks for the side card", () => {
+    expect(sideCardFromUrl("")).toBe(false);
+    expect(sideCardFromUrl("?view=map&detail=popup")).toBe(false);
+    expect(sideCardFromUrl("?view=map&detail=sidecard")).toBe(true);
   });
 });
