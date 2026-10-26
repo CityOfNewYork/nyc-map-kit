@@ -9,8 +9,8 @@
  */
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, addLandmarkLabels, and, greyOutsideCity, hideLabelsOutsideCity,
-  loadBasemapStyle, nameExpression, PARK_NAME_COLOR, warmTint,
+  addBoroughLabels, addLandmarkLabels, addSubwayStations, and, greyOutsideCity,
+  hideLabelsOutsideCity, loadBasemapStyle, nameExpression, PARK_NAME_COLOR, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -251,6 +251,7 @@ export function balancePlaceLabels(
   const city = layer("label_city");
   if (city) city.filter = and(city.filter, ["!=", ["get", "name"], "New York"]);
 
+  addSubwayStations(style);
   addLandmarkLabels(style, lang);
   addBoroughLabels(style, lang, 14);
   style.metadata = Object.assign({}, style.metadata, {

@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import {
-  BOROUGH_ORDER, boroughRank, compareSites, groupByOrgProperty, indexByLocation,
-  metresBetween, prepareData,
+  BOROUGH_ORDER, NEAREST_SITES, NEAREST_WITHIN_M, boroughRank, compareSites, groupByOrgProperty,
+  indexByLocation, metresBetween, nearestIds, prepareData,
 } from "./data.ts";
 import type { OrgsDoc, Site, SiteCollection } from "./types.ts";
 
@@ -104,9 +104,26 @@ describe("organizations", () => {
   });
 });
 
-// TODOs mark planned coverage; use synthetic sites rather than the snapshot.
 describe("nearestIds", () => {
-  test.todo("returns at most NEAREST_SITES ids, nearest first");
-  test.todo("leaves out sites further than NEAREST_WITHIN_M");
-  test.todo("returns an empty list when no site is in range");
+  const center: [number, number] = [-73.95, 40.75];
+  /** A site `metres` north of `center`. */
+  const north = (id: string, metres: number): Site => ({
+    type: "Feature",
+    properties: { id, org: id, org_id: id, address: "" },
+    geometry: { type: "Point", coordinates: [center[0], center[1] + metres / 111_195] },
+  });
+
+  test("returns at most NEAREST_SITES ids, nearest first", () => {
+    const sites = [north("d", 400), north("b", 200), north("a", 100), north("c", 300)];
+    expect(NEAREST_SITES).toBe(3);
+    expect(nearestIds(sites, center)).toEqual(["a", "b", "c"]);
+  });
+  test("leaves out sites further than NEAREST_WITHIN_M", () => {
+    const sites = [north("far", NEAREST_WITHIN_M + 50), north("near", NEAREST_WITHIN_M - 50)];
+    expect(nearestIds(sites, center)).toEqual(["near"]);
+  });
+  test("returns an empty list when no site is in range", () => {
+    expect(nearestIds([north("far", NEAREST_WITHIN_M * 2)], center)).toEqual([]);
+    expect(nearestIds([], center)).toEqual([]);
+  });
 });

@@ -200,6 +200,11 @@ describe("the NYC basemap steps", () => {
     expect(style.layers.find((l) => l.id === "Neighborhoods/label/Default")?.minzoom).toBe(12);
   });
 
+  test("draw the subway's stations above OTI's labels, under the landmarks and boroughs", () => {
+    const ids = nycLabels(fixture(), "en").layers.map((l) => l.id);
+    expect(ids.slice(-3)).toEqual(["subway_station", "landmark_label", "borough_label"]);
+  });
+
   test("report a rule that matched nothing", () => {
     const style = fixture();
     style.layers = style.layers.filter((l) => l.id !== "Parks/label/Default");

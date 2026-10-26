@@ -89,6 +89,7 @@ import type { ExpressionSpecification, GeoJSONSource, StyleSpecification } from 
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { FetchSource, PMTiles, Protocol } from "pmtiles";
+import { STATION_ICON, STATION_ICON_DPR, stationIcon } from "./station-icon.ts";
 
 /**
  * A FetchSource that reads once more, past the browser's cache, when a read fails.
@@ -375,6 +376,15 @@ function track(event: string, payload: Record<string, unknown>): void {
   console.log("[dataLayer]", row);
 }
 
+/** The smallest box centred on `center` that holds every one of `points`: each point is
+ *  taken with its mirror image across the centre. Mirrored in degrees rather than on
+ *  screen, which differ by metres across a borough. */
+export function centredOn(center: LngLat, points: LngLat[]): [LngLat, LngLat] {
+  const dx = Math.max(...points.map(([x]) => Math.abs(x - center[0])));
+  const dy = Math.max(...points.map(([, y]) => Math.abs(y - center[1])));
+  return [[center[0] - dx, center[1] - dy], [center[0] + dx, center[1] + dy]];
+}
+
 export function createMap<P extends PointProperties>(
   container: HTMLElement, options: MapCoreOptions<P> = {},
 ): MapCore<P> {
@@ -413,7 +423,15 @@ export function createMap<P extends PointProperties>(
     minZoom: 9,
     maxZoom: 18,
     attributionControl: { compact: true },
+    // North stays up and the map stays flat. By default MapLibre turns and tilts it on a
+    // right-drag or Ctrl-drag (on a trackpad, a two-finger click that moves), a two-finger
+    // twist or drag on a touchscreen, and Shift with an arrow key; with no compass, nothing
+    // on the map turns it back.
+    dragRotate: false,
+    touchPitch: false,
   });
+  map.touchZoomRotate.disableRotation();   // a pinch still zooms
+  map.keyboard.disableRotation();          // the arrow keys still pan, + and − still zoom
   // The canvas is a single tab stop that pans with the arrow keys. Everything a keyboard
   // user actually needs — every site — is reachable from the client's list; the zoom
   // buttons, unless the client leaves them out, are real <button>s and take focus in order.
@@ -523,6 +541,13 @@ export function createMap<P extends PointProperties>(
   map.on("styleimagemissing", (e) => {
     const image = imageFor(e.id);
     if (image && !map.hasImage(e.id)) map.addImage(e.id, image, { pixelRatio: PIN_DPR });
+  });
+  // The basemaps' subway stations (basemap-style.ts): their icon, added with the style,
+  // before any tile is laid out, so no station is drawn without it.
+  map.on("style.load", () => {
+    if (!map.hasImage(STATION_ICON)) {
+      map.addImage(STATION_ICON, stationIcon(), { pixelRatio: STATION_ICON_DPR });
+    }
   });
 
   // State is carried by which pin image is drawn and how big, rather than by a fill
@@ -901,7 +926,8 @@ export function createMap<P extends PointProperties>(
     },
 
     /** Mark a place and frame it together with the sites in `ids` (the client picks
-     *  which: the nearest few, say). Pass null to remove the mark; the camera stays. */
+     *  which: the nearest few, say), with the place in the middle. Pass null to remove
+     *  the mark; the camera stays. */
     showPlace(place, ids = []) {
       whenReady(() => {
         const marked = place && place.mark !== false;
@@ -915,11 +941,12 @@ export function createMap<P extends PointProperties>(
           map.easeTo({ center: place.center, zoom: STREET_ZOOM, duration: 700 });
           return;
         }
-        const b = new maplibregl.LngLatBounds();
-        if (place.bbox) b.extend(place.bbox);
-        else b.extend(place.center);
-        for (const f of near) b.extend(f.geometry.coordinates as LngLat);
-        map.fitBounds(b, { padding: 60, maxZoom: STREET_ZOOM, duration: 700 });
+        // The place is the middle of the frame, which reaches out as far as the area, if
+        // the place is one, and the sites, on whichever side of it they are.
+        const reach = near.map((f) => f.geometry.coordinates as LngLat);
+        if (place.bbox) reach.push([place.bbox[0], place.bbox[1]], [place.bbox[2], place.bbox[3]]);
+        map.fitBounds(centredOn(place.center, reach),
+          { padding: 60, maxZoom: STREET_ZOOM, duration: 700 });
       });
       return api;
     },

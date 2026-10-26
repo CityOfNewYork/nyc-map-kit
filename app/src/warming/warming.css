@@ -198,16 +198,22 @@
 }
 .pill:hover { background: var(--hover); }
 /* A filter that is on: tinted, in the primary blue. */
-.pill.on {
+.pill.on,
+.pill[aria-pressed="true"] {
   border-color: var(--primary);
   background: #e6efff;
   color: #050560;
   font-weight: 600;
 }
 .pill[aria-expanded="true"] svg { transform: rotate(180deg); }
-.check-pill input { width: 18px; height: 18px; margin: 0; accent-color: var(--ink); }
-.check-pill:has(input:focus-visible) { outline: 2px dashed var(--ink); outline-offset: 2px; }
-.check-pill input:focus-visible { outline: none; }
+/* The toggle's drawn box: an empty grey square, then a black one with a white tick
+   while it is pressed. The grey is 4.5:1 on white, past the 3:1 a control's edge needs. */
+.toggle-box { flex: none; }
+.toggle-box rect { fill: var(--surface); stroke: #767676; }
+.toggle-box path { fill: none; stroke: none; stroke-width: 2.25; stroke-linecap: round;
+                   stroke-linejoin: round; }
+.pill[aria-pressed="true"] .toggle-box rect { fill: var(--ink); stroke: var(--ink); }
+.pill[aria-pressed="true"] .toggle-box path { stroke: var(--surface); }
 
 /* A filter button's menu, under it, over the map and the list. */
 .dropdown { position: relative; }
@@ -281,13 +287,14 @@
 }
 .landing .map { grid-area: 2 / 1; }
 
-/* Folds away on the way to the map view (see LandingPage.tsx). */
+/* Folds away on the way to the map view (see LandingPage.tsx). It clips only while it
+   folds, so what opens under the search box can hang below it. */
 .hero {
-  overflow: hidden;
   background: var(--link-hover);
   color: var(--surface);
   transition: height 0.3s ease-in-out;
 }
+.hero.leaving { overflow: hidden; }
 .hero-inner {
   max-width: 1120px;
   margin: 0 auto;
@@ -325,6 +332,7 @@
 
 /* The kit's search box, restyled as the prototype's white bar on navy. */
 .hero .search {
+  position: relative;
   flex: 0 1 600px;
   min-width: 0;
   border-radius: 0;
@@ -356,20 +364,17 @@
   color: var(--surface);
 }
 .hero .search-submit:hover { background: #333333; }
-.hero .search-status {
-  padding: 8px 20px 0;
-  border-top: 0;
-  background: none;
-  box-shadow: none;
-  color: var(--surface);
+/* The status line and the choices float over the page below, in the cards they are over
+   the map, so the hero keeps its height. */
+.hero .search-drop {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 5;
 }
-.hero .search-found .place-name { color: var(--surface); }
-.hero .search-choices {
-  margin-top: 8px;
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
-}
+.hero .search-status p { margin: 0; font-size: inherit; }
+.hero .search-choices { color: var(--ink); }
 .hero .search-choices > li:first-child { border-top: 0; }
 
 .hero-map-link {

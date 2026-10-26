@@ -17,8 +17,8 @@ import { layers, namedFlavor } from "@protomaps/basemaps";
 import type { Flavor } from "@protomaps/basemaps";
 import type { ExpressionSpecification, LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, addLandmarkLabels, and, dotCityLine, flatBuildings, nameExpression,
-  PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND, OUTSIDE, POSITRON_ROADS,
+  addBoroughLabels, addLandmarkLabels, addSubwayStations, and, dotCityLine, flatBuildings,
+  nameExpression, PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND, OUTSIDE, POSITRON_ROADS,
   greyOutsideCity, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
@@ -321,6 +321,7 @@ function placeLabels(style: StyleSpecification, lang: string) {
   const roads = style.layers.findIndex((l) => l.id === "roads_labels_major");
   style.layers.splice(roads < 0 ? style.layers.length : roads + 1, 0, parkNames);
 
+  addSubwayStations(style);
   addLandmarkLabels(style, lang);
   addBoroughLabels(style, lang, NEIGHBOURHOOD_ZOOM);
 }

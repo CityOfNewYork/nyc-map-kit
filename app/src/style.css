@@ -321,23 +321,35 @@ body {
   max-height: 50vh;
   overflow-y: auto;
 }
+/* With choices under it, the status line is the head of their card: one card, the two
+   parted by a rule. Each clips its shadow off the edge they share, and the choices
+   overlap the line by a pixel, so the page cannot show through the seam. */
+.search-status:has(+ .search-choices) {
+  border-radius: var(--radius) var(--radius) 0 0;
+  clip-path: inset(-12px -12px 0 -12px);
+}
+.search-status + .search-choices {
+  margin-top: -1px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--radius) var(--radius);
+  clip-path: inset(0 -12px -12px -12px);
+}
 .search-choices > li + li { border-top: 1px solid var(--line); }
 .search-choice {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  width: 100%;
   min-height: var(--tap);
   padding: 8px 12px;
-  border: 0;
-  background: none;
-  font: inherit;
-  color: inherit;
-  text-align: left;
   cursor: pointer;
 }
 .search-choice:hover { background: var(--hover); }
-.search-choice:focus-visible { outline-offset: -4px; }
+/* The choice the arrow keys are on: tinted, with the focus ring inside its row. */
+.search-choice[aria-selected="true"] {
+  background: var(--hover);
+  outline: 2px dashed var(--ink);
+  outline-offset: -4px;
+}
 .search-choice .place-name { font-weight: 700; }
 .search-choice .place-boro { font-size: 0.9375rem; color: var(--ink-muted); }
 
