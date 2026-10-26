@@ -200,15 +200,14 @@ stages:
                 - checkout: self
                   displayName: Checkout
 
-                # Azure only expands $(name) inside the pipeline file, so substitute the
-                # manifest's references ourselves. Pipeline variables reach scripts as upper-case
-                # environment variables; an undefined one fails the step.
+                # Azure only expands $(name) inside the pipeline file, so deploy/render.sh
+                # substitutes the manifest's references. Pipeline variables reach scripts as
+                # upper-case environment variables; an undefined one fails the step.
                 - bash: |
                     set -euo pipefail
                     mkdir -p "$(Pipeline.Workspace)/manifests"
                     for f in deployment service; do
-                      perl -pe 's/\$\(([A-Za-z_]+)\)/defined $ENV{uc $1} ? $ENV{uc $1} : die "undefined variable: $1\n"/ge' \
-                        "deploy/manifests/$f.yaml" > "$(Pipeline.Workspace)/manifests/$f.yaml"
+                      bash deploy/render.sh "deploy/manifests/$f.yaml" > "$(Pipeline.Workspace)/manifests/$f.yaml"
                       cat "$(Pipeline.Workspace)/manifests/$f.yaml"
                     done
                   displayName: Render deployment.yaml and service.yaml
@@ -244,8 +243,7 @@ stages:
                 - bash: |
                     set -euo pipefail
                     mkdir -p "$(Pipeline.Workspace)/manifests"
-                    perl -pe 's/\$\(([A-Za-z_]+)\)/defined $ENV{uc $1} ? $ENV{uc $1} : die "undefined variable: $1\n"/ge' \
-                      deploy/manifests/ingress.yaml > "$(Pipeline.Workspace)/manifests/ingress.yaml"
+                    bash deploy/render.sh deploy/manifests/ingress.yaml > "$(Pipeline.Workspace)/manifests/ingress.yaml"
                     cat "$(Pipeline.Workspace)/manifests/ingress.yaml"
                   displayName: Render ingress.yaml
 
