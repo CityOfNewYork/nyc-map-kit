@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nyc-map-kit-$(color)
+  namespace: gis-apps
+spec:
+  selector:
+    matchLabels:
+      app: nyc-map-kit
+      color: $(color)
+  replicas: 2 # tells deployment to run 2 pods matching the template
+  template:
+    metadata:
+      labels:
+        app: nyc-map-kit
+        color: $(color)
+    spec:
+      containers:
+      - name: nyc-map-kit
+        image: $(registry)/$(imageRepository):$(imageVersion)
+        imagePullPolicy: IfNotPresent # the tag is a unique build ID, so a cached image is never stale
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+        ports:
+        - containerPort: 80
+      imagePullSecrets:
+      - name: $(registrySecret)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nyc-map-kit-$(color)
+  namespace: gis-apps
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+  selector:
+    app: nyc-map-kit
+    color: $(color)

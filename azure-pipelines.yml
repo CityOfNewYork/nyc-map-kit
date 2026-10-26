@@ -1,0 +1,253 @@
+# nyc-map-kit — Azure Pipelines. Mirrors deploy/build.sh: install, lint, test, fetch the
+# pinned Protomaps basemap and Clash Grotesk, then `npm run build`. The build output (dist/)
+# is published as the `dist` pipeline artifact; the Package stage bakes it into a container
+# image (deploy/Dockerfile) and pushes it to the registry for the chosen environment; the
+# Deploy stage renders deploy/deployment.yaml and applies it to that environment's cluster.
+#
+# Choosing the environment: the `environment` parameter (nonprod or prod). Queue a run by
+# hand and pick one; CI and PR runs use the default (nonprod). It selects which file,
+# deploy/vars-nonprod.yml or deploy/vars-prod.yml, defines the environment-agnostic variables
+# (registry, registrySecret, ingressHost, tlsSecret, ...) that deploy/deployment.yaml refers to.
+#
+# Choosing the color: the `color` parameter (blue or green, default blue) becomes the `color`
+# variable, which deploy/deployment.yaml uses as a suffix on the Deployment and Service names.
+#
+# Cutting over: a normal run builds, packages and deploys the Deployment and Service for the
+# chosen color, but leaves the Ingress (deploy/ingress.yaml) alone, so traffic does not move.
+# After verifying the new Service, queue a run with cutover = true and the same color and
+# environment: it runs only the Cutover stage, which points the Ingress at that color's Service.
+#
+# Secret variable (define in Pipelines > Edit > Variables, or a linked variable group; do not
+# commit a value): viteGeoclientKey — the Geoclient v2 subscription key. It ends up in the built
+# JavaScript, so use a key for this site only. Without it the search box still finds
+# boroughs, neighborhoods and ZIP codes but not addresses.
+
+trigger:
+  branches:
+    include:
+      - pipeline
+
+pr:
+  branches:
+    include:
+      - main
+
+parameters:
+  - name: environment
+    displayName: Target environment
+    type: string
+    default: nonprod
+    values:
+      - nonprod
+      - prod
+  - name: color
+    displayName: Deployment color
+    type: string
+    default: blue
+    values:
+      - blue
+      - green
+  - name: cutover
+    displayName: Cut over the ingress to the chosen color (runs only that step)
+    type: boolean
+    default: false
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  # Build
+  - name: basemapUrl
+    value: https://github.com/CityOfNewYork/nyc-map-kit/releases/download/basemap-20261019-3/nyc-20261019-3.pmtiles
+  - name: basemapSha256
+    value: b36c554f9ed888292c924c24ab7b9e6738b6c58212586337ea2df000b28ad2ca
+  - name: basemapOut
+    value: app/public/nyc.pmtiles
+  - name: npm_config_cache
+    value: $(Pipeline.Workspace)/.npm
+  # The timestamp part of basemapUrl's nyc-<tileBuild>.pmtiles; labels the image (deploy/Dockerfile).
+  - name: tileBuild
+    value: 20261019-3
+
+  # Container image
+  - name: imageRepository
+    value: static/nyc-map-kit
+  # Deployed by build ID, not "latest": deploy/deployment.yaml uses imagePullPolicy IfNotPresent,
+  # so a moving tag would never be re-pulled.
+  - name: imageVersion
+    value: $(Build.BuildId)
+
+  # Per-environment settings (registry, registrySecret, registryServiceConnection,
+  # clusterServiceConnection, ingressHost, tlsSecret): one file per `environment` value.
+  - template: deploy/vars-${{ parameters.environment }}.yml
+
+  # Suffix for the Kubernetes object names in deploy/deployment.yaml.
+  - name: color
+    value: ${{ parameters.color }}
+
+stages:
+  - stage: Build
+    displayName: Build
+    condition: eq('${{ parameters.cutover }}', 'false')
+    jobs:
+      - job: Build
+        displayName: Build app
+        steps:
+          - checkout: self
+            displayName: Checkout
+
+          - task: NodeTool@0
+            displayName: Install Node.js (.nvmrc)
+            inputs:
+              versionSource: fromFile
+              versionFilePath: .nvmrc
+
+          - task: Cache@2
+            displayName: Cache npm
+            inputs:
+              key: 'npm | "$(Agent.OS)" | package-lock.json'
+              restoreKeys: |
+                npm | "$(Agent.OS)"
+              path: $(npm_config_cache)
+
+          - script: npm ci
+            displayName: npm ci
+
+          - script: npm run lint
+            displayName: npm run lint
+
+          - script: npm test
+            displayName: npm test
+
+          - bash: |
+              set -euo pipefail
+              tmp="$(mktemp "$(basemapOut).XXXXXX")"
+              trap 'rm -f "$tmp"' EXIT
+              curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 "$(basemapUrl)" -o "$tmp"
+              echo "$(basemapSha256)  $tmp" | sha256sum -c -
+              mv "$tmp" "$(basemapOut)"
+              echo "Protomaps basemap: $(basemapUrl)"
+            displayName: Download and verify the Protomaps basemap
+
+          - bash: build/clash-grotesk.sh
+            displayName: Fetch Clash Grotesk
+
+          - script: npm run build
+            displayName: npm run build
+            env:
+              # Secret variables are not exposed to scripts unless mapped explicitly.
+              VITE_GEOCLIENT_KEY: $(viteGeoclientKey)
+
+          - publish: $(System.DefaultWorkingDirectory)/dist
+            artifact: dist
+            displayName: Publish build output
+
+  - stage: Package
+    displayName: Package container image
+    dependsOn: Build
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    jobs:
+      - job: Package
+        displayName: Build and push image (${{ parameters.environment }} registry)
+        steps:
+          - checkout: self
+            displayName: Checkout
+
+          - task: DownloadPipelineArtifact@2
+            displayName: Download build output
+            inputs:
+              artifact: dist
+              targetPath: $(Build.SourcesDirectory)/dist
+
+          - task: Docker@2
+            displayName: Build image
+            inputs:
+              command: build
+              containerRegistry: $(registryServiceConnection)
+              repository: $(imageRepository)
+              dockerfile: deploy/Dockerfile
+              buildContext: $(Build.SourcesDirectory)
+              arguments: --build-arg TILEBUILD=$(tileBuild)
+              tags: |
+                $(imageVersion)
+                latest
+
+          - task: Docker@2
+            displayName: Push image
+            inputs:
+              command: push
+              containerRegistry: $(registryServiceConnection)
+              repository: $(imageRepository)
+              tags: |
+                $(imageVersion)
+                latest
+
+  - stage: Deploy
+    displayName: Deploy to ${{ parameters.environment }}
+    dependsOn: Package
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    jobs:
+      # A deployment job targets an Azure DevOps Environment, where approvals and checks
+      # can be required (Pipelines > Environments). Create nyc-map-kit-nonprod and nyc-map-kit-prod.
+      - deployment: Deploy
+        displayName: Apply deploy/deployment.yaml
+        environment: nyc-map-kit-${{ parameters.environment }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                  displayName: Checkout
+
+                # Azure only expands $(name) inside the pipeline file, so substitute the
+                # manifest's references ourselves. Pipeline variables reach scripts as upper-case
+                # environment variables; an undefined one fails the step.
+                - bash: |
+                    set -euo pipefail
+                    mkdir -p "$(Pipeline.Workspace)/manifests"
+                    perl -pe 's/\$\(([A-Za-z_]+)\)/defined $ENV{uc $1} ? $ENV{uc $1} : die "undefined variable: $1\n"/ge' \
+                      deploy/deployment.yaml > "$(Pipeline.Workspace)/manifests/deployment.yaml"
+                    cat "$(Pipeline.Workspace)/manifests/deployment.yaml"
+                  displayName: Render deployment.yaml
+
+                - task: KubernetesManifest@1
+                  displayName: Deploy to cluster
+                  inputs:
+                    action: deploy
+                    connectionType: kubernetesServiceConnection
+                    kubernetesServiceConnection: $(clusterServiceConnection)
+                    manifests: $(Pipeline.Workspace)/manifests/deployment.yaml
+
+  # Manual cutover: points the Ingress at the Service of the chosen color. Run it by itself
+  # (cutover = true) after verifying the new Deployment and Service; it skips every other stage.
+  # It uses the same Azure DevOps Environment, so that environment's approvals still apply.
+  - stage: Cutover
+    displayName: Cut over ${{ parameters.environment }} ingress to ${{ parameters.color }}
+    dependsOn: []
+    condition: and(eq('${{ parameters.cutover }}', 'true'), ne(variables['Build.Reason'], 'PullRequest'))
+    jobs:
+      - deployment: Cutover
+        displayName: Apply deploy/ingress.yaml
+        environment: nyc-map-kit-${{ parameters.environment }}
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                  displayName: Checkout
+
+                - bash: |
+                    set -euo pipefail
+                    mkdir -p "$(Pipeline.Workspace)/manifests"
+                    perl -pe 's/\$\(([A-Za-z_]+)\)/defined $ENV{uc $1} ? $ENV{uc $1} : die "undefined variable: $1\n"/ge' \
+                      deploy/ingress.yaml > "$(Pipeline.Workspace)/manifests/ingress.yaml"
+                    cat "$(Pipeline.Workspace)/manifests/ingress.yaml"
+                  displayName: Render ingress.yaml
+
+                - task: KubernetesManifest@1
+                  displayName: Cut over ingress
+                  inputs:
+                    action: deploy
+                    connectionType: kubernetesServiceConnection
+                    kubernetesServiceConnection: $(clusterServiceConnection)
+                    manifests: $(Pipeline.Workspace)/manifests/ingress.yaml

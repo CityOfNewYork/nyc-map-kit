@@ -1,0 +1,15 @@
+# Prod settings. Included by azure-pipelines.yml when the `environment` parameter is prod.
+# Service connections are in Project settings > Service connections.
+variables:
+  - name: registry
+    value: registry.example.com
+  - name: registrySecret
+    value: registry-secret
+  - name: registryServiceConnection
+    value: sc-registry-prod
+  - name: clusterServiceConnection
+    value: sc-cluster-prod
+  - name: ingressHost
+    value: finder.nyc.gov
+  - name: tlsSecret
+    value: finder.nyc.gov-secret

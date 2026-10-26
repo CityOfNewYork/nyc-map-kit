@@ -1,0 +1,28 @@
+---
+# Applied only by the Cutover stage (azure-pipelines.yml), after the Service of the chosen
+# color has been verified. $(color) selects the Service that receives traffic.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nyc-map-kit
+  namespace: gis-apps
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: "/$2"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+      - $(ingressHost)
+    secretName: $(tlsSecret)
+  rules:
+  - host: $(ingressHost)
+    http:
+      paths:
+      - path: /nyc-map-kit(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: nyc-map-kit-$(color)
+            port:
+              number: 80

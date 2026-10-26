@@ -1,0 +1,15 @@
+# Nonprod settings. Included by azure-pipelines.yml when the `environment` parameter is nonprod.
+# Service connections are in Project settings > Service connections.
+variables:
+  - name: registry
+    value: registry-nonprod.example.com
+  - name: registrySecret
+    value: registry-secret
+  - name: registryServiceConnection
+    value: sc-registry-nonprod
+  - name: clusterServiceConnection
+    value: sc-cluster-nonprod
+  - name: ingressHost
+    value: finder-dev.nyc.gov
+  - name: tlsSecret
+    value: finder-dev.nyc.gov-secret
