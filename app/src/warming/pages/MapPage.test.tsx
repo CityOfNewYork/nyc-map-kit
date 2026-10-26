@@ -117,12 +117,12 @@ describe("MapPage", () => {
       expect(onFilters).toHaveBeenCalledWith({ ...NO_FILTERS, openNow: true });
     });
 
-    test("Copy link copies the map view with its filters", async () => {
+    test("Share results copies the map view with its filters", async () => {
       history.replaceState(null, "", "/warming.html?open=1");
       const writeText = vi.fn().mockResolvedValue(undefined);
       vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
       renderPage({ filters: { ...NO_FILTERS, openNow: true } });
-      fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
+      fireEvent.click(screen.getByRole("button", { name: "Share results" }));
       await waitFor(() => expect(writeText).toHaveBeenCalledWith(
         "http://localhost:3000/warming.html?open=1&view=map"));
     });

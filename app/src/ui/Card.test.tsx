@@ -119,6 +119,11 @@ describe("Card", () => {
 describe("CopyLink", () => {
   const url = () => new URL("https://example.org/app/?site=lincoln");
 
+  test("uses the label provided by the card", () => {
+    render(<CopyLink url={url} payload={{}} label="Share result" />);
+    expect(screen.getByRole("button", { name: "Share result" })).toBeInTheDocument();
+  });
+
   test("copies the link and says so, on the button and to a screen reader", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });

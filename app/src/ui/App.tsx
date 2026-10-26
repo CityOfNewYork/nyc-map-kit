@@ -274,7 +274,7 @@ export default function App({ settings }: AppProps) {
                  label={t(model?.config.listLabel || "Volunteer sites")}
                  summary={<SiteCounts sites={listed && shown} count={model?.config.count} />}
                  action={<CopyLink key={types.join()} url={() => siteUrl(null)}
-                                   payload={{ via: "list" }} />}
+                                   payload={{ via: "list" }} label="Share results" />}
                  row={(f) => siteRow(f, pinField === "org_type" ? pinStyles : null)} />
         </div>
         {/* What the map's canvas reads out when it takes focus (map-core's describedBy),
