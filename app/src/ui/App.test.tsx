@@ -96,6 +96,16 @@ afterEach(() => {
 });
 
 describe("App", () => {
+  test("the h1 opens <main>, which holds the search, the list and the map", async () => {
+    await renderApp();
+    const main = screen.getByRole("main");
+    expect(main).toContainElement(screen.getByRole("heading", { level: 1 }));
+    expect(main).toContainElement(screen.getByRole("search"));
+    expect(main).toContainElement(document.getElementById("site-list"));
+    expect(main).toContainElement(document.getElementById("map"));
+    expect(screen.queryByRole("banner")).toBeNull();
+  });
+
   test("the search landmark holds the search box and the Filters button", async () => {
     await renderApp();
     const search = screen.getByRole("search");
