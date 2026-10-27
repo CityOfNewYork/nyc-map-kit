@@ -960,6 +960,33 @@ body {
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
+/* The address copies itself when pressed. It keeps the text's look; the copy icon after
+   it, in the link's colour, says it can be pressed, and turns to a check and "Copied". */
+.copy-address {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.copy-address-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: -2px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--link);
+  white-space: nowrap;
+}
+.copy-address-mark svg { flex: none; }
+/* Only under a pointer that hovers: a phone keeps :hover on what was last tapped. */
+@media (hover: hover) {
+  .copy-address:hover > span:first-child { text-decoration: underline; text-underline-offset: 2px; }
+  .copy-address:hover .copy-address-mark { color: var(--link-hover); }
+}
 
 /* The longer fields, each under its heading. Structure from parseStructure() in
    logic/card.ts — real paragraphs and real lists, so the spacing between items is
