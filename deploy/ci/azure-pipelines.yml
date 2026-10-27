@@ -127,6 +127,7 @@ stages:
               curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 "$(basemapUrl)" -o "$tmp"
               echo "$(basemapSha256)  $tmp" | sha256sum -c -
               mv "$tmp" "$(basemapOut)"
+              chmod a+r "$(basemapOut)"
               echo "Protomaps basemap: $(basemapUrl)"
             displayName: Download and verify the Protomaps basemap
 
