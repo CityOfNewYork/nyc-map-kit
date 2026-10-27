@@ -56,7 +56,7 @@ function serve(ok = true) {
   return fetch;
 }
 const rows = () => within(document.getElementById("site-list")!).getAllByRole("button");
-const landing = () => screen.queryByRole("region", { name: "Find a warming center near you" });
+const landing = () => screen.queryByRole("heading", { name: "Find a warming center near you" });
 const mapHeading = () => screen.queryByRole("heading", { name: "Map of warming centers" });
 
 function renderApp(url = "/warming.html") {
