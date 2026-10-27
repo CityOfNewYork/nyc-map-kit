@@ -92,7 +92,8 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
 
       <div className="card-foot">
         <Updated date={cardUpdated(config, p, org, model.generated)} />
-        <CopyLink key={p.id} url={() => siteUrl(p.id)} payload={{ site_id: p.id, via: "card" }} />
+        <CopyLink key={p.id} url={() => siteUrl(p.id)} payload={{ site_id: p.id, via: "card" }}
+            label="Share result" />
       </div>
     </div>
   );
@@ -218,9 +219,9 @@ function Updated({ date }: { date: string }) {
 /** Copies `url()`, read at the press, and says it did: the card copies its own address,
  *  ?site=<id>. Inside an iframe that is the frame's address (see useSiteCard). `payload`
  *  goes with the analytics event. Give it a `key` that changes with what the link
- *  carries, so the button says "Copy link" again for a new one. */
-export function CopyLink({ url, payload }: {
-  url: () => URL; payload: Record<string, unknown>;
+ *  carries, so the button returns to its label for a new one. */
+export function CopyLink({ url, payload, label = "Copy link" }: {
+  url: () => URL; payload: Record<string, unknown>; label?: string;
 }) {
   const [result, copy] = useCopy(() => url().href, "map_copy_link", payload);
   return (
@@ -229,7 +230,7 @@ export function CopyLink({ url, payload }: {
         <Icon name="link" size={16} />
         {result === "copied" ? <span>{t("Link copied")}</span>
           : result === "failed" ? <span>{t("Could not copy the link")}</span>
-          : <span>{t("Copy link")}</span>}
+          : <span>{t(label)}</span>}
       </button>
       {/* The same outcome for a screen reader, which does not hear a button's label change. */}
       <span className="visually-hidden" role="status">

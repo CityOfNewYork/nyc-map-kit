@@ -343,7 +343,7 @@
 /* A grey outline around the whole bar, button included. */
 .hero .search-bar {
   height: 54px;
-  border: 2px solid var(--ink-muted);
+  border: 2px solid #888888; /* grey outline for contrast ratio */
   border-radius: var(--radius-pill);
   background: var(--surface);
   overflow: hidden;
@@ -363,7 +363,9 @@
   background: var(--ink);
   color: var(--surface);
 }
-.hero .search-submit:hover { background: #333333; }
+.hero .search-submit:hover { 
+  background: #707070; /* darker grey on hover for contrast ratio */
+}
 /* The status line and the choices float over the page below, in the cards they are over
    the map, so the hero keeps its height. */
 .hero .search-drop {
