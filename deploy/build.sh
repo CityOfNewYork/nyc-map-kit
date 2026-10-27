@@ -79,6 +79,11 @@ curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 "$BASEMAP_URL" -o "
 STEP="verifying the checksum of the downloaded basemap (expected $BASEMAP_SHA256)"
 echo "$BASEMAP_SHA256  $BASEMAP_TMP" | sha256_check
 mv "$BASEMAP_TMP" "$BASEMAP_OUT"
+
+# Add read permissions to group and others for the downloaded basemap or the
+# map breaks because it is not readable by the web server.
+chmod a+r "$BASEMAP_OUT"
+
 echo "Protomaps basemap: $BASEMAP_URL"
 if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
   echo "Protomaps basemap: $BASEMAP_URL" >> "$GITHUB_STEP_SUMMARY"
