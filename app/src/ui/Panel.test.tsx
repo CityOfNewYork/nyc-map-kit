@@ -39,7 +39,7 @@ afterEach(() => {
 describe("Panel", () => {
   test("renders one keyboard-operable row for every site, north to south", () => {
     renderPanel();
-    expect(screen.getByRole("navigation", { name: "Volunteer sites" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Volunteer sites" })).toBeInTheDocument();
     expect(rows().map((r) => r.textContent)).toEqual([
       "Gamma3 Grand Concourse, Bronx", "Alpha1 Grand Concourse, Bronx", "Beta2 Grand Concourse, Bronx",
     ]);
@@ -50,12 +50,14 @@ describe("Panel", () => {
     expect(rows().map((r) => r.dataset.siteId)).toEqual(["b", "a", "c"]);
     expect(within(rows()[0]).getByText("0.3 mi away")).toHaveAttribute("aria-hidden", "true");
     expect(within(rows()[0]).getByText("0.3 miles away")).toBeInTheDocument();
-    expect(screen.getAllByRole("status")[0]).toHaveTextContent("Closest to Harlem, Manhattan");
+    expect(document.querySelector(".list-closest")).toHaveTextContent("Closest to Harlem, Manhattan");
+    // The search box's line is the live region (ui/Search.tsx), so the place is heard once.
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   test("omits site rows when list is off, and keeps the summary", () => {
     renderPanel({ list: "off" });
-    fireEvent.click(screen.getByRole("button", { name: "Show list" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Show list/ }));
     expect(rows()).toEqual([]);
     expect(screen.getByText("3 sites")).toBeInTheDocument();
   });
@@ -87,17 +89,25 @@ describe("Panel", () => {
 
   test("on a desktop the list starts shut, and the handle shows it and hides it again", () => {
     renderPanel();
-    const handle = screen.getByRole("button", { name: "Show list" });
-    expect(screen.getByRole("navigation")).toHaveClass("shut");
+    const handle = screen.getByRole("button", { name: /^Show list/ });
+    expect(screen.getByRole("region")).toHaveClass("shut");
     expect(handle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("3 sites")).toBeNull();
+    expect(handle.querySelector(".counts")).toHaveTextContent(/^Show list$/);
     fireEvent.click(handle);
-    expect(screen.getByRole("navigation")).not.toHaveClass("shut");
+    expect(screen.getByRole("region")).not.toHaveClass("shut");
     expect(handle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("3 sites")).toBeInTheDocument();
     fireEvent.click(handle);
     expect(handle).toHaveAttribute("aria-expanded", "false");
     expect(handle).toHaveTextContent("Show list");
+  });
+
+  test("its top line is a heading whose button says how many sites, open or shut", () => {
+    renderPanel();
+    const handle = screen.getByRole("button", { name: "Show list, 3 sites" });
+    expect(screen.getByRole("heading", { level: 2 })).toContainElement(handle);
+    fireEvent.click(handle);
+    expect(handle).toHaveAccessibleName(/^3 sites\s*Show or hide the list$/);
   });
 
   test("on a phone the handle steps the sheet between collapsed and half height", () => {

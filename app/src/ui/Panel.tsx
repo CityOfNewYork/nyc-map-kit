@@ -44,9 +44,6 @@ interface PanelProps {
   action?: ReactNode;
   /** A row's lines above the distance. The site's name and address unless given. */
   row?: (feature: Site) => ReactNode;
-  /** Shown above the rows and kept in view, before the place found, such as a count of
-   *  the sites. Nothing unless given. */
-  header?: ReactNode;
   /** Shown at the top of the rows and scrolled away with them, such as a notice. Nothing
    *  unless given. */
   intro?: ReactNode;
@@ -66,11 +63,15 @@ interface PanelProps {
  * list -> map controls, which is why it sits before the map in the DOM. The card is a
  * modal and takes focus when it opens.
  *
+ * Its top line is a heading holding the button that shows and hides the list (WAI-ARIA
+ * APG accordion pattern), so a screen reader moving by headings finds the list, open or
+ * shut, and hears how many sites it holds.
+ *
  * `model` is null until the data has loaded; until then the panel shows its frame and
  * nothing in it responds.
  */
 export function Panel({
-  model, list, selectedId, found, onClearFilters, onOpen, label, summary, action, row, header,
+  model, list, selectedId, found, onClearFilters, onOpen, label, summary, action, row,
   intro, marker,
 }: PanelProps) {
   const origin = found && found.center;
@@ -182,40 +183,43 @@ export function Panel({
   const hidden = !desktop && step === "collapsed";
 
   return (
-    <nav className={["panel", dragging && "dragging", desktop && shut && "shut"]
-                      .filter(Boolean).join(" ")}
-         id="panel" ref={panelRef} aria-label={label}>
+    <section className={["panel", dragging && "dragging", desktop && shut && "shut"]
+                          .filter(Boolean).join(" ")}
+             id="panel" ref={panelRef} aria-label={label}>
       {/* The handle spans the line; an app's control sits over it, a button of its own
           rather than one inside the handle (see .panel-top in style.css). */}
       <div className="panel-top">
-        <button className="sheet-handle" id="sheet-handle" type="button"
-                aria-expanded={desktop ? !shut : step !== "collapsed"} aria-controls="site-list"
-                onClick={() => model && (desktop
-                  ? setShut((s) => !s) : setStep((s) => NEXT_STEP[s]))}
-                onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-                onPointerUp={onPointerUp}>
-          {desktop && shut ? (
-            <>
-              <span className="chev" aria-hidden="true">▶</span>
-              <span className="counts">{t("Show list")}</span>
-            </>
-          ) : (
-            <>
-              <span className="counts">{summary}</span>
-              <span className="chev" aria-hidden="true">{step === "half" ? "▼" : "▲"}</span>
-              <span className="visually-hidden">{t("Show or hide the list")}</span>
-            </>
-          )}
-        </button>
+        <h2 className="panel-heading">
+          <button className="sheet-handle" id="sheet-handle" type="button"
+                  aria-expanded={desktop ? !shut : step !== "collapsed"}
+                  aria-controls="site-list"
+                  onClick={() => model && (desktop
+                    ? setShut((s) => !s) : setStep((s) => NEXT_STEP[s]))}
+                  onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}>
+            {desktop && shut ? (
+              <>
+                <span className="chev" aria-hidden="true">▶</span>
+                <span className="counts">{t("Show list")}</span>
+                <span className="visually-hidden">, {summary}</span>
+              </>
+            ) : (
+              <>
+                <span className="counts">{summary}</span>
+                <span className="chev" aria-hidden="true">{step === "half" ? "▼" : "▲"}</span>
+                <span className="visually-hidden">{t("Show or hide the list")}</span>
+              </>
+            )}
+          </button>
+        </h2>
         {action && !(desktop && shut) && <div className="panel-action">{action}</div>}
       </div>
 
       {/* Under the count, on a desktop: that no site matches the filters, and after a
           search, the place the rows are ordered from. The place line stands in for the
-          search box's own (see style.css), so it is a live region too, and a screen reader
-          hears it without leaving the input. */}
+          search box's own on screen (see style.css); the search box's line, always in
+          the page, is the one a screen reader hears. */}
       <div className="list-head" inert={hidden}>
-        {header}
         {empty && (
           <p className="list-empty">
             <span>{t("No locations match your filters.")}</span>{" "}
@@ -224,7 +228,7 @@ export function Panel({
             </button>
           </p>
         )}
-        <div className="list-closest" role="status">
+        <div className="list-closest">
           {found && <p><span>{t("Closest to")}</span>{" "}<PlaceName place={found} inline /></p>}
         </div>
       </div>
@@ -296,7 +300,7 @@ export function Panel({
           </button>
         )}
       </div>
-    </nav>
+    </section>
   );
 }
 

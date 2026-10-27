@@ -46,7 +46,10 @@ interface SearchProps {
  * The status line under the box is a live region, so a screen reader hears "Searching…",
  * the result, or why there is none, without leaving the input. The hint in the empty box
  * is its <label>, laid over the input, not a placeholder: the translation proxy cannot
- * see attribute values (see App.tsx).
+ * see attribute values (see App.tsx). The label is aria-hidden, so a screen reader moving
+ * through the page does not read it a second time as text. The input takes its name from
+ * it through aria-labelledby, which reaches hidden text in every browser; a hidden <label>
+ * alone does not.
  *
  * Use my location asks the browser where the reader is and treats the answer as a place
  * found, so the list orders itself nearest-first from there. The browser asks the reader's
@@ -231,8 +234,9 @@ export function Search({ onFound, onClear }: SearchProps) {
                role="combobox" aria-expanded={choices.length > 0}
                aria-controls={choices.length > 0 ? "search-choices" : undefined}
                aria-activedescendant={active >= 0 ? `search-choice-${active}` : undefined}
-               aria-describedby="search-status" />
-        <label htmlFor="search-input" className={value ? "search-label filled" : "search-label"}>
+               aria-labelledby="search-label" aria-describedby="search-status" />
+        <label htmlFor="search-input" id="search-label" aria-hidden="true"
+               className={value ? "search-label filled" : "search-label"}>
           {GEOCLIENT_KEY
             ? <span>{t("Enter an address or neighborhood")}</span>
             : <span>{t("Neighborhood, borough or ZIP code")}</span>}

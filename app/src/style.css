@@ -614,9 +614,18 @@ body {
   align-items: center;
   column-gap: 10px;
 }
-.panel-top > .sheet-handle {
+/* The heading holding the handle takes the handle's place on the line, and passes the
+   line's columns on to it. */
+.panel-heading {
   grid-area: 1 / 1 / 2 / -1;
   align-self: stretch;
+  display: grid;
+  grid-template-columns: subgrid;
+  margin: 0;
+  font: inherit;
+}
+.panel-heading > .sheet-handle {
+  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: subgrid;
   align-items: center;
@@ -639,14 +648,14 @@ body {
 .list-empty { font-size: 0.875rem; color: var(--ink); }
 .list-closest { font-size: 0.8125rem; }
 /* With something to say, it is the count's subtext: the line sits right under the count,
-   with the rule under both. The list's line names the place, so the search box's does
-   not; its live region stays in place, empty, for what the search says next. */
+   with the rule under both. The list's line names the place, so the search box's is only
+   moved out of sight: it is the live region a screen reader hears, open list or shut. */
 @media (min-width: 768px) {
   .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p)) {
     border-bottom: 0;
   }
   .panel:not(.shut) .panel-top:has(+ .list-head :is(.list-empty, .list-closest p))
-    > .sheet-handle {
+    > .panel-heading > .sheet-handle {
     min-height: 0;
     padding-top: 12px;
     padding-bottom: 2px;
@@ -658,7 +667,13 @@ body {
     margin-bottom: -10px;
   }
   .panel-top + .list-head { padding-top: 0; padding-bottom: 12px; }
-  .stage .search-found { display: none; }
+  .stage .search-found {
+    position: absolute;
+    width: 1px; height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   .stage .search-status:has(> .search-found) { margin: 0; padding: 0; box-shadow: none; }
 }
 /* On a phone the search box keeps its line, and the sheet's handle the count. */
@@ -1287,7 +1302,7 @@ body {
      "Show list", in the key's type. */
   .panel.shut { flex: none; align-self: flex-start; }
   .panel.shut > :not(.panel-top) { display: none; }
-  .panel.shut .panel-top { display: block; border-bottom: 0; }
+  .panel.shut :is(.panel-top, .panel-heading) { display: block; border-bottom: 0; }
   .panel.shut .sheet-handle {
     display: flex;
     gap: 8px;

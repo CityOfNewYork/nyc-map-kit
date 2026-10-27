@@ -72,7 +72,7 @@ async function renderApp(search = "") {
 }
 const rows = () => within(document.getElementById("site-list")!).queryAllByRole("button");
 /** On a desktop the list starts shut: open it, to see its counts. */
-const showList = () => fireEvent.click(screen.getByRole("button", { name: "Show list" }));
+const showList = () => fireEvent.click(screen.getByRole("button", { name: /^Show list/ }));
 
 beforeEach(() => {
   maps = [];
@@ -101,7 +101,7 @@ describe("App", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Volunteer opportunities");
     expect(document.title).toBe("Volunteer opportunities");
     expect(rows().map((r) => r.dataset.siteId)).toEqual(["c", "a", "b"]);
-    expect(screen.getByRole("navigation")).toHaveClass("shut");   // on a desktop, until asked
+    expect(screen.getByRole("region")).toHaveClass("shut");   // on a desktop, until asked
     showList();
     expect(screen.getByText("2 organizations")).toBeInTheDocument();
     expect(screen.getByText("3 sites")).toBeInTheDocument();
@@ -121,7 +121,7 @@ describe("App", () => {
     await renderApp();
     fireEvent.click(rows()[0]);
     expect(mainMap().select).toHaveBeenCalledWith("c");
-    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Gamma");
+    expect(screen.getByRole("heading", { level: 2, name: "Gamma" })).toBeInTheDocument();
     expect(rows()[0]).toHaveAttribute("aria-current", "true");
   });
 
