@@ -1,5 +1,5 @@
-# nyc-map-kit — Azure Pipelines. Mirrors deploy/build.sh: install, lint, test, fetch the
-# pinned Protomaps basemap and Clash Grotesk, then `npm run build`. The build output (dist/)
+# nyc-map-kit — Azure Pipelines. The Build stage runs deploy/build.sh: install, lint, test, fetch
+# the pinned Protomaps basemap and Clash Grotesk, then `npm run build`. The build output (dist/)
 # is published as the `dist` pipeline artifact; the Package stage bakes it into a container
 # image (deploy/images/Dockerfile) and pushes it to the registry for the chosen environment; the
 # Deploy stage renders deploy/manifests/deployment.yaml and service.yaml and applies them to that
@@ -58,15 +58,10 @@ pool:
 
 variables:
   # Build
-  - name: basemapUrl
-    value: https://github.com/CityOfNewYork/nyc-map-kit/releases/download/basemap-20261019-3/nyc-20261019-3.pmtiles
-  - name: basemapSha256
-    value: b36c554f9ed888292c924c24ab7b9e6738b6c58212586337ea2df000b28ad2ca
-  - name: basemapOut
-    value: app/public/nyc.pmtiles
   - name: npm_config_cache
     value: $(Pipeline.Workspace)/.npm
-  # The timestamp part of basemapUrl's nyc-<tileBuild>.pmtiles; labels the image (deploy/images/Dockerfile).
+  # The timestamp part of BASEMAP_URL's nyc-<tileBuild>.pmtiles in deploy/build.sh; labels the
+  # image (deploy/images/Dockerfile). Keep in step with that URL when a newer basemap is cut.
   - name: tileBuild
     value: 20261019-3
 
@@ -111,31 +106,10 @@ stages:
                 npm | "$(Agent.OS)"
               path: $(npm_config_cache)
 
-          - script: npm ci
-            displayName: npm ci
-
-          - script: npm run lint
-            displayName: npm run lint
-
-          - script: npm test
-            displayName: npm test
-
-          - bash: |
-              set -euo pipefail
-              tmp="$(mktemp "$(basemapOut).XXXXXX")"
-              trap 'rm -f "$tmp"' EXIT
-              curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 "$(basemapUrl)" -o "$tmp"
-              echo "$(basemapSha256)  $tmp" | sha256sum -c -
-              mv "$tmp" "$(basemapOut)"
-              chmod a+r "$(basemapOut)"
-              echo "Protomaps basemap: $(basemapUrl)"
-            displayName: Download and verify the Protomaps basemap
-
-          - bash: build/clash-grotesk.sh
-            displayName: Fetch Clash Grotesk
-
-          - script: npm run build
-            displayName: npm run build
+          # npm ci, lint, test, the pinned basemap download and checksum, Clash Grotesk and
+          # `npm run build` all live in deploy/build.sh, the same script used locally.
+          - bash: deploy/build.sh
+            displayName: Build app (deploy/build.sh)
             env:
               # Secret variables are not exposed to scripts unless mapped explicitly.
               VITE_GEOCLIENT_KEY: $(viteGeoclientKey)

@@ -10,8 +10,8 @@
 # in an HTTP header).
 #
 # The key is read at build time from VITE_GEOCLIENT_KEY, which can be set in the
-# environment (it takes precedence) or in app/.env.local. This script requires both that
-# app/.env.local exists and that the key is non-empty, and stops before building if not.
+# environment (it takes precedence, as in CI) or in app/.env.local. This script requires
+# a non-empty key from one of them, and stops before building if there is none.
 # An invalid key still builds, but address search will not work.
 #
 # app/.env.local must not be committed to git; .gitignore enforces this. See
@@ -32,8 +32,14 @@ trap 'code=$?; echo "Error: build failed during \"${STEP}\" (exit code ${code}, 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# Keep in step with the workflow, deploy/ci/azure-pipelines.yml (and build/protomaps.sh)
-# when a newer basemap is cut.
+# Keep in step with the workflow, the tileBuild variable in deploy/ci/azure-pipelines.yml
+# (and build/protomaps.sh) when a newer basemap is cut.
+#
+# BASEMAP_URL and BASEMAP_SHA256 are pinned on purpose and must be updated together, by
+# hand, whenever the pmtiles version changes: copy the new release asset's URL and its
+# "sha256:" digest (shown on the release page) from the same release. The checksum is not
+# fetched automatically, because it would then come from the same place as the file and
+# verify nothing.
 BASEMAP_URL="https://github.com/CityOfNewYork/nyc-map-kit/releases/download/basemap-20261019-3/nyc-20261019-3.pmtiles"
 BASEMAP_SHA256="b36c554f9ed888292c924c24ab7b9e6738b6c58212586337ea2df000b28ad2ca"
 BASEMAP_OUT="app/public/nyc.pmtiles"
@@ -51,11 +57,11 @@ else
 fi
 
 [[ -x build/clash-grotesk.sh ]] || fail "build/clash-grotesk.sh is missing or not executable."
-[[ -f app/.env.local ]] || fail "app/.env.local is missing; copy app/.env.example to it and set VITE_GEOCLIENT_KEY."
 
 # Same precedence as Vite: a VITE_GEOCLIENT_KEY in the environment wins over app/.env.local.
 GEOCLIENT_KEY="${VITE_GEOCLIENT_KEY:-}"
 if [[ -z "$GEOCLIENT_KEY" ]]; then
+  [[ -f app/.env.local ]] || fail "VITE_GEOCLIENT_KEY is not set and app/.env.local is missing; copy app/.env.example to it and set VITE_GEOCLIENT_KEY."
   GEOCLIENT_KEY="$(tr -d '\r' < app/.env.local \
     | sed -n -E "s/^[[:space:]]*VITE_GEOCLIENT_KEY[[:space:]]*=[[:space:]]*//p" \
     | tail -n 1 | sed -E "s/^[\"']//; s/[\"']\$//")"
