@@ -29,7 +29,7 @@ export function LandingPage({ leaving, onOpenMap, onFound }: LandingPageProps) {
     <section className={leaving ? "hero leaving" : "hero"} ref={heroRef}
              aria-labelledby="landing-title">
       <div className="hero-inner">
-        <h2 id="landing-title">{t("Find a warming center near you")}</h2>
+        <h1 id="landing-title" tabIndex={-1}>{t("Find a warming center near you")}</h1>
         <p>
           <span>
             {t("During periods of extreme cold, warming centers may be activated across all boroughs, using both fixed sites and warming vehicles.")}

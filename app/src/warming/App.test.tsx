@@ -106,6 +106,18 @@ describe("warming App", () => {
       await waitFor(() => expect(rows()).toHaveLength(2));
     });
 
+    test("each view's one <h1> is its own heading, inside <main>, not the site's name", () => {
+      renderApp();
+      const main = screen.getByRole("main");
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Find a warming center near you");
+      expect(main).toContainElement(screen.getByRole("heading", { level: 1 }));
+      expect(screen.getByRole("banner")).toHaveTextContent("Warming Centers");
+      cleanup();
+      renderApp("/warming.html?view=map");
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Map of warming centers");
+      expect(screen.getByRole("main")).toContainElement(screen.getByRole("heading", { level: 1 }));
+    });
+
     test("See full map switches to the map view, adds ?view=map, and moves focus there", () => {
       renderApp();
       fireEvent.click(screen.getByRole("button", { name: /See full map/ }));
