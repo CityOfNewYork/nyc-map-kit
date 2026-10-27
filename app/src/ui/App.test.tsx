@@ -71,6 +71,8 @@ async function renderApp(search = "") {
   await waitFor(() => expect(createMap).toHaveBeenCalled());
 }
 const rows = () => within(document.getElementById("site-list")!).queryAllByRole("button");
+/** On a desktop the list starts shut: open it, to see its counts. */
+const showList = () => fireEvent.click(screen.getByRole("button", { name: "Show list" }));
 
 beforeEach(() => {
   maps = [];
@@ -99,6 +101,8 @@ describe("App", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Volunteer opportunities");
     expect(document.title).toBe("Volunteer opportunities");
     expect(rows().map((r) => r.dataset.siteId)).toEqual(["c", "a", "b"]);
+    expect(screen.getByRole("navigation")).toHaveClass("shut");   // on a desktop, until asked
+    showList();
     expect(screen.getByText("2 organizations")).toBeInTheDocument();
     expect(screen.getByText("3 sites")).toBeInTheDocument();
     expect(mainMap().options.data?.features).toHaveLength(3);
@@ -108,6 +112,7 @@ describe("App", () => {
   test("a config's own count replaces the organization and site counts", async () => {
     serve({ "config.json": { count: { one: "{n} center", other: "{n} centers" } } });
     await renderApp();
+    showList();
     expect(screen.getByText("3 centers")).toBeInTheDocument();
     expect(screen.queryByText("2 organizations")).toBeNull();
   });
@@ -130,6 +135,7 @@ describe("App", () => {
 
   test("filters by organization type in the list, on the map and in the address", async () => {
     await renderApp();
+    showList();
     fireEvent.click(screen.getByRole("button", { name: "Filters" }));
     fireEvent.click(screen.getByRole("button", { name: "Organization type" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Library" }));

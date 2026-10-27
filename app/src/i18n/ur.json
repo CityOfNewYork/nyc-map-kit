@@ -23,6 +23,9 @@
   "Link copied": "لنک کاپی ہو گیا",
   "Could not copy the link": "لنک کاپی نہیں ہو سکا",
   "Copy link": "لنک کاپی کریں",
+  "Copy address": "پتہ کاپی کریں",
+  "Copied": "کاپی ہو گیا",
+  "Could not copy the address": "پتہ کاپی نہیں ہو سکا",
   "Close card": "کارڈ بند کریں",
   "Close prototype notice": "پروٹوٹائپ نوٹس بند کریں",
   "Previous site at this location": "اس مقام پر پچھلی جگہ",
@@ -132,5 +135,12 @@
   "Operated by": "زیرِ انتظام",
   "public computer centers data": "عوامی کمپیوٹر مراکز کا ڈیٹا",
   "Arrow keys move the map. Plus and minus zoom in and out.": "تیر والی کلیدیں نقشے کو ہلاتی ہیں۔ جمع اور تفریق سے زوم اِن اور زوم آؤٹ کریں۔",
-  "Every site on the map is also in the list.": "نقشے کی ہر جگہ فہرست میں بھی ہے۔"
+  "Every site on the map is also in the list.": "نقشے کی ہر جگہ فہرست میں بھی ہے۔",
+  "Restaurants": "ریستوران",
+  "Cuisine": "کھانے کی قسم",
+  "{n} restaurants": {
+    "one": "{n} ریستوران",
+    "other": "{n} ریستوران"
+  },
+  "wheelchair friendly restaurant finder": "وہیل چیئر کے لیے موزوں ریستوران تلاش کرنے کا صفحہ"
 }

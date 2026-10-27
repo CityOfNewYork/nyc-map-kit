@@ -17,6 +17,9 @@
   "Link copied": "連結已複製",
   "Could not copy the link": "無法複製連結",
   "Copy link": "複製連結",
+  "Copy address": "複製地址",
+  "Copied": "已複製",
+  "Could not copy the address": "無法複製地址",
   "Close card": "關閉卡片",
   "Close prototype notice": "關閉原型提示",
   "Previous site at this location": "此位置的上一個地點",
@@ -111,5 +114,9 @@
   "Operated by": "營運方",
   "public computer centers data": "公共電腦中心資料",
   "Arrow keys move the map. Plus and minus zoom in and out.": "方向鍵可移動地圖。加號和減號可放大和縮小。",
-  "Every site on the map is also in the list.": "地圖上的每個地點也都在列表中。"
+  "Every site on the map is also in the list.": "地圖上的每個地點也都在列表中。",
+  "Restaurants": "餐廳",
+  "Cuisine": "菜系",
+  "{n} restaurants": "{n} 家餐廳",
+  "wheelchair friendly restaurant finder": "輪椅友善餐廳查詢頁面"
 }
