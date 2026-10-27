@@ -31,6 +31,8 @@ The manifests use `$(name)` placeholders. `deploy/render.sh` fills each one in f
  
  ### Build and Run Docker Image
 
+Make sure you've built the app as described in [Build App](#build-app).
+
 In this section, the following must be substituted with real values:
 
 * `<version>` - the version for the Docker image (do NOT use "latest" for deployments to shared servers!)
@@ -48,17 +50,27 @@ docker build -t nyc-map-kit:<version> --build-arg TILEBUILD=nyc-<timestamp>.pmti
 docker run --rm --name nyc-map-kit -p <local-port>:80 nyc-map-kit:<version>
 ```
 
-### Deploy to a Local Cluster
+### Deploy to a Local Cluster (Docker Desktop)
 
-Uses the Kubernetes cluster built into Docker Desktop (Settings > Kubernetes), which runs images from the local Docker image store, so no registry is needed. Only the Deployment and Service are applied. The Ingress is skipped: it needs an ingress controller and a TLS secret, and in the pipeline only the Cutover stage applies it. Reach the app with `port-forward` instead.
+This section describes how to deploy the app to Docker's bundled Kubernetes server that runs on your local workstation. It assumes you have a recent version of Docker Desktop installed. Docker Desktop's Kubernetes server runs images from the local Docker image store, so no registry is needed.
+
+For now, only the Deployment and Service are applied. The Ingress is skipped: it needs an ingress controller and a TLS secret, and in the pipeline only the Cutover stage applies it. The app is reachable `port-forward` instead of an ingress controller.
+
+Enable Kubernetes by opening the Docker Dashboard and then going to "Settings" (gear icon in the upper right corner) and then "Kubernetes" (one of the choices in the left side sidebar). On the Kubernetes settings page, go the first setting, labled "Enable Kubernetes", and use the slider to enable Kubernetes.
+
+If you have not done so already, build the Docker image as described in the [Build App](#build-app) section.
 
 ```sh
 # Variables for the manifests' $(name) placeholders. REGISTRYSECRET is a dummy value
 # because the image is already local and is never pulled.
 export COLOR=blue REGISTRY=local IMAGEREPOSITORY=nyc-map-kit IMAGEVERSION=dev REGISTRYSECRET=unused
 
-# Build the image with the same name the manifests will ask for
-docker build -t local/nyc-map-kit:dev -f deploy/images/Dockerfile .
+# OPTIONAL: re-tag the image with the same name the manifests will ask for
+# by replacing the <version> with the real value
+#
+# Alternatively, adjust the variable values in the previous export command with
+# your local image configuration
+docker tag nyc-map-kit:<version> local/nyc-map-kit:dev
 
 # Once: the manifests are in this namespace
 kubectl --context docker-desktop create namespace gis-apps
