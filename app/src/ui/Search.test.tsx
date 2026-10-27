@@ -37,9 +37,11 @@ afterEach(() => {
 });
 
 describe("Search without a Geoclient key", () => {
-  test("says what it can find", () => {
+  test("says what it can find, as the box's name and not again as text", () => {
     const { input } = renderSearch();
     expect(input).toHaveAccessibleName("Neighborhood, borough or ZIP code");
+    expect(screen.getByText("Neighborhood, borough or ZIP code").closest("label"))
+      .toHaveAttribute("aria-hidden", "true");
   });
 
   test("finds a neighborhood from places.json, fetched once, and says so", async () => {
