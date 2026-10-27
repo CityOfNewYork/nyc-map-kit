@@ -42,6 +42,11 @@ describe("LandingPage", () => {
     expect(link).toHaveAttribute("rel", "noopener");
   });
 
+  test("the search box's form is the search landmark", () => {
+    renderLanding();
+    expect(screen.getByRole("search")).toContainElement(screen.getByRole("combobox"));
+  });
+
   test("See full map calls onOpenMap", () => {
     const { onOpenMap } = renderLanding();
     fireEvent.click(screen.getByRole("button", { name: /See full map/ }));

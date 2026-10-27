@@ -247,8 +247,10 @@ export default function App({ settings }: AppProps) {
             On a phone the list is a bottom sheet and this wrapper drops out of the layout
             (see style.css). */}
         <div className="side">
-          <div className="search-row">
-            <Search onFound={setFound} onClear={() => setFound(null)} />
+          {/* One search landmark for the box and the Filters button: HTML's <search>
+              covers "a search or filtering operation". */}
+          <div className="search-row" role="search">
+            <Search onFound={setFound} onClear={() => setFound(null)} landmark={false} />
             <FiltersButton ref={filterButton} controls="filters" open={filtering}
                            active={types.length ? 1 : 0}
                            onClick={() => (filtering ? closeFilters() : setFiltering(true))} />
