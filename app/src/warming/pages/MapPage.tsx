@@ -76,7 +76,7 @@ export function MapPage({
                summary={<ListCount total={model && model.features.length} shown={shown.length}
                                    filtered={active > 0} />}
                action={<CopyLink key={JSON.stringify(filters)} url={resultsUrl}
-                                 payload={{ via: "list" }} />}
+                                 payload={{ via: "list" }} label="Share results" />}
                row={(feature) => centerRow(feature, minute)} marker={centerMarker}
                header={(
                  // The count again, as a live region the eye does not see, so a screen
@@ -94,7 +94,7 @@ export function MapPage({
 }
 
 /** The map view as it is now, with its filters, language and card style, but without an
- *  open center's card, which has a Copy link of its own: what the list's Copy link
+ *  open center's card, which has a Share result of its own: what the list's Share results
  *  copies. */
 function resultsUrl(): URL {
   const url = siteUrl(null);
