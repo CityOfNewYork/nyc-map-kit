@@ -39,11 +39,12 @@
       data-orgs="">
 <!-- Plain HTML outside React, so it is on screen at first paint, even if the map fails to
      load, and costs no layout shift. It travels with every frame that embeds the block.
-     main.tsx translates each data-t element's text. -->
-<p class="prototype-note"><strong data-t>Prototype, not a City service.</strong>
+     main.tsx translates each data-t element's text. A region named by its first words, so
+     a screen reader moving by landmarks finds it. -->
+<section class="prototype-note" aria-labelledby="note-title"><strong id="note-title" data-t>Prototype, not a City service.</strong>
 <span data-t>For current information see the City's</span>
 <a href="https://data.cityofnewyork.us/d/sejx-2gn3" target="_top" data-t>public computer centers data</a><span>.</span>
-<button class="note-close" type="button"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span class="visually-hidden" data-t>Close prototype notice</span></button></p>
+<button class="note-close" type="button"><svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg><span class="visually-hidden" data-t>Close prototype notice</span></button></section>
 <div id="root"></div>
 <script type="module" src="/src/main.tsx"></script>
 </body>
