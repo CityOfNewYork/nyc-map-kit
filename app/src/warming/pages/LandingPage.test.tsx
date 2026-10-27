@@ -28,7 +28,9 @@ function renderLanding(leaving = false) {
 describe("LandingPage", () => {
   test("renders the hero heading and intro text", () => {
     renderLanding();
-    expect(screen.getByRole("region", { name: "Find a warming center near you" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Find a warming center near you" }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole("region")).toBeNull();   // the heading names it; not a landmark too
     expect(screen.getByText(/^During periods of extreme cold/)).toBeInTheDocument();
   });
 
@@ -38,6 +40,11 @@ describe("LandingPage", () => {
     expect(link).toHaveAttribute("href", "https://portal.311.nyc.gov/");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener");
+  });
+
+  test("the search box's form is the search landmark", () => {
+    renderLanding();
+    expect(screen.getByRole("search")).toContainElement(screen.getByRole("combobox"));
   });
 
   test("See full map calls onOpenMap", () => {
@@ -60,7 +67,7 @@ describe("LandingPage", () => {
     // jsdom lays nothing out, so give the hero a height to fold from.
     vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(240);
     const { rerender, onOpenMap, onFound } = renderLanding();
-    const hero = screen.getByRole("region");
+    const hero = screen.getByRole("heading", { level: 1 }).closest<HTMLElement>(".hero")!;
     expect(hero.style.height).toBe("");
     rerender(<LandingPage leaving onOpenMap={onOpenMap} onFound={onFound} />);
     expect(hero.style.height).toBe("0px");

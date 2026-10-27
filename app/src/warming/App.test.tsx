@@ -56,7 +56,7 @@ function serve(ok = true) {
   return fetch;
 }
 const rows = () => within(document.getElementById("site-list")!).getAllByRole("button");
-const landing = () => screen.queryByRole("region", { name: "Find a warming center near you" });
+const landing = () => screen.queryByRole("heading", { name: "Find a warming center near you" });
 const mapHeading = () => screen.queryByRole("heading", { name: "Map of warming centers" });
 
 function renderApp(url = "/warming.html") {
@@ -104,6 +104,18 @@ describe("warming App", () => {
       renderApp("/warming.html?view=map");
       expect(mapHeading()).toBeInTheDocument();
       await waitFor(() => expect(rows()).toHaveLength(2));
+    });
+
+    test("each view's one <h1> is its own heading, inside <main>, not the site's name", () => {
+      renderApp();
+      const main = screen.getByRole("main");
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Find a warming center near you");
+      expect(main).toContainElement(screen.getByRole("heading", { level: 1 }));
+      expect(screen.getByRole("banner")).toHaveTextContent("Warming Centers");
+      cleanup();
+      renderApp("/warming.html?view=map");
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Map of warming centers");
+      expect(screen.getByRole("main")).toContainElement(screen.getByRole("heading", { level: 1 }));
     });
 
     test("See full map switches to the map view, adds ?view=map, and moves focus there", () => {

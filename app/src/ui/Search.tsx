@@ -28,6 +28,9 @@ interface SearchProps {
   onFound: (place: Found) => void;
   /** The search was cleared. */
   onClear: () => void;
+  /** Whether the form is the page's search landmark. Leave it out where a wrapper that
+   *  holds the filters too is the landmark instead (MapPage, App). */
+  landmark?: boolean;
 }
 
 /**
@@ -57,7 +60,7 @@ interface SearchProps {
  *
  * The search never hides a site. App re-orders the list nearest-first and frames the map.
  */
-export function Search({ onFound, onClear }: SearchProps) {
+export function Search({ onFound, onClear, landmark = true }: SearchProps) {
   const [value, setValue] = useState("");
   const [status, setStatus] = useState<Status>({ type: "idle" });
   const inputRef = useRef<HTMLInputElement>(null);
@@ -225,7 +228,8 @@ export function Search({ onFound, onClear }: SearchProps) {
   }
 
   return (
-    <form className="search" id="search" role="search" onSubmit={onSubmit}>
+    <form className="search" id="search" role={landmark ? "search" : undefined}
+          onSubmit={onSubmit}>
       <div className="search-bar">
         <input ref={inputRef} className="search-input" id="search-input" type="text"
                value={value} onChange={(e) => setValue(e.target.value)}

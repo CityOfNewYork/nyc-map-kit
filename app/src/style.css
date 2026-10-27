@@ -173,17 +173,8 @@ body {
   overflow: hidden;
 }
 
-/* Deliberately block, not a flex row. The counts are not known until the data lands, so
-   a flex row re-wraps when they appear and the map below it jumps — measured as a CLS of
-   0.153, the block's entire layout-shift score. Two fixed lines never move. */
-/* The header's only child is the visually-hidden <h1> (see App.tsx), so it has
-   nothing left to draw. Without this it would still paint its old padding and rule as a
-   ~20px empty bar above the map, and the block would have given up the vertical space
-   without getting the heading back. The element stays for the document structure. */
-.block-header {
-  padding: 0;
-  border: 0;
-}
+/* With no bar above it, the block's <main> (App.tsx) fills the frame: both rows. */
+#root > main.stage { grid-row: 1 / -1; }
 
 .stage {
   position: relative;

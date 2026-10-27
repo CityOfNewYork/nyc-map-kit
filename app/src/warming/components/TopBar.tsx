@@ -9,21 +9,24 @@ const NYC_LOGO = "M430.8,60.7l9.2-8.6v-26.1L412.5,0h-91.6l-27.5,26.1V8.7L284.2,0
 
 /**
  * The bar across the top of the page: the NYC logo followed by "Warming Centers", the
- * page's heading, "Official website", which opens the line every nyc.gov page carries to
+ * site's name, "Official website", which opens the line every nyc.gov page carries to
  * say it is the City's, and at the far end the language menu.
+ *
+ * The name is not a heading: each view's <h1> opens its own content, inside <main>
+ * (LandingPage, MapPage).
  */
 export function TopBar() {
   const [open, setOpen] = useState(false);
   return (
     <header className="site-header">
       <div className="header-bar">
-        <h1 tabIndex={-1}>
+        <p className="site-name">
           <svg className="nyc-logo" aria-hidden="true" viewBox="0 0 440 139">
             <path d={NYC_LOGO} fill="currentColor" />
           </svg>
           <span className="visually-hidden">NYC</span>{" "}
           <span className="site-title">{t("Warming Centers")}</span>
-        </h1>
+        </p>
         <button type="button" className="official-toggle" aria-expanded={open}
                 aria-controls="official-notice" onClick={() => setOpen((o) => !o)}>
           <span>{t("Official website")}</span>

@@ -54,11 +54,13 @@ export function MapPage({
 
   return (
     <>
-      <h2 className="visually-hidden" id="map-heading" tabIndex={-1}
-          data-card-return>{t("Map of warming centers")}</h2>
+      <h1 className="visually-hidden" id="map-heading" tabIndex={-1}
+          data-card-return>{t("Map of warming centers")}</h1>
       <div className="toolbar">
-        <div className="search-row">
-          <Search onFound={onFound} onClear={onClear} />
+        {/* One search landmark for the box and the filters: HTML's <search> covers "a
+            search or filtering operation". */}
+        <div className="search-row" role="search">
+          <Search onFound={onFound} onClear={onClear} landmark={false} />
           <FiltersButton ref={filterButton} controls="filters" open={filtering} active={active}
                          onClick={() => (filtering ? closeFilters() : setFiltering(true))} />
           <FilterBar filters={filters} onChange={onFilters} />

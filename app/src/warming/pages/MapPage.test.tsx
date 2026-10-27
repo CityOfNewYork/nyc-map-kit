@@ -106,6 +106,14 @@ describe("MapPage", () => {
   });
 
   describe("search", () => {
+    test("the search landmark holds the search box and the filters", () => {
+      renderPage();
+      const search = screen.getByRole("search");
+      expect(within(search).getByRole("combobox")).toBeInTheDocument();
+      expect(within(search).getByRole("button", { name: "Open now" })).toBeInTheDocument();
+      expect(within(search).getByRole("button", { name: /^Filters/ })).toBeInTheDocument();
+    });
+
     test("a search is handed to the app", async () => {
       const { onFound } = renderPage();
       const input = screen.getByRole("combobox");

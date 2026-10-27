@@ -222,33 +222,30 @@ export default function App({ settings }: AppProps) {
   const feature = card.feature;
   return (
     <>
-      {/*
-        The heading is in the markup but not on the screen. The block is an iframe inside a
-        nyc.gov page that already has its own <h1> naming what the page is about, so
-        drawing the name a second time at the top of the map spent a line of vertical
-        space telling the resident something they had just read.
+      {/* The stage is the page's <main>: the search, the list and the map. */}
+      <main className="stage" id="stage" data-list={model ? settings.list : "on"}>
+        {/*
+          The <h1> opens <main>, in the markup but not on the screen: the page, or the
+          nyc.gov page that embeds the map in an iframe, already names it, and drawing the
+          name again at the top of the map would spend a line of vertical space on
+          something the resident has just read.
 
-        It stays in the DOM, visually hidden, because it is doing three jobs that have
-        nothing to do with being seen: it is the block's only <h1>, so removing it would
-        leave an iframe whose document has no heading outline at all; it is what a screen
-        reader announces on entering the frame, which is the only way a non-sighted user
-        learns what the frame contains; and it is the landmark the list and map sit under.
-
-        It also takes focus when a card closes that no list row opened and the list is shut or off
-        (useSiteCard.ts, closedCardFocus), so focus is not left on nothing.
-      */}
-      <header className="block-header">
+          It stays in the DOM, visually hidden, because it is the page's only <h1>, what a
+          screen reader announces first, and the heading the list and map sit under. It
+          also takes focus when a card closes that no list row opened and the list is shut
+          or off (useSiteCard.ts, closedCardFocus), so focus is not left on nothing.
+        */}
         <h1 id="block-title" className="visually-hidden" tabIndex={-1}
             data-card-return>{title || DEFAULT_TITLE}</h1>
-      </header>
 
-      <div className="stage" id="stage" data-list={model ? settings.list : "on"}>
         {/* The search box and the Filters button above the list, one column on a desktop.
             On a phone the list is a bottom sheet and this wrapper drops out of the layout
             (see style.css). */}
         <div className="side">
-          <div className="search-row">
-            <Search onFound={setFound} onClear={() => setFound(null)} />
+          {/* One search landmark for the box and the Filters button: HTML's <search>
+              covers "a search or filtering operation". */}
+          <div className="search-row" role="search">
+            <Search onFound={setFound} onClear={() => setFound(null)} landmark={false} />
             <FiltersButton ref={filterButton} controls="filters" open={filtering}
                            active={types.length ? 1 : 0}
                            onClick={() => (filtering ? closeFilters() : setFiltering(true))} />
@@ -296,7 +293,7 @@ export default function App({ settings }: AppProps) {
             <p className="loading" id="loading"><span>{t("Loading the map…")}</span></p>
           )}
         </div>
-      </div>
+      </main>
 
       <SiteDialog ref={dialogElement} miniMapElement={miniMapElement}
                   feature={feature} group={card.group}

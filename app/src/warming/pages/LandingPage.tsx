@@ -26,10 +26,10 @@ export function LandingPage({ leaving, onOpenMap, onFound }: LandingPageProps) {
   }, [leaving]);
 
   return (
-    <section className={leaving ? "hero leaving" : "hero"} ref={heroRef}
-             aria-labelledby="landing-title">
+    // Not a landmark of its own: its <h1> names it, and it sits in <main>.
+    <section className={leaving ? "hero leaving" : "hero"} ref={heroRef}>
       <div className="hero-inner">
-        <h2 id="landing-title">{t("Find a warming center near you")}</h2>
+        <h1 tabIndex={-1}>{t("Find a warming center near you")}</h1>
         <p>
           <span>
             {t("During periods of extreme cold, warming centers may be activated across all boroughs, using both fixed sites and warming vehicles.")}
