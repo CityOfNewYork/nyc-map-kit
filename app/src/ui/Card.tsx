@@ -32,11 +32,11 @@ interface CardProps {
 
 /**
  * One site's card: always exactly one record. In order: the name; the app's `meta` line;
- * its `status` and, after a search, how far the site is; the buttons; the address and the
- * fact rows, each beside its icon; the longer fields under headings; and when the site
- * was last updated, with a link to the card itself. What the buttons, facts and sections
- * are is config.json's (see logic/card.ts); anything a site does not have is left out
- * rather than shown empty.
+ * its `status` and, after a search, how far the site is; the buttons; the address, which
+ * copies itself when pressed, and the fact rows, each beside its icon; the longer fields
+ * under headings; and when the site was last updated, with a link to the card itself.
+ * What the buttons, facts and sections are is config.json's (see logic/card.ts); anything
+ * a site does not have is left out rather than shown empty.
  *
  * Every visible string is its own element — see the language rule at the top of App.tsx.
  */
@@ -72,7 +72,9 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
                directions={mapsLink(config, feature, org)} />
 
       <div className="card-facts">
-        <Fact icon="pin" label={t("Address")}><span>{p.address}</span></Fact>
+        <Fact icon="pin" label={t("Address")}>
+          <CopyAddress key={p.id} address={p.address} payload={{ org_id: p.org_id, site_id: p.id }} />
+        </Fact>
         {hours && <Fact icon="clock" label={t("Hours")}>{hours}</Fact>}
         {facts.map((fact) => (
           <Fact key={fact.key} icon={fact.icon} label={t(fact.label)}>
@@ -221,16 +223,7 @@ function Updated({ date }: { date: string }) {
 export function CopyLink({ url, payload, label = "Copy link" }: {
   url: () => URL; payload: Record<string, unknown>; label?: string;
 }) {
-  const [result, setResult] = useState<"copied" | "failed" | null>(null);
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(url().href);
-      setResult("copied");
-      track("map_copy_link", payload);
-    } catch {
-      setResult("failed");
-    }
-  }
+  const [result, copy] = useCopy(() => url().href, "map_copy_link", payload);
   return (
     <>
       <button type="button" className="copy-link" onClick={copy}>
@@ -248,7 +241,50 @@ export function CopyLink({ url, payload, label = "Copy link" }: {
   );
 }
 
-type IconName = FactIcon | "pin" | "directions" | "link" | "warning";
+/** The address as a button that copies it, with a copy icon after it, and a check and
+ *  "Copied" once it has. `payload` goes with the analytics event. Give it a `key` that
+ *  changes with the site, so a new card's address starts without "Copied". */
+function CopyAddress({ address, payload }: {
+  address: string; payload: Record<string, unknown>;
+}) {
+  const [result, copy] = useCopy(() => address, "map_copy_address", payload);
+  return (
+    <>
+      <button type="button" className="copy-address" onClick={copy}>
+        <span>{address}</span>{" "}
+        <span className="copy-address-mark">
+          <Icon name={result === "copied" ? "check" : "copy"} size={16} />
+          {result === "copied" ? <span>{t("Copied")}</span>
+            : result === "failed" ? <span>{t("Could not copy the address")}</span>
+            : <span className="visually-hidden">{t("Copy address")}</span>}
+        </span>
+      </button>
+      {/* The same outcome for a screen reader, which does not hear a button's label change. */}
+      <span className="visually-hidden" role="status">
+        {result === "copied" && <span>{t("Copied")}</span>}
+        {result === "failed" && <span>{t("Could not copy the address")}</span>}
+      </span>
+    </>
+  );
+}
+
+/** Copies `text()`, read at the press, and pushes `event` with `payload` once it has.
+ *  Returns how the last copy went, for the button to say, and the press handler. */
+function useCopy(text: () => string, event: string, payload: Record<string, unknown>) {
+  const [result, setResult] = useState<"copied" | "failed" | null>(null);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text());
+      setResult("copied");
+      track(event, payload);
+    } catch {
+      setResult("failed");
+    }
+  }
+  return [result, copy] as const;
+}
+
+type IconName = FactIcon | "pin" | "directions" | "link" | "copy" | "check" | "warning";
 
 /** The card's icons, on a 24-unit square. Decorative: the text beside each says what it
  *  means. */
@@ -301,6 +337,17 @@ const ICONS: Record<IconName, ReactNode> = {
       <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1" />
       <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1" />
     </g>
+  ),
+  // Two sheets, one over the other.
+  copy: (
+    <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+      <rect x="9" y="9" width="11.5" height="11.5" rx="2" />
+      <path d="M15 9V5.5a2 2 0 0 0-2-2H5.5a2 2 0 0 0-2 2V13a2 2 0 0 0 2 2H9" />
+    </g>
+  ),
+  check: (
+    <path d="M4.5 12.5l5 5L19.5 7" fill="none" stroke="currentColor" strokeWidth="2.4"
+          strokeLinecap="round" strokeLinejoin="round" />
   ),
   warning: (
     <>

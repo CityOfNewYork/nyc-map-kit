@@ -63,6 +63,17 @@ describe("FiltersPanel", () => {
     expect(onClose).toHaveBeenCalledTimes(3);
   });
 
+  test("keeps its heading and buttons outside the filters, the part that scrolls", () => {
+    stubScreen(true);
+    renderPanel();
+    const body = document.querySelector(".filters-body")!;
+    expect(body).toContainElement(screen.getByRole("checkbox", { name: "Open now" }));
+    for (const el of [screen.getByRole("heading", { name: "Filters" }),
+                      ...screen.getAllByRole("button")]) {
+      expect(body).not.toContainElement(el);
+    }
+  });
+
   test("counts one location in the singular, and closes when it goes", () => {
     stubScreen(true);
     const { view } = renderPanel(1);

@@ -50,7 +50,9 @@ interface FiltersPanelProps {
 /**
  * The panel the Filters button opens: a heading and a close button, the filters, then
  * Clear filters and "Show n locations", which closes the panel on the result. Each change
- * applies at once, to the list and the map together. Escape closes it too.
+ * applies at once, to the list and the map together. Escape closes it too. The panel is
+ * no taller than the room it has: the heading and the buttons stay put, and the filters
+ * scroll between them.
  *
  * On a desktop it opens under the search box, in the column, with the map still in use.
  * On a phone it is a modal card over the blurred map, as the site card is: showModal()
@@ -95,7 +97,7 @@ export function FiltersPanel({ id, shown, onClear, onClose, children }: FiltersP
         </button>
       </div>
 
-      {children}
+      <div className="filters-body">{children}</div>
 
       <div className="filters-foot">
         <button type="button" className="filters-clear" onClick={onClear}>

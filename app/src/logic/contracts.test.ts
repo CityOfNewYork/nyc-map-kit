@@ -20,6 +20,7 @@ const json = <T>(path: string): T => JSON.parse(text(path));
 const MAPS = [
   { config: "public/config.json", data: "public/sites.geojson", orgs: "public/orgs.json" },
   { config: "public/computer-centers/config.json", data: "public/computer-centers/sites.geojson" },
+  { config: "public/wheelchair-friendly/config.json", data: "public/wheelchair-friendly/sites.geojson" },
 ];
 const WARMING_SAMPLES = Object.values(DATASETS).map((file) => `public/${file}`);
 const WARMING = ["public/warming/centers.geojson", ...WARMING_SAMPLES];

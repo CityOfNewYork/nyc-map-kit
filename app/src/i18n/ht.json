@@ -19,6 +19,9 @@
   "Copy link": "Kopye lyen an",
   "Share results": "Pataje rezilta yo",
   "Share result": "Pataje rezilta a",
+  "Copy address": "Kopye adrès la",
+  "Copied": "Kopye",
+  "Could not copy the address": "Nou pa t ka kopye adrès la",
   "Close card": "Fèmen fich la",
   "Close prototype notice": "Fèmen avi pwototip la",
   "Previous site at this location": "Kote anvan an nan menm adrès sa a",
@@ -116,5 +119,12 @@
   "Operated by": "Jere pa",
   "public computer centers data": "done sou sant òdinatè piblik yo",
   "Arrow keys move the map. Plus and minus zoom in and out.": "Flèch klavye yo deplase kat la. Plis ak mwens rapwoche ak eloye.",
-  "Every site on the map is also in the list.": "Chak kote ki sou kat la nan lis la tou."
+  "Every site on the map is also in the list.": "Chak kote ki sou kat la nan lis la tou.",
+  "Restaurants": "Restoran",
+  "Cuisine": "Kalite manje",
+  "{n} restaurants": {
+    "one": "{n} restoran",
+    "other": "{n} restoran"
+  },
+  "wheelchair friendly restaurant finder": "paj pou chèche restoran ki aksesib pou chèz woulant Vil la"
 }

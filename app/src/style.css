@@ -394,12 +394,14 @@ body {
   font-weight: 700;
 }
 
-/* The filters: a card under the search box, pushing the list down. A <dialog>, so the
-   browser's own placement and frame are taken off. */
+/* The filters: a card under the search box, pushing the list down, and shrinking to fit
+   the column. A <dialog>, so the browser's own placement and frame are taken off. */
 .filters-panel {
   position: static;
-  flex: none;
-  display: grid;
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
   width: auto;
   max-width: none;
@@ -418,6 +420,17 @@ body {
   justify-content: space-between;
 }
 .filters-head h3 { margin: 0; font-size: 1.125rem; }
+/* The filters themselves, between the head and the foot, scrolling when there are more
+   than fit. The padding, taken back by the margin, keeps focus rings inside the scroll. */
+.filters-body {
+  flex: 0 1 auto;
+  min-height: 0;
+  display: grid;
+  gap: 14px;
+  margin: -4px;
+  padding: 4px;
+  overflow-y: auto;
+}
 .filters-close {
   display: grid;
   place-items: center;
@@ -947,6 +960,33 @@ body {
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
+/* The address copies itself when pressed. It keeps the text's look; the copy icon after
+   it, in the link's colour, says it can be pressed, and turns to a check and "Copied". */
+.copy-address {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.copy-address-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: -2px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--link);
+  white-space: nowrap;
+}
+.copy-address-mark svg { flex: none; }
+/* Only under a pointer that hovers: a phone keeps :hover on what was last tapped. */
+@media (hover: hover) {
+  .copy-address:hover > span:first-child { text-decoration: underline; text-underline-offset: 2px; }
+  .copy-address:hover .copy-address-mark { color: var(--link-hover); }
+}
 
 /* The longer fields, each under its heading. Structure from parseStructure() in
    logic/card.ts — real paragraphs and real lists, so the spacing between items is
@@ -1179,7 +1219,6 @@ body {
     height: fit-content;
     max-height: calc(100% - 48px);
     margin: auto;
-    overflow-y: auto;
   }
   .filters-panel::backdrop {
     background: rgba(27, 27, 27, 0.32);

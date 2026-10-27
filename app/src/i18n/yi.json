@@ -25,6 +25,9 @@
   "Copy link": "קאָפּירן לינק",
   "Share results": "טיילן רעזולטאַטן",
   "Share result": "טיילן רעזולטאַט",
+  "Copy address": "קאָפּירן אַדרעס",
+  "Copied": "קאָפּירט",
+  "Could not copy the address": "האָט נישט געקענט קאָפּירן דעם אַדרעס",
   "Close card": "פֿאַרמאַכן דאָס קאַרטל",
   "Close prototype notice": "פֿאַרמאַכן די פּראָטאָטיפּ־מעלדונג",
   "Previous site at this location": "פֿריִערדיקער אָרט ביי דער אַדרעס",
@@ -134,5 +137,12 @@
   "Operated by": "געפֿירט דורך",
   "public computer centers data": "דאַטן וועגן עפֿנטלעכע קאָמפּיוטער־צענטערס",
   "Arrow keys move the map. Plus and minus zoom in and out.": "די פֿײַל־קלאַווישן רירן די מאַפּע. פּלוס און מינוס פֿאַרגרעסערן און פֿאַרקלענערן.",
-  "Every site on the map is also in the list.": "יעדער אָרט אויף דער מאַפּע איז אויך אין דער רשימה."
+  "Every site on the map is also in the list.": "יעדער אָרט אויף דער מאַפּע איז אויך אין דער רשימה.",
+  "Restaurants": "רעסטאָראַנען",
+  "Cuisine": "קיך",
+  "{n} restaurants": {
+    "one": "{n} רעסטאָראַן",
+    "other": "{n} רעסטאָראַנען"
+  },
+  "wheelchair friendly restaurant finder": "בלאַט צו געפֿינען רעסטאָראַנען צוגענגלעך פֿאַר רעדערשטולן"
 }

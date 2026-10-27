@@ -19,6 +19,9 @@
   "Copy link": "링크 복사",
   "Share results": "결과 공유",
   "Share result": "결과 공유",
+  "Copy address": "주소 복사",
+  "Copied": "복사됨",
+  "Could not copy the address": "주소를 복사할 수 없습니다",
   "Close card": "카드 닫기",
   "Close prototype notice": "프로토타입 안내 닫기",
   "Previous site at this location": "이 위치의 이전 장소",
@@ -113,5 +116,9 @@
   "Operated by": "운영 기관",
   "public computer centers data": "공공 컴퓨터 센터 데이터",
   "Arrow keys move the map. Plus and minus zoom in and out.": "화살표 키로 지도를 이동합니다. 더하기와 빼기로 확대하고 축소합니다.",
-  "Every site on the map is also in the list.": "지도의 모든 장소는 목록에도 있습니다."
+  "Every site on the map is also in the list.": "지도의 모든 장소는 목록에도 있습니다.",
+  "Restaurants": "식당",
+  "Cuisine": "음식 종류",
+  "{n} restaurants": "식당 {n}곳",
+  "wheelchair friendly restaurant finder": "휠체어 이용 가능 식당 찾기"
 }

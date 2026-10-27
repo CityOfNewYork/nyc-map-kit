@@ -248,10 +248,9 @@ export function addLandmarkLabels(style: StyleSpecification, lang: string): Styl
  *  against the page and fetches it alongside the tiles, so the map does not wait for it. */
 export const SUBWAY_STATIONS = "subway-stations.geojson";
 
-/** Stations show from this zoom, and are named from the next, where there is room: the
- *  zoom the default basemap names its side streets from. */
-const STATION_ZOOM = 14;
-const STATION_NAME_ZOOM = 15;
+/** Stations show from this zoom, and are named from the next, where there is room. */
+const STATION_ZOOM = 13;
+const STATION_NAME_ZOOM = 14;
 
 /**
  * Add the subway's stations, in place: an icon at each station complex, from

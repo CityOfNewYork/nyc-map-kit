@@ -116,6 +116,35 @@ describe("Card", () => {
   });
 });
 
+describe("the address", () => {
+  const addressButton = () =>
+    screen.getByRole("button", { name: "234 East 149th Street, Bronx Copy address" });
+
+  test("copies itself when pressed, and says so, beside it and to a screen reader", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    render(<Card feature={lincoln} model={lincolnModel()} />);
+    const button = addressButton();
+    fireEvent.click(button);
+    await waitFor(() => expect(button).toHaveTextContent("234 East 149th Street, Bronx Copied"));
+    expect(screen.getAllByRole("status").map((s) => s.textContent)).toContain("Copied");
+    expect(writeText).toHaveBeenCalledWith("234 East 149th Street, Bronx");
+    expect(window.dataLayer).toEqual([{ event: "map_copy_address", org_id: "o1", site_id: "lincoln" }]);
+    vi.unstubAllGlobals();
+  });
+
+  test("says when it could not be copied", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("denied"));
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    render(<Card feature={lincoln} model={lincolnModel()} />);
+    fireEvent.click(addressButton());
+    await waitFor(() => expect(screen.getAllByRole("status").map((s) => s.textContent))
+      .toContain("Could not copy the address"));
+    expect(window.dataLayer).toEqual([]);
+    vi.unstubAllGlobals();
+  });
+});
+
 describe("CopyLink", () => {
   const url = () => new URL("https://example.org/app/?site=lincoln");
 

@@ -29,6 +29,9 @@
   "Copy link": "Копировать ссылку",
   "Share results": "Поделиться результатами",
   "Share result": "Поделиться результатом",
+  "Copy address": "Копировать адрес",
+  "Copied": "Скопировано",
+  "Could not copy the address": "Не удалось скопировать адрес",
   "Close card": "Закрыть карточку",
   "Close prototype notice": "Закрыть уведомление о прототипе",
   "Previous site at this location": "Предыдущее место по этому адресу",
@@ -153,5 +156,14 @@
   "Operated by": "Оператор",
   "public computer centers data": "данные о публичных компьютерных центрах",
   "Arrow keys move the map. Plus and minus zoom in and out.": "Клавиши со стрелками двигают карту. Плюс и минус приближают и отдаляют.",
-  "Every site on the map is also in the list.": "Каждое место на карте есть и в списке."
+  "Every site on the map is also in the list.": "Каждое место на карте есть и в списке.",
+  "Restaurants": "Рестораны",
+  "Cuisine": "Кухня",
+  "{n} restaurants": {
+    "one": "{n} ресторан",
+    "few": "{n} ресторана",
+    "many": "{n} ресторанов",
+    "other": "{n} ресторана"
+  },
+  "wheelchair friendly restaurant finder": "странице поиска ресторанов, доступных для инвалидных колясок"
 }
