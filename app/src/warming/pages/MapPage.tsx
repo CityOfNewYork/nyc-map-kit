@@ -63,6 +63,12 @@ export function MapPage({
                          onClick={() => (filtering ? closeFilters() : setFiltering(true))} />
           <FilterBar filters={filters} onChange={onFilters} />
         </div>
+        {/* The count again, as a live region the eye does not see, so a screen reader
+            hears what a filter left. Here, not in the list, which a shut list hides. */}
+        <p className="visually-hidden" role="status">
+          <ListCount total={model && model.features.length} shown={shown.length}
+                     filtered={active > 0} />
+        </p>
       </div>
       <div className="side">
         {filtering && (
@@ -77,15 +83,7 @@ export function MapPage({
                                    filtered={active > 0} />}
                action={<CopyLink key={JSON.stringify(filters)} url={resultsUrl}
                                  payload={{ via: "list" }} label="Share results" />}
-               row={(feature) => centerRow(feature, minute)} marker={centerMarker}
-               header={(
-                 // The count again, as a live region the eye does not see, so a screen
-                 // reader hears what a filter on the bar left.
-                 <p className="visually-hidden" role="status">
-                   <ListCount total={model && model.features.length} shown={shown.length}
-                              filtered={active > 0} />
-                 </p>
-               )} />
+               row={(feature) => centerRow(feature, minute)} marker={centerMarker} />
       </div>
       <MapKey items={[...CENTER_KINDS.values()].map(({ label, color, glyph }) => (
         { label: t(label), color, glyph }))} />

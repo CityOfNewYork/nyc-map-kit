@@ -35,7 +35,7 @@ function renderPage(props: Partial<ComponentProps<typeof MapPage>> = {}) {
 }
 const rows = () => within(document.getElementById("site-list")!).getAllByRole("button");
 /** On a desktop the list starts shut: open it, to see its count and Copy link. */
-const showList = () => fireEvent.click(screen.getByRole("button", { name: "Show list" }));
+const showList = () => fireEvent.click(screen.getByRole("button", { name: /^Show list/ }));
 
 beforeEach(() => {
   stubScreen(true);
@@ -74,6 +74,15 @@ describe("MapPage", () => {
       showList();
       expect(screen.getAllByText("Showing 1 of 3 locations")).toHaveLength(2);
       expect(screen.getByRole("button", { name: /^Filters\s*1 filter on$/ })).toBeInTheDocument();
+    });
+
+    test("a screen reader hears what the filters left from outside the list", () => {
+      renderPage({ filters: { ...NO_FILTERS, types: ["bus"] }, shown: [centers[1]] });
+      expect(screen.getAllByRole("status").map((s) => s.textContent))
+        .toContain("Showing 1 of 3 locations");
+      // Not in the list, which hides all but its top line while shut.
+      expect(within(screen.getByRole("region", { name: "Warming centers" }))
+        .queryByRole("status")).toBeNull();
     });
 
     test("choosing a row opens that center", () => {
