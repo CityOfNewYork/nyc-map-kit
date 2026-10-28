@@ -279,6 +279,18 @@
   .filter-bar { display: flex; flex: 1 1 0; min-width: 0; }
   .filter-bar > .dropdown { flex: none; }
 }
+/* Share map at the bar's end on a desktop or tablet, white on navy. On a phone the bar has
+   no room for it, and the list's top line has it instead (ui/Panel.tsx's action). */
+.share-map { display: none; }
+.share-map .copy-link { color: var(--surface); }
+.share-map .copy-link:hover { color: var(--selected); }
+.share-map .copy-link:focus-visible { outline-color: var(--surface); }
+@media (min-width: 768px) {
+  .toolbar { display: flex; align-items: center; gap: 16px; }
+  .toolbar > .search-row { flex: 1 1 0; min-width: 0; }
+  .share-map { display: block; flex: none; }
+  .stage .panel-action { display: none; }
+}
 /* A toggle moved into More filters' menu is on white: the focus ring is black again. */
 .toolbar .dropdown-panel .pill:focus-visible { outline-color: var(--ink); }
 

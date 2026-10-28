@@ -62,6 +62,13 @@ export function MapPage({
           {/* Made again in a new language, to measure its words (see FilterBar). */}
           <FilterBar key={language()} filters={filters} onChange={onFilters} />
         </div>
+        {/* Share map at the bar's end on a desktop or tablet; a phone has it in the list's
+            top line instead (see warming.css). Outside the search landmark: it shares the
+            map rather than searching it. */}
+        <div className="share-map">
+          <CopyLink key={JSON.stringify(filters)} url={resultsUrl}
+                    payload={{ via: "toolbar" }} label="Share map" />
+        </div>
         {/* The count again, as a live region the eye does not see, so a screen reader
             hears what a filter left. Here, not in the list, which a shut list hides. */}
         <p className="visually-hidden" role="status">
@@ -81,7 +88,7 @@ export function MapPage({
                summary={<ListCount total={model && model.features.length} shown={shown.length}
                                    filtered={active > 0} />}
                action={<CopyLink key={JSON.stringify(filters)} url={resultsUrl}
-                                 payload={{ via: "list" }} label="Share results" />}
+                                 payload={{ via: "list" }} label="Share map" />}
                row={(feature) => centerRow(feature, minute)} marker={centerMarker} />
       </div>
     </>
@@ -89,8 +96,7 @@ export function MapPage({
 }
 
 /** The map view as it is now, with its filters and language, but without an open
- *  center's card, which has a Share result of its own: what the list's Share results
- *  copies. */
+ *  center's card, which has a Share result of its own: what Share map copies. */
 function resultsUrl(): URL {
   const url = siteUrl(null);
   url.searchParams.set("view", "map");
