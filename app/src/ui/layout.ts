@@ -1,5 +1,13 @@
 import type { MapCore, PointProperties } from "../core/map-core.ts";
 
+/** How many items fit in `room` pixels, from the left, each `widths[i]` wide and `gap`
+ *  from the next thing: a row that moves what does not fit into a menu at its end. */
+export function itemsThatFit(widths: number[], room: number, gap: number): number {
+  let n = 0;
+  while (n < widths.length && room >= widths[n] + gap) room -= widths[n++] + gap;
+  return n;
+}
+
 /** On a desktop the list floats over the map's left edge (see .side in style.css), so
  *  the camera's centre moves right by the list's width plus its 10 px inset either side. */
 const LIST_INSET = 10;

@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { MapCore, PointProperties } from "../core/map-core.ts";
 import { stubScreen } from "../test/fixtures.ts";
-import { keepClearOfList } from "./layout.ts";
+import { itemsThatFit, keepClearOfList } from "./layout.ts";
 
 /** The parts of a MapLibre map keepClearOfList uses. */
 function fakeMap() {
@@ -98,5 +98,13 @@ describe("keepClearOfList", () => {
     screen.resize(false);
     expect(raw.setPadding).not.toHaveBeenCalled();
     expect(raw.off).toHaveBeenCalledWith("moveend", expect.any(Function));
+  });
+});
+
+describe("itemsThatFit", () => {
+  test("counts the items that fit, from the left, each with its gap", () => {
+    expect(itemsThatFit([100, 200, 120], 500, 8)).toBe(3);
+    expect(itemsThatFit([100, 200, 120], 400, 8)).toBe(2);
+    expect(itemsThatFit([100, 200, 120], 107, 8)).toBe(0);
   });
 });

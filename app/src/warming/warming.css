@@ -196,8 +196,8 @@
 
 /* ------------------------------------------------------------------ filters ------ */
 
-/* Where they fit, the filters are a row of buttons beside the search box, and the
-   Filters button and its panel step aside. */
+/* On a desktop or tablet the filters are a row of buttons beside the search box (see
+   below); on a phone, the Filters button and its panel. */
 .filter-bar { display: none; align-items: center; gap: 8px; }
 .pill {
   display: inline-flex;
@@ -270,23 +270,22 @@
   cursor: pointer;
 }
 
-/* As wide as the list below. */
-.search-row { width: 360px; max-width: 100%; }
-
-/* Wide enough for the row of filter buttons (see .filter-bar above). */
-@media (min-width: 1100px) {
-  .search-row { width: auto; }
-  .search-row .search { flex: none; width: 360px; }
+/* On a desktop or tablet the search box is 490 px wide, and the row of filters takes the
+   rest of the bar: FilterBar moves into More filters, from the right, the toggles that do
+   not fit in it. The search box narrows only once none is left. */
+@media (min-width: 768px) {
+  .search-row .search { flex: 0 1 490px; min-width: 240px; }
   .filters-button { display: none; }
-  .filter-bar { display: flex; }
+  .filter-bar { display: flex; flex: 1 1 0; min-width: 0; }
+  .filter-bar > .dropdown { flex: none; }
 }
+/* A toggle moved into More filters' menu is on white: the focus ring is black again. */
+.toolbar .dropdown-panel .pill:focus-visible { outline-color: var(--ink); }
 
 /* Open now, wheelchair access and pets, as the bar shows them, wrapping as they need. */
 .filter-toggles { display: flex; flex-wrap: wrap; gap: 8px; }
 
 @media (max-width: 767px) {
-  /* Across the bar. */
-  .search-row { width: auto; }
   /* The list's sheet stops under the bar at its tallest. */
   .stage .panel { max-height: calc(100% - var(--bar-h)); }
 }

@@ -13,7 +13,7 @@ import { FilterPanel } from "../components/FilterPanel.tsx";
 import { useNycMinute } from "../components/useNycMinute.ts";
 import { activeFilters, NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
-import { number, plural, t } from "../../logic/i18n.ts";
+import { language, number, plural, t } from "../../logic/i18n.ts";
 
 interface MapPageProps {
   model: Model | null;
@@ -30,9 +30,9 @@ interface MapPageProps {
 }
 
 /** The map view's own part: the search box with the filters beside it, on a bar above
- *  the map, then the list. On a wide screen the filters are a row of buttons (FilterBar);
- *  narrower, one Filters button opens them all (FilterPanel). The map is App's, shared
- *  with the landing view. */
+ *  the map, then the list. On a desktop or tablet the filters are a row of buttons
+ *  (FilterBar); on a phone, one Filters button opens them all (FilterPanel). The map is
+ *  App's, shared with the landing view. */
 export function MapPage({
   model, shown, filters, onFilters, found, selectedId, onFound, onClear, onOpen,
 }: MapPageProps) {
@@ -59,7 +59,8 @@ export function MapPage({
           <Search onFound={onFound} onClear={onClear} landmark={false} />
           <FiltersButton ref={filterButton} controls="filters" open={filtering} active={active}
                          onClick={() => (filtering ? closeFilters() : setFiltering(true))} />
-          <FilterBar filters={filters} onChange={onFilters} />
+          {/* Made again in a new language, to measure its words (see FilterBar). */}
+          <FilterBar key={language()} filters={filters} onChange={onFilters} />
         </div>
         {/* The count again, as a live region the eye does not see, so a screen reader
             hears what a filter left. Here, not in the list, which a shut list hides. */}

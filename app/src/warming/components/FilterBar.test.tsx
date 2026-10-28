@@ -70,6 +70,39 @@ describe("FilterBar", () => {
   });
 });
 
+describe("FilterBar in a narrow bar", () => {
+  /** A bar 400 px wide, More filters 140 px and each toggle 150 px: room for one. */
+  function narrow() {
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains("filter-bar") ? 400 : 0;
+    });
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains("toggle-pill") ? 150 : this.classList.contains("dropdown") ? 140 : 0;
+    });
+  }
+
+  test("keeps the toggles that fit and moves the rest into More filters, from the right", () => {
+    narrow();
+    render(<FilterBar filters={NO_FILTERS} onChange={() => {}} />);
+    const bar = screen.getByRole("group", { name: "Filters" });
+    expect([...bar.querySelectorAll(":scope > button")].map((b) => b.textContent))
+      .toEqual(["Open now"]);
+    fireEvent.click(screen.getByRole("button", { name: "More filters" }));
+    const menu = document.querySelector(".dropdown-panel")!;
+    expect([...menu.querySelectorAll(".toggle-pill")].map((b) => b.textContent))
+      .toEqual(["Wheelchair accessible", "Pets allowed"]);
+  });
+
+  test("tints More filters while a toggle in its menu is on", () => {
+    narrow();
+    render(<FilterBar filters={{ ...NO_FILTERS, pets: true }} onChange={() => {}} />);
+    expect(screen.getByRole("button", { name: "More filters" })).toHaveClass("on");
+    cleanup();
+    render(<FilterBar filters={{ ...NO_FILTERS, openNow: true }} onChange={() => {}} />);
+    expect(screen.getByRole("button", { name: "More filters" })).not.toHaveClass("on");
+  });
+});
+
 describe("FilterPanel", () => {
   test("holds the kinds and the toggles, counts what they leave, and clears them", () => {
     stubScreen(false);
