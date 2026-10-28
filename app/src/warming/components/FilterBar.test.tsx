@@ -18,6 +18,12 @@ afterEach(() => {
 });
 
 describe("FilterBar", () => {
+  test("open now comes first, then the kinds of center, then wheelchair and pets", () => {
+    render(<FilterBar filters={NO_FILTERS} onChange={() => {}} />);
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(
+      ["Open now", "Location type", "Wheelchair accessible", "Pets allowed"]);
+  });
+
   test("Location type opens a menu of kinds, and a kind filters the centers", () => {
     const onChange = vi.fn();
     render(<FilterBar filters={NO_FILTERS} onChange={onChange} />);
@@ -70,6 +76,11 @@ describe("FilterPanel", () => {
     const onChange = vi.fn();
     render(<FilterPanel id="filters" filters={{ ...NO_FILTERS, types: ["bus"] }} shown={8}
                         onChange={onChange} onClose={() => {}} />);
+    const body = document.querySelector(".filters-body")!;
+    // Each button's name, less the count Location type carries of the kinds chosen.
+    expect([...body.querySelectorAll(":scope > * > button")]
+      .map((b) => b.textContent!.replace(/\d.*$/, "")))
+      .toEqual(["Open now", "Location type", "Wheelchair accessible", "Pets allowed"]);
     fireEvent.click(screen.getByRole("button", { name: /^Location type/ }));
     expect(screen.getByRole("checkbox", { name: "Warming bus" })).toBeChecked();
     fireEvent.click(screen.getByRole("checkbox", { name: "Warming bus" }));

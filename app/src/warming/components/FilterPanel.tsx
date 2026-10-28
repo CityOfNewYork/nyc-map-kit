@@ -4,7 +4,7 @@ import { FilterDisclosure, FiltersPanel } from "../../ui/Filters.tsx";
 import { CENTER_KINDS } from "../logic/centers.ts";
 import { NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
-import { FilterToggles } from "./FilterBar.tsx";
+import { FeatureToggles, OpenNowToggle } from "./FilterBar.tsx";
 import { t } from "../../logic/i18n.ts";
 
 interface FilterPanelProps {
@@ -18,8 +18,8 @@ interface FilterPanelProps {
 }
 
 /**
- * The warming filters in the kit's panel (ui/Filters.tsx): the kinds of center, then open
- * now, wheelchair access and pets as the same toggles the bar shows.
+ * The warming filters in the kit's panel (ui/Filters.tsx), in the bar's order: open now,
+ * the kinds of center, then wheelchair access and pets, as the same toggles the bar shows.
  */
 export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPanelProps) {
   function set(next: Partial<Filters>, filter: string, value: string | boolean) {
@@ -37,6 +37,10 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
 
   return (
     <FiltersPanel id={id} shown={shown} onClear={clear} onClose={onClose}>
+      <div className="filter-toggles">
+        <OpenNowToggle filters={filters} set={set} />
+      </div>
+
       <FilterDisclosure label={t("Location type")} chosen={filters.types.length}>
         {[...CENTER_KINDS].map(([type, kind]) => (
           <Check key={type} className="filter-check" checked={filters.types.includes(type)}
@@ -47,7 +51,7 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
       </FilterDisclosure>
 
       <div className="filter-toggles">
-        <FilterToggles filters={filters} set={set} />
+        <FeatureToggles filters={filters} set={set} />
       </div>
     </FiltersPanel>
   );

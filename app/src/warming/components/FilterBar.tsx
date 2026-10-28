@@ -14,11 +14,11 @@ interface FilterBarProps {
 }
 
 /**
- * The filters as a row of buttons beside the search box on a wide screen: Location type
- * opens a short menu, and open now, wheelchair access and pets are toggle buttons of
- * their own. A button is tinted while its filter is on. Each change applies at once, to
- * the list and the map together. Narrower screens use the Filters button and FilterPanel
- * instead (see warming.css).
+ * The filters as a row of buttons beside the search box on a wide screen: open now first,
+ * then Location type, which opens a short menu, then wheelchair access and pets. Open
+ * now, wheelchair access and pets are toggle buttons. A button is tinted while its filter
+ * is on. Each change applies at once, to the list and the map together. Narrower screens
+ * use the Filters button and FilterPanel instead (see warming.css).
  */
 export function FilterBar({ filters, onChange }: FilterBarProps) {
   function set(next: Partial<Filters>, filter: string, value: string | boolean) {
@@ -32,6 +32,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
 
   return (
     <div className="filter-bar" role="group" aria-label={t("Filters")}>
+      <OpenNowToggle filters={filters} set={set} />
       <Dropdown label={<span>{t("Location type")}</span>} on={filters.types.length > 0}>
         <fieldset>
           <legend className="visually-hidden">{t("Location type")}</legend>
@@ -44,23 +45,33 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
         </fieldset>
       </Dropdown>
 
-      <FilterToggles filters={filters} set={set} />
+      <FeatureToggles filters={filters} set={set} />
     </div>
   );
 }
 
-/** Open now, wheelchair access and pets: each a toggle with its icon, tinted while it is
- *  on. The bar and FilterPanel both show them. */
-export function FilterToggles({ filters, set }: {
+/** What the toggles below are given: the filters, and how to change one. */
+interface ToggleProps {
   filters: Filters;
   set: (next: Partial<Filters>, filter: string, value: boolean) => void;
-}) {
+}
+
+/** Open now, a toggle with its icon, tinted while it is on: the first filter in the bar
+ *  and in FilterPanel. */
+export function OpenNowToggle({ filters, set }: ToggleProps) {
+  return (
+    <Toggle className="pill toggle-pill" pressed={filters.openNow}
+            onChange={(on) => set({ openNow: on }, "open", on)} icon={<ClockIcon />}>
+      {t("Open now")}
+    </Toggle>
+  );
+}
+
+/** Wheelchair access and pets: each a toggle with its icon, tinted while it is on. The
+ *  bar and FilterPanel both show them, after the kinds of center. */
+export function FeatureToggles({ filters, set }: ToggleProps) {
   return (
     <>
-      <Toggle className="pill toggle-pill" pressed={filters.openNow}
-              onChange={(on) => set({ openNow: on }, "open", on)} icon={<ClockIcon />}>
-        {t("Open now")}
-      </Toggle>
       <Toggle className="pill toggle-pill" pressed={filters.wheelchair}
               onChange={(on) => set({ wheelchair: on }, "wheelchair", on)} icon={<WheelchairIcon />}>
         {t("Wheelchair accessible")}
