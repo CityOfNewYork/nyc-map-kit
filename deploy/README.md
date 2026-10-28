@@ -42,12 +42,12 @@ In this section, the following must be substituted with real values:
 
 ```sh
 # Build the image
-docker build -t nyc-map-kit:<version> --build-arg TILEBUILD=nyc-<timestamp>.pmtiles -f deploy/images/Dockerfile .
+docker build -t nyc-map-kit:<version> --platform linux/amd64 --build-arg TILEBUILD=nyc-<timestamp>.pmtiles -f deploy/images/Dockerfile .
 ```
 
 ```sh
 # Run the image
-docker run --rm --name nyc-map-kit -p <local-port>:80 nyc-map-kit:<version>
+docker run  --platform linux/amd64 --rm --name nyc-map-kit -p <local-port>:80 nyc-map-kit:<version>
 ```
 
 ### Deploy to a Local Cluster (Docker Desktop)
