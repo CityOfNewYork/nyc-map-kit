@@ -34,8 +34,6 @@ function renderPage(props: Partial<ComponentProps<typeof MapPage>> = {}) {
   return handlers;
 }
 const rows = () => within(document.getElementById("site-list")!).getAllByRole("button");
-/** On a desktop the list starts shut: open it, to see its count and Copy link. */
-const showList = () => fireEvent.click(screen.getByRole("button", { name: /^Show list/ }));
 
 beforeEach(() => {
   stubScreen(true);
@@ -67,11 +65,9 @@ describe("MapPage", () => {
 
     test("shows the count, and how many of how many with filters on", () => {
       renderPage();
-      showList();
       expect(screen.getAllByText("3 locations").length).toBeGreaterThan(0);
       cleanup();
       renderPage({ filters: { ...NO_FILTERS, types: ["bus"] }, shown: [centers[1]] });
-      showList();
       expect(screen.getAllByText("Showing 1 of 3 locations")).toHaveLength(2);
       expect(screen.getByRole("button", { name: /^Filters\s*1 filter on$/ })).toBeInTheDocument();
     });
@@ -82,7 +78,8 @@ describe("MapPage", () => {
         .toContain("Showing 1 of 3 locations");
       // Not in the list, which hides all but its top line while shut.
       expect(within(screen.getByRole("region", { name: "Warming centers" }))
-        .queryByRole("status")).toBeNull();
+        .queryAllByRole("status").map((s) => s.textContent))
+        .not.toContain("Showing 1 of 3 locations");
     });
 
     test("choosing a row opens that center", () => {
@@ -143,7 +140,6 @@ describe("MapPage", () => {
       const writeText = vi.fn().mockResolvedValue(undefined);
       vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
       renderPage({ filters: { ...NO_FILTERS, openNow: true } });
-      showList();
       fireEvent.click(screen.getByRole("button", { name: "Share results" }));
       await waitFor(() => expect(writeText).toHaveBeenCalledWith(
         "http://localhost:3000/warming.html?open=1&view=map"));
