@@ -362,10 +362,34 @@ const NO_SELECTION = "∅";
 
 const EMPTY: FeatureCollection<Point, never> = { type: "FeatureCollection", features: [] };
 
-// The three layers that draw individual sites (as opposed to cluster bubbles). A click
+// The four layers that draw individual sites (as opposed to cluster bubbles). A click
 // anywhere in this set is a click on a site; MapLibre hands back the topmost one, which
 // is the one the user actually pointed at.
-const POINT_LAYERS = ["focus-site", "overlay-sites", "sites"];
+const POINT_LAYERS = ["focus-site", "overlay-sites", "sites", "site-dots"];
+
+/** A site where pins do not fit: a dot in the pin's colour, 7 px across, ringed in white. */
+const DOT = { radius: 3.5, stroke: 1 };
+/** How many sites pins carry at `zoom`: twice as many at each zoom level in. */
+const PINS_FIT = { sites: 1000, zoom: 10 };
+
+/**
+ * The zoom from which `count` sites draw as pins; below it they draw as dots.
+ *
+ * Past a certain density a pile of pins stops reading as pins: each covers all of the
+ * one behind it but a sliver of its white outline, and the pile turns white. Pins carry
+ * about PINS_FIT.sites sites at PINS_FIT.zoom, and twice as many at each zoom level in.
+ * Zooming in one level spreads the sites over four times the screen, but the pins grow
+ * as the map zooms (see sitesSize), and set by eye on 547 to 12,053 sites over Midtown
+ * Manhattan the factor is closer to two. The count is the sites shown, so a filter that
+ * leaves fewer brings the pins back sooner.
+ *
+ * A whole zoom level, rounded up, because MapLibre builds a layer for each whole-zoom
+ * tile it shows at any part of: at a fractional switch both layers would be built for the
+ * tile in between, and a click could land on a site drawn only in the hidden one.
+ */
+export function pinZoom(count: number): number {
+  return Math.max(0, Math.ceil(PINS_FIT.zoom + Math.log2(count / PINS_FIT.sites)));
+}
 
 /** Push a map-side analytics event. The host page's tag reads window.dataLayer. */
 function track(event: string, payload: Record<string, unknown>): void {
@@ -590,6 +614,21 @@ export function createMap<P extends PointProperties>(
   function sitesOpacity(): number {
     return highlighted.length ? 0.55 : 1;
   }
+  /** A dot's colour: its category's, in the shade its pin takes, as pinIcon picks it. */
+  function dotColor(): ExpressionSpecification | string {
+    const state = highlighted.length ? "dimmed" : "base";
+    const base = shades(PIN.base)[state];
+    if (!categories || !categoryValues.length) return base;
+    return ["match", ["to-string", ["get", categories.field]],
+      ...categoryValues.flatMap((value) => [value, shades(categories.values[value].color)[state]]),
+      base] as ExpressionSpecification;
+  }
+  /** Draw the shown sites as pins from the zoom they fit at, and as dots below it. */
+  function fitPins(): void {
+    const zoom = pinZoom(currentData.features.length);
+    map.setLayerZoomRange("site-dots", 0, zoom);
+    map.setLayerZoomRange("sites", zoom, 24);
+  }
 
   /**
    * Why there are three sources rather than one.
@@ -613,6 +652,9 @@ export function createMap<P extends PointProperties>(
     map.setLayoutProperty("sites", "icon-image", sitesIcon());
     map.setLayoutProperty("sites", "icon-size", sitesSize());
     map.setPaintProperty("sites", "icon-opacity", sitesOpacity());
+    map.setPaintProperty("site-dots", "circle-color", dotColor());
+    map.setPaintProperty("site-dots", "circle-opacity", sitesOpacity());
+    map.setPaintProperty("site-dots", "circle-stroke-opacity", sitesOpacity());
     if (cluster) {
       map.setPaintProperty("clusters", "circle-opacity", highlighted.length ? 0.35 : 0.9);
       map.setPaintProperty("cluster-count", "text-opacity", highlighted.length ? 0.5 : 1);
@@ -688,6 +730,21 @@ export function createMap<P extends PointProperties>(
       },
       paint: { "text-color": "#ffffff" },
     });
+    // The sites as dots, below the zoom their pins fit at (see fitPins).
+    map.addLayer({
+      id: "site-dots",
+      type: "circle",
+      source: "sites",
+      filter: ["!", ["has", "point_count"]],
+      paint: {
+        "circle-radius": DOT.radius,
+        "circle-color": dotColor(),
+        "circle-opacity": sitesOpacity(),
+        "circle-stroke-width": DOT.stroke,
+        "circle-stroke-color": PIN.stroke,
+        "circle-stroke-opacity": sitesOpacity(),
+      },
+    });
     map.addLayer({
       id: "sites",
       type: "symbol",
@@ -736,6 +793,7 @@ export function createMap<P extends PointProperties>(
         "icon-ignore-placement": true,
       },
     });
+    fitPins();
 
     for (const name of [...(cluster ? ["clusters"] : []), ...POINT_LAYERS]) {
       map.on("mouseenter", name, () => { map.getCanvas().style.cursor = "pointer"; });
@@ -894,6 +952,7 @@ export function createMap<P extends PointProperties>(
       indexData(currentData);
       whenReady(() => {
         map.getSource<GeoJSONSource>("sites")!.setData(drawn(currentData.features));
+        fitPins();
         if (selectedId && !byId.has(selectedId)) selectedId = null;
         repaint();
       });
