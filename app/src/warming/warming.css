@@ -22,7 +22,7 @@
   display: flex;
   align-items: center;
   gap: 24px;
-  height: 54px;
+  height: 48px;
   padding: 0 20px;
 }
 .site-name {
@@ -33,13 +33,13 @@
   line-height: 1;
 }
 .site-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   white-space: nowrap;
 }
-.nyc-logo { display: block; width: auto; height: 26px; }
+.nyc-logo { display: block; width: auto; height: 20px; }
 /* The centers' mark before the name, as on their pins. */
-.site-name .category-icon { flex: none; width: 24px; height: 24px; margin-inline-end: -4px; }
+.site-name .category-icon { flex: none; width: 20px; height: 20px; margin-inline-end: -4px; }
 .official-toggle {
   display: inline-flex;
   align-items: center;
@@ -408,11 +408,9 @@
 }
 
 @media (max-width: 767px) {
-  .header-bar { gap: 12px; height: 48px; padding: 0 14px; }
+  .header-bar { gap: 12px; padding: 0 14px; }
   /* style.css floats the search box over the map on a phone; the hero's sits in the hero. */
   .hero .search { z-index: auto; margin: 0; }
-  .nyc-logo { height: 20px; }
-  .site-name .category-icon { width: 20px; height: 20px; }
   .site-title { font-size: 1.125rem; }
   /* "Official website" takes a thin line of its own above the logo, as nyc.gov's header
      does on a phone, and a long title is cut short rather than widen the page. */
