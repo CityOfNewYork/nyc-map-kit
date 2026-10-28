@@ -7,7 +7,7 @@ import { createMap } from "../../core/map-core.ts";
 import type { MapCoreOptions } from "../../core/map-core.ts";
 import type { SiteCollection, SiteProperties } from "../../logic/types.ts";
 import { site, stubScreen } from "../../test/fixtures.ts";
-import { CENTER_PINS } from "../logic/centers.ts";
+import { CENTER_MARK } from "../logic/centers.ts";
 import { WarmingMap } from "./WarmingMap.tsx";
 
 // MapLibre needs WebGL, which jsdom lacks.
@@ -59,7 +59,7 @@ describe("WarmingMap", () => {
     render(<WarmingMap lang="es" basemap="protomaps" data={data} />);
     await waitFor(() => expect(createMap).toHaveBeenCalledTimes(1));
     expect(loadBasemap).toHaveBeenCalledWith("protomaps", "es");
-    expect(options()).toMatchObject({ style: STYLE, data, categories: CENTER_PINS, counts: true });
+    expect(options()).toMatchObject({ style: STYLE, data, pin: CENTER_MARK, counts: true });
     expect(options().style).not.toBe(STYLE);   // a copy: MapLibre changes the style it is given
   });
 

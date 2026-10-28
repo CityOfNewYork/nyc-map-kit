@@ -2,7 +2,7 @@ import type { LngLat } from "../../logic/places.ts";
 import type { Model, Site } from "../../logic/types.ts";
 import { Card } from "../../ui/Card.tsx";
 import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
-import { centerDetails, centerKind, centerStatus } from "../logic/centers.ts";
+import { CENTER_MARK, centerDetails, centerKind, centerStatus } from "../logic/centers.ts";
 import { clockTime, minutesOf } from "../logic/hours.ts";
 import { PawIcon, WheelchairIcon } from "./FeatureIcons.tsx";
 import { OpenStatusLine } from "./OpenStatusLine.tsx";
@@ -33,7 +33,7 @@ export function CenterCard({ feature, model, origin }: CenterCardProps) {
             <>
               {kind && (
                 <span className="card-meta-item">
-                  <CategoryIcon color={kind.color} glyph={kind.glyph} />
+                  <CategoryIcon {...CENTER_MARK} />
                   <span>{t(kind.label)}</span>
                 </span>
               )}

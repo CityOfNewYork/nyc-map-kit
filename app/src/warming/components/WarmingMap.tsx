@@ -6,7 +6,7 @@ import type { MapCore, SelectInfo } from "../../core/map-core.ts";
 import type { Site, SiteCollection, SiteProperties } from "../../logic/types.ts";
 import { keepClearOfList } from "../../ui/layout.ts";
 import { useMapCore } from "../../ui/useMapCore.ts";
-import { CENTER_PINS } from "../logic/centers.ts";
+import { CENTER_MARK } from "../logic/centers.ts";
 import { t } from "../../logic/i18n.ts";
 
 /** The list's width on a desktop: .side in warming.css. */
@@ -47,7 +47,7 @@ export function WarmingMap({
       .then((style) => {
         if (cancelled) return;
         const created = create({
-          style: structuredClone(style), data, categories: CENTER_PINS, counts: true,
+          style: structuredClone(style), data, pin: CENTER_MARK, counts: true,
           onSelect: (feature, info) => select(feature, info),
         });
         // Only the reader's own input carries an originalEvent. A wheel zoom's movestart

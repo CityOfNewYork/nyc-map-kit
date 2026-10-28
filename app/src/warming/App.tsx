@@ -11,7 +11,7 @@ import { CenterCard } from "./components/CenterCard.tsx";
 import { TopBar } from "./components/TopBar.tsx";
 import { useNycMinute } from "./components/useNycMinute.ts";
 import { WarmingMap } from "./components/WarmingMap.tsx";
-import { CENTER_CONFIG, CENTER_PINS } from "./logic/centers.ts";
+import { CENTER_CONFIG, CENTER_MARK } from "./logic/centers.ts";
 import { DATASETS, datasetFromUrl } from "./logic/dataset.ts";
 import { filtersFromUrl, passes, withFilters } from "./logic/filters.ts";
 import type { Filters } from "./logic/filters.ts";
@@ -51,7 +51,7 @@ export default function App({ lang, basemap }: AppProps) {
     () => (model ? model.features.filter((f) => passes(f, filters, clock)) : []),
     [model, filters, clock]);
   // A center's card: what is selected, its modal, its ?site= address, focus, its small map.
-  const card = useSiteCard({ model, style, categories: CENTER_PINS });
+  const card = useSiteCard({ model, style, pin: CENTER_MARK });
   const { attach, selectingFromUrl, dialogElement, miniMapElement } = card;
 
   // The sample centers ?dataset= names (logic/dataset.ts), read once: changing them

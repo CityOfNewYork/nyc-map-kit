@@ -262,13 +262,6 @@
   .stage .panel { max-height: calc(100% - var(--bar-h)); }
 }
 
-/* ------------------------------------------------------------------ map key ------ */
-
-/* The key's card is style.css's. Here the search box is in the bar, not over the map, so
-   the key stays left of the zoom buttons and level with them at every width, below the
-   bar. style.css places it the same way on a phone. */
-.map-key { top: calc(var(--bar-h) + 10px); }
-
 /* ------------------------------------------------------------------ landing ------ */
 
 .landing {
@@ -420,6 +413,6 @@
   .landing .map .maplibregl-ctrl-bottom-right { bottom: 0; }
 }
 
-/* Right to left: the toolbar, map key and notice keep the map area's layout (see
-   style.css) and run their text right to left. */
-[dir="rtl"] .stage :is(.filter-bar, .map-key, .notice) { direction: rtl; }
+/* Right to left: the toolbar and the notice keep the map area's layout (see style.css)
+   and run their text right to left. */
+[dir="rtl"] .stage :is(.filter-bar, .notice) { direction: rtl; }

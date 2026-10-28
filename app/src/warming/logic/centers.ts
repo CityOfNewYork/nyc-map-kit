@@ -1,4 +1,4 @@
-import type { PinCategories } from "../../core/map-core.ts";
+import type { PinStyle } from "../../core/map-core.ts";
 import type { Config, Site, SiteProperties } from "../../logic/types.ts";
 import { statusAt } from "./hours.ts";
 import type { OpenStatus } from "./hours.ts";
@@ -21,29 +21,27 @@ export interface CenterDetails {
 }
 type CenterProperties = SiteProperties & CenterDetails;
 
-/** A kind of center: what the list calls it, the colour of its pins and icons, and the
- *  glyph they carry, as SVG path data on a 24-unit square. */
+/** A kind of center: what the list, the card and the filters call it. */
 export interface CenterKind {
   label: string;
-  color: string;
-  glyph: string;
 }
 
-/** The kinds, by the value of a center's `type`, in the order the map key lists them.
- *  Each colour clears 3:1 against the basemap's land, water and parks, and under its white
- *  glyph. The red and the green are alike in lightness, so the glyph is what tells them
- *  apart to a reader who cannot see the difference in hue. */
+/** The kinds, by the value of a center's `type`, in the order the filters list them. */
 export const CENTER_KINDS = new Map<string, CenterKind>([
-  ["hospital", { label: "Hospital", color: "#d71920", glyph: "M8 5v14M16 5v14M8 12h8" }],
-  ["dropin", {
-    label: "Drop-in center", color: "#1b7a3d",
-    glyph: "M4.5 11.5 12 5l7.5 6.5M7 10v9h10v-9",
-  }],
-  ["bus", {
-    label: "Warming bus", color: "#050560",
-    glyph: "M7 4.5h10a2 2 0 0 1 2 2V17H5V6.5a2 2 0 0 1 2-2zM5 11.5h14M8 17v2.5M16 17v2.5",
-  }],
+  ["hospital", { label: "Hospital" }],
+  ["dropin", { label: "Drop-in center" }],
+  ["bus", { label: "Warming bus" }],
 ]);
+
+/** Every center's mark, whatever its kind: a white house on red, on the map's pins and
+ *  beside each center in the list and the card. The red clears 3:1 against the
+ *  basemap's land, and the white house 3:1 against the red. The house is a solid mark,
+ *  within the 40% of its square that core/pins.ts holds marks to. */
+export const CENTER_MARK: PinStyle = {
+  color: "#f74226",
+  glyph: "M12 2.5 22 11.5H19.5V21H14.25V15.5H9.75V21H4.5V11.5H2Z",
+  fill: true,
+};
 
 /** What a center's card shows, as the block's config.json would say it (see Card in ui/):
  *  a Call button, the website as a fact row, how to get in, and the day it was updated.
@@ -53,13 +51,6 @@ export const CENTER_CONFIG: Config = {
   facts: [{ key: "website", source: "site", label: "Website", as: "url", icon: "globe" }],
   card: [{ key: "instructions", source: "site", label: "How to get in" }],
   updated: { key: "updated", source: "site" },
-};
-
-/** The pins map-core draws for each kind. */
-export const CENTER_PINS: PinCategories = {
-  field: "type",
-  values: Object.fromEntries(
-    [...CENTER_KINDS].map(([type, { color, glyph }]) => [type, { color, glyph }])),
 };
 
 /** A center's kind. Undefined for a type not listed above. */

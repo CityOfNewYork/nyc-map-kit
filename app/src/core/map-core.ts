@@ -22,6 +22,7 @@
  *     onClusterExpand(count),
  *     focusPoint,                    // optional () => [x, y]: where a selected pin lands,
  *                                    // in container pixels. Default: the container's centre.
+ *     pin,                           // optional: the default pin's colour and glyph (PinStyle)
  *     categories,                    // optional: pins coloured by one property (PinCategories)
  *     counts,                        // optional: true puts on each pin how many sites are
  *                                    // drawn on its exact coordinates, where above 1
@@ -137,6 +138,15 @@ export interface SelectInfo {
   via: "map" | "api";
 }
 
+/** A pin's colour, and its glyph as SVG path data on a 24-unit square (see pinImage). A
+ *  glyph is stroked, like an icon, unless `fill` makes it a solid mark (see pins.ts).
+ *  Without a glyph the pin has the default's hole. */
+export interface PinStyle {
+  color: string;
+  glyph?: string;
+  fill?: boolean;
+}
+
 /**
  * Pins in a colour of their own, with a glyph in the head, by the value of one property.
  * The core knows nothing of what the values mean: the client names the property and gives
@@ -146,10 +156,8 @@ export interface SelectInfo {
 export interface PinCategories {
   /** The property that holds the category, such as "type". */
   field: string;
-  /** Each value's colour, and its glyph as SVG path data on a 24-unit square (see pinImage).
-   *  A glyph is stroked, like an icon, unless `fill` makes it a solid mark (see pins.ts).
-   *  Without a glyph the pin has the default's hole. */
-  values: Record<string, { color: string; glyph?: string; fill?: boolean }>;
+  /** Each value's pin. */
+  values: Record<string, PinStyle>;
 }
 
 /** createMap's options. `P` is the client's feature properties. */
@@ -157,6 +165,9 @@ export interface MapCoreOptions<P extends PointProperties> {
   style?: StyleSpecification | string;
   data?: FeatureCollection<Point, P>;
   cluster?: boolean;
+  /** Every pin's colour and glyph, but for those `categories` gives their own. The orange
+   *  pin with a hole (PIN.base) unless given. */
+  pin?: PinStyle | null;
   categories?: PinCategories | null;
   /** Each pin carries, at the top right of its head, how many sites the data puts on its
    *  exact coordinates, where that is more than one. Sites merely close by are not
@@ -313,6 +324,22 @@ function pinImage(
   return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
+/** The pin an image id draws, and in which state, with how many sites it counts: its
+ *  category's pin where it names one listed, or else `pin`. Null for an id that is not a
+ *  pin's. */
+export function pinFor(
+  id: string, categories: PinCategories | null, pin: PinStyle,
+): { style: PinStyle; state: keyof typeof PIN_IMAGE; count: number } | null {
+  const match = /^pin-(base|dimmed|selected)(?::(.+?))?(?:\+(\d+))?$/.exec(id);
+  if (!match) return null;
+  const category = match[2] && categories ? categories.values[match[2]] : null;
+  return {
+    style: category ?? pin,
+    state: match[1] as keyof typeof PIN_IMAGE,
+    count: match[3] ? Number(match[3]) : 1,
+  };
+}
+
 /** `color` mixed with `toward` (0–255 per channel), keeping `keep` of it. */
 function mix(color: string, toward: number, keep: number): string {
   return "#" + [1, 3, 5]
@@ -416,6 +443,7 @@ export function createMap<P extends PointProperties>(
     style,
     data = EMPTY,
     cluster = false,
+    pin = null,
     categories = null,
     counts = false,
     onSelect = () => {},
@@ -552,15 +580,13 @@ export function createMap<P extends PointProperties>(
   }
 
   /** A pin image by its id: a state's, a category's, and either with a count. */
+  const basePin: PinStyle = pin ?? { color: PIN.base };
   function imageFor(id: string): ImageData | null {
-    const match = /^pin-(base|dimmed|selected)(?::(.+?))?(?:\+(\d+))?$/.exec(id);
-    if (!match) return null;
-    const state = match[1] as keyof typeof PIN_IMAGE;
-    const count = match[3] ? Number(match[3]) : 1;
-    const category = match[2] && categories ? categories.values[match[2]] : null;
-    const shade = shades(category ? category.color : PIN.base);
-    return pinImage(shade[state], state === "selected" ? shade.halo : null, category?.glyph,
-      count, category?.fill);
+    const found = pinFor(id, categories, basePin);
+    if (!found) return null;
+    const { style: { color, glyph, fill }, state, count } = found;
+    const shade = shades(color);
+    return pinImage(shade[state], state === "selected" ? shade.halo : null, glyph, count, fill);
   }
   map.on("styleimagemissing", (e) => {
     const image = imageFor(e.id);
@@ -617,7 +643,7 @@ export function createMap<P extends PointProperties>(
   /** A dot's colour: its category's, in the shade its pin takes, as pinIcon picks it. */
   function dotColor(): ExpressionSpecification | string {
     const state = highlighted.length ? "dimmed" : "base";
-    const base = shades(PIN.base)[state];
+    const base = shades(basePin.color)[state];
     if (!categories || !categoryValues.length) return base;
     return ["match", ["to-string", ["get", categories.field]],
       ...categoryValues.flatMap((value) => [value, shades(categories.values[value].color)[state]]),

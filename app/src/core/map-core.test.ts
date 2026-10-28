@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { expect, test, vi } from "vitest";
-import { centredOn, createMap, pinZoom } from "./map-core.ts";
+import { centredOn, createMap, pinFor, pinZoom } from "./map-core.ts";
 
 // MapLibre draws with WebGL, which jsdom does not have. The stand-in records what the core
 // asks of it: the options the map is made with, and the handlers it turns off.
@@ -52,6 +52,17 @@ test("a searched place is the middle of its frame, whichever side of it the site
   expect(centredOn([0, 0], [[2, 1], [3, 0]])).toEqual([[-3, -1], [3, 1]]);
   // An area's corners count like sites, so all of the area stays in view.
   expect(centredOn([10, 20], [[9, 19], [14, 21], [11, 23]])).toEqual([[6, 17], [14, 23]]);
+});
+
+test("a pin is its category's where it names one listed, and the map's own pin otherwise", () => {
+  const pin = { color: "#f74226", glyph: "M0 0Z", fill: true };
+  const categories = { field: "type", values: { bus: { color: "#050560" } } };
+  expect(pinFor("pin-base", null, pin)).toEqual({ style: pin, state: "base", count: 1 });
+  expect(pinFor("pin-selected:bus+2", categories, pin))
+    .toEqual({ style: { color: "#050560" }, state: "selected", count: 2 });
+  expect(pinFor("pin-dimmed:library", categories, pin))
+    .toEqual({ style: pin, state: "dimmed", count: 1 });
+  expect(pinFor("subway-station", categories, pin)).toBeNull();
 });
 
 test("pins carry 1,000 sites at z10 and twice as many at each zoom level in", () => {

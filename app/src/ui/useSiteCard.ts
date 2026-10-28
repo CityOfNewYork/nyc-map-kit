@@ -28,7 +28,7 @@
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
 import { createMap } from "../core/map-core.ts";
-import type { MapCore, PinCategories, SelectInfo } from "../core/map-core.ts";
+import type { MapCore, PinCategories, PinStyle, SelectInfo } from "../core/map-core.ts";
 import { track } from "../logic/analytics.ts";
 import { coincidentWith } from "../logic/data.ts";
 import type { Model, Site, SiteProperties } from "../logic/types.ts";
@@ -44,11 +44,12 @@ interface SiteCardOptions {
   model: Model | null;
   /** The basemap, for the card's small map. null until it has loaded. */
   style: StyleSpecification | null;
-  /** The main map's pin categories, so the small map's pins match. */
+  /** The main map's pin and pin categories, so the small map's pins match. */
+  pin?: PinStyle | null;
   categories?: PinCategories | null;
 }
 
-export function useSiteCard({ model, style, categories = null }: SiteCardOptions) {
+export function useSiteCard({ model, style, pin = null, categories = null }: SiteCardOptions) {
   // The site whose card is open. `seq` counts selections, so selecting a site again (Back
   // to it, say) still runs the effect that opens and focuses the card.
   const [selection, setSelection] = useState<{ feature: Site | null; seq: number }>(
@@ -141,6 +142,7 @@ export function useSiteCard({ model, style, categories = null }: SiteCardOptions
       miniMap = miniMapRef.current = createMap(miniContainer.current!, {
         style: structuredClone(style!),
         data: model!.data,
+        pin,
         categories,
         zoomButtons: false,
         onSelect: (picked, info) => {

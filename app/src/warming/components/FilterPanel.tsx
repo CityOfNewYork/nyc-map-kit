@@ -1,5 +1,4 @@
 import { track } from "../../logic/analytics.ts";
-import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { Check } from "../../ui/Check.tsx";
 import { FilterDisclosure, FiltersPanel } from "../../ui/Filters.tsx";
 import { CENTER_KINDS } from "../logic/centers.ts";
@@ -41,8 +40,7 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
       <FilterDisclosure label={t("Location type")} chosen={filters.types.length}>
         {[...CENTER_KINDS].map(([type, kind]) => (
           <Check key={type} className="filter-check" checked={filters.types.includes(type)}
-                 onChange={(on) => toggleType(type, on)}
-                 icon={<CategoryIcon color={kind.color} glyph={kind.glyph} />}>
+                 onChange={(on) => toggleType(type, on)}>
             {t(kind.label)}
           </Check>
         ))}

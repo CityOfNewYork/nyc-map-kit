@@ -4,7 +4,6 @@ import type { Model, Site } from "../../logic/types.ts";
 import { CopyLink } from "../../ui/Card.tsx";
 import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { FiltersButton } from "../../ui/Filters.tsx";
-import { MapKey } from "../../ui/MapKey.tsx";
 import { Panel } from "../../ui/Panel.tsx";
 import { Pause } from "../../ui/Pause.tsx";
 import { Search } from "../../ui/Search.tsx";
@@ -14,7 +13,7 @@ import { FilterBar } from "../components/FilterBar.tsx";
 import { FilterPanel } from "../components/FilterPanel.tsx";
 import { OpenStatusLine } from "../components/OpenStatusLine.tsx";
 import { useNycMinute } from "../components/useNycMinute.ts";
-import { CENTER_KINDS, centerKind, centerStatus } from "../logic/centers.ts";
+import { CENTER_MARK, centerKind, centerStatus } from "../logic/centers.ts";
 import { activeFilters, NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
 import { number, plural, t } from "../../logic/i18n.ts";
@@ -87,8 +86,6 @@ export function MapPage({
                                  payload={{ via: "list" }} label="Share results" />}
                row={(feature) => centerRow(feature, minute)} marker={centerMarker} />
       </div>
-      <MapKey items={[...CENTER_KINDS.values()].map(({ label, color, glyph }) => (
-        { label: t(label), color, glyph }))} />
     </>
   );
 }
@@ -133,10 +130,9 @@ function centerRow(feature: Site, minute: number) {
   );
 }
 
-/** The icon of a center's kind, as the map key shows it. */
-function centerMarker(feature: Site) {
-  const kind = centerKind(feature);
-  return kind && <CategoryIcon color={kind.color} glyph={kind.glyph} />;
+/** Every center's mark, as its pin carries it. */
+function centerMarker() {
+  return <CategoryIcon {...CENTER_MARK} />;
 }
 
 /** "26 locations", in the form the language gives that number. Nothing until the data

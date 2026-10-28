@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { Site } from "../../logic/types.ts";
-import { CENTER_KINDS, CENTER_PINS, centerKind, centerStatus } from "./centers.ts";
+import { CENTER_MARK, centerKind, centerStatus } from "./centers.ts";
 
 function center(properties: Record<string, unknown>): Site {
   return {
@@ -20,13 +20,10 @@ describe("centerKind", () => {
   });
 });
 
-describe("CENTER_PINS", () => {
-  test("gives each kind a pin in its own colour and glyph, read from `type`", () => {
-    expect(CENTER_PINS.field).toBe("type");
-    for (const [type, { color, glyph }] of CENTER_KINDS) {
-      expect(CENTER_PINS.values[type]).toEqual({ color, glyph });
-    }
-    expect(Object.keys(CENTER_PINS.values)).toEqual([...CENTER_KINDS.keys()]);
+describe("CENTER_MARK", () => {
+  test("is a solid mark, so the pins and icons fill it rather than stroke it", () => {
+    expect(CENTER_MARK.fill).toBe(true);
+    expect(CENTER_MARK.glyph).toMatch(/^M/);
   });
 });
 

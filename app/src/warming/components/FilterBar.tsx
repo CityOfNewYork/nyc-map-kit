@@ -1,7 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FocusEvent, KeyboardEvent, ReactNode } from "react";
 import { track } from "../../logic/analytics.ts";
-import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { Check } from "../../ui/Check.tsx";
 import { Toggle } from "../../ui/Toggle.tsx";
 import { CENTER_KINDS } from "../logic/centers.ts";
@@ -38,8 +37,7 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           <legend className="visually-hidden">{t("Location type")}</legend>
           {[...CENTER_KINDS].map(([type, kind]) => (
             <Check key={type} className="filter-check" checked={filters.types.includes(type)}
-                   onChange={(on) => toggleType(type, on)}
-                   icon={<CategoryIcon color={kind.color} glyph={kind.glyph} />}>
+                   onChange={(on) => toggleType(type, on)}>
               {t(kind.label)}
             </Check>
           ))}
