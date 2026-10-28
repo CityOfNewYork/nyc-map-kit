@@ -12,18 +12,25 @@ interface FiltersButtonProps {
   onClick: () => void;
 }
 
+/** Two sliders: the mark of a control that opens filters. Decorative. */
+export function FiltersIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size}>
+      <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
+        <circle cx="16" cy="7" r="2" />
+        <circle cx="10" cy="17" r="2" />
+      </g>
+    </svg>
+  );
+}
+
 /** The round Filters button beside the search box. */
 export function FiltersButton({ ref, controls, open, active, onClick }: FiltersButtonProps) {
   return (
     <button type="button" className="filters-button" ref={ref}
             aria-expanded={open} aria-controls={controls} onClick={onClick}>
-      <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22">
-        <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <path d="M4 7h10M18 7h2M4 17h4M12 17h8" />
-          <circle cx="16" cy="7" r="2" />
-          <circle cx="10" cy="17" r="2" />
-        </g>
-      </svg>
+      <FiltersIcon />
       <span className="visually-hidden">{t("Filters")}</span>
       {active > 0 && (
         <span className="filters-count">

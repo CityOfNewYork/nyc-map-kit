@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { FocusEvent, KeyboardEvent, ReactNode } from "react";
 import { track } from "../../logic/analytics.ts";
 import { Check } from "../../ui/Check.tsx";
+import { FiltersIcon } from "../../ui/Filters.tsx";
 import { Toggle } from "../../ui/Toggle.tsx";
 import { CENTER_KINDS } from "../logic/centers.ts";
 import type { Filters } from "../logic/filters.ts";
@@ -14,11 +15,11 @@ interface FilterBarProps {
 }
 
 /**
- * The filters as a row of buttons beside the search box on a wide screen: open now first,
- * then Location type, which opens a short menu, then wheelchair access and pets. Open
- * now, wheelchair access and pets are toggle buttons. A button is tinted while its filter
- * is on. Each change applies at once, to the list and the map together. Narrower screens
- * use the Filters button and FilterPanel instead (see warming.css).
+ * The filters as a row of buttons beside the search box on a wide screen: open now,
+ * wheelchair access and pets as toggle buttons, then More filters, which opens a short
+ * menu of the kinds of center. A button is tinted while its filter is on. Each change
+ * applies at once, to the list and the map together. Narrower screens use the Filters
+ * button and FilterPanel instead (see warming.css).
  */
 export function FilterBar({ filters, onChange }: FilterBarProps) {
   function set(next: Partial<Filters>, filter: string, value: string | boolean) {
@@ -32,10 +33,10 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
 
   return (
     <div className="filter-bar" role="group" aria-label={t("Filters")}>
-      <OpenNowToggle filters={filters} set={set} />
-      <Dropdown label={<span>{t("Location type")}</span>} on={filters.types.length > 0}>
+      <FilterToggles filters={filters} set={set} />
+      <Dropdown label={<span>{t("More filters")}</span>} on={filters.types.length > 0}>
         <fieldset>
-          <legend className="visually-hidden">{t("Location type")}</legend>
+          <legend>{t("Location type")}</legend>
           {[...CENTER_KINDS].map(([type, kind]) => (
             <Check key={type} className="filter-check" checked={filters.types.includes(type)}
                    onChange={(on) => toggleType(type, on)}>
@@ -44,34 +45,22 @@ export function FilterBar({ filters, onChange }: FilterBarProps) {
           ))}
         </fieldset>
       </Dropdown>
-
-      <FeatureToggles filters={filters} set={set} />
     </div>
   );
 }
 
-/** What the toggles below are given: the filters, and how to change one. */
-interface ToggleProps {
+/** Open now, wheelchair access and pets: each a toggle with its icon, tinted while it is
+ *  on. The bar and FilterPanel both show them first. */
+export function FilterToggles({ filters, set }: {
   filters: Filters;
   set: (next: Partial<Filters>, filter: string, value: boolean) => void;
-}
-
-/** Open now, a toggle with its icon, tinted while it is on: the first filter in the bar
- *  and in FilterPanel. */
-export function OpenNowToggle({ filters, set }: ToggleProps) {
-  return (
-    <Toggle className="pill toggle-pill" pressed={filters.openNow}
-            onChange={(on) => set({ openNow: on }, "open", on)} icon={<ClockIcon />}>
-      {t("Open now")}
-    </Toggle>
-  );
-}
-
-/** Wheelchair access and pets: each a toggle with its icon, tinted while it is on. The
- *  bar and FilterPanel both show them, after the kinds of center. */
-export function FeatureToggles({ filters, set }: ToggleProps) {
+}) {
   return (
     <>
+      <Toggle className="pill toggle-pill" pressed={filters.openNow}
+              onChange={(on) => set({ openNow: on }, "open", on)} icon={<ClockIcon />}>
+        {t("Open now")}
+      </Toggle>
       <Toggle className="pill toggle-pill" pressed={filters.wheelchair}
               onChange={(on) => set({ wheelchair: on }, "wheelchair", on)} icon={<WheelchairIcon />}>
         {t("Wheelchair accessible")}
@@ -84,8 +73,9 @@ export function FeatureToggles({ filters, set }: ToggleProps) {
   );
 }
 
-/** A button that opens a short menu under it, closed by Done, Escape or a click
- *  elsewhere. Escape and Done put focus back on the button. */
+/** A button with the filters' sliders after its label that opens a short menu under it,
+ *  closed by Done, Escape or a click elsewhere. Escape and Done put focus back on the
+ *  button. */
 function Dropdown({ label, on, children }: { label: ReactNode; on: boolean; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -123,10 +113,7 @@ function Dropdown({ label, on, children }: { label: ReactNode; on: boolean; chil
       <button type="button" className={on ? "pill on" : "pill"} ref={button}
               aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)}>
         {label}
-        <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14">
-          <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2"
-                strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <FiltersIcon size={18} />
       </button>
       <div className="dropdown-panel" id={id} hidden={!open}>
         {children}

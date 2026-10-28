@@ -18,19 +18,20 @@ afterEach(() => {
 });
 
 describe("FilterBar", () => {
-  test("open now comes first, then the kinds of center, then wheelchair and pets", () => {
+  test("open now, wheelchair and pets come first, then More filters", () => {
     render(<FilterBar filters={NO_FILTERS} onChange={() => {}} />);
     expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(
-      ["Open now", "Location type", "Wheelchair accessible", "Pets allowed"]);
+      ["Open now", "Wheelchair accessible", "Pets allowed", "More filters"]);
   });
 
-  test("Location type opens a menu of kinds, and a kind filters the centers", () => {
+  test("More filters opens a menu of kinds, and a kind filters the centers", () => {
     const onChange = vi.fn();
     render(<FilterBar filters={NO_FILTERS} onChange={onChange} />);
-    const button = screen.getByRole("button", { name: "Location type" });
+    const button = screen.getByRole("button", { name: "More filters" });
     expect(button).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(button);
     expect(button).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("group", { name: "Location type" })).toBeVisible();
     fireEvent.click(screen.getByRole("checkbox", { name: "Hospital" }));
     expect(onChange).toHaveBeenCalledWith({ ...NO_FILTERS, types: ["hospital"] });
     expect(window.dataLayer).toEqual([{ event: "map_filter", filter: "type", value: "hospital:true" }]);
@@ -38,7 +39,7 @@ describe("FilterBar", () => {
 
   test("the menu closes on Done, Escape or a press elsewhere, focus back on its button", () => {
     render(<><FilterBar filters={NO_FILTERS} onChange={() => {}} /><p>Elsewhere</p></>);
-    const button = screen.getByRole("button", { name: "Location type" });
+    const button = screen.getByRole("button", { name: "More filters" });
     fireEvent.click(button);
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(button).toHaveAttribute("aria-expanded", "false");
@@ -65,7 +66,7 @@ describe("FilterBar", () => {
     rerender(<FilterBar filters={{ ...NO_FILTERS, wheelchair: true, types: ["bus"] }} onChange={onChange} />);
     expect(screen.getByRole("button", { name: "Wheelchair accessible" }))
       .toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Location type" })).toHaveClass("on");
+    expect(screen.getByRole("button", { name: "More filters" })).toHaveClass("on");
   });
 });
 
@@ -80,7 +81,7 @@ describe("FilterPanel", () => {
     // Each button's name, less the count Location type carries of the kinds chosen.
     expect([...body.querySelectorAll(":scope > * > button")]
       .map((b) => b.textContent!.replace(/\d.*$/, "")))
-      .toEqual(["Open now", "Location type", "Wheelchair accessible", "Pets allowed"]);
+      .toEqual(["Open now", "Wheelchair accessible", "Pets allowed", "Location type"]);
     fireEvent.click(screen.getByRole("button", { name: /^Location type/ }));
     expect(screen.getByRole("checkbox", { name: "Warming bus" })).toBeChecked();
     fireEvent.click(screen.getByRole("checkbox", { name: "Warming bus" }));
