@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { expect, test, vi } from "vitest";
-import { centredOn, createMap } from "./map-core.ts";
+import { centredOn, createMap, pinZoom } from "./map-core.ts";
 
 // MapLibre draws with WebGL, which jsdom does not have. The stand-in records what the core
 // asks of it: the options the map is made with, and the handlers it turns off.
@@ -52,4 +52,22 @@ test("a searched place is the middle of its frame, whichever side of it the site
   expect(centredOn([0, 0], [[2, 1], [3, 0]])).toEqual([[-3, -1], [3, 1]]);
   // An area's corners count like sites, so all of the area stays in view.
   expect(centredOn([10, 20], [[9, 19], [14, 21], [11, 23]])).toEqual([[6, 17], [14, 23]]);
+});
+
+test("pins carry 1,000 sites at z10 and twice as many at each zoom level in", () => {
+  expect(pinZoom(1000)).toBe(10);
+  expect(pinZoom(1001)).toBe(11);
+  expect(pinZoom(2000)).toBe(11);
+  expect(pinZoom(4000)).toBe(12);
+});
+
+test("the switch is a whole zoom level, rounded up", () => {
+  expect(pinZoom(486)).toBe(9);      // below a laptop's opening zoom
+  expect(pinZoom(1674)).toBe(11);
+  expect(pinZoom(12053)).toBe(14);
+});
+
+test("a handful of sites are pins at every zoom a phone can show; none draws nothing", () => {
+  expect(pinZoom(10)).toBeLessThanOrEqual(4);
+  expect(pinZoom(0)).toBe(0);
 });
