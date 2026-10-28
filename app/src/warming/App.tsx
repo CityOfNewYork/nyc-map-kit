@@ -29,27 +29,9 @@ interface AppProps {
   /** The basemap's label language. */
   lang: string;
   basemap: BasemapId;
-  /** A center's card opens as a panel beside the list rather than as a pop-up. */
-  panel?: boolean;
 }
 
-/** Where the panel's right edge is on a desktop: the list's 10 px inset, its 360 px, the
- *  10 px between them and the panel's 400 px (see warming.css). */
-const PANEL_RIGHT = 10 + 360 + 10 + 400;
-/** How much of a phone's map the panel covers, from the bottom. */
-const PANEL_PHONE_SHARE = 0.62;
-
-/** Where a selected pin lands when the card is a panel: in the middle of the map the
- *  panel leaves uncovered. */
-function panelFocusPoint(): [number, number] | null {
-  const el = document.getElementById("map");
-  if (!el) return null;
-  const { width, height } = el.getBoundingClientRect();
-  if (matchMedia("(min-width: 768px)").matches) return [(PANEL_RIGHT + width) / 2, height / 2];
-  return [width / 2, (height * (1 - PANEL_PHONE_SHARE)) / 2];
-}
-
-export default function App({ lang, basemap, panel = false }: AppProps) {
+export default function App({ lang, basemap }: AppProps) {
   useLanguage();   // re-render in a new language (logic/i18n.ts)
   const [view, setView] = useState<View>(() => viewFromUrl(window.location.search));
   const [model, setModel] = useState<Model | null>(null);
@@ -69,7 +51,7 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
     () => (model ? model.features.filter((f) => passes(f, filters, clock)) : []),
     [model, filters, clock]);
   // A center's card: what is selected, its modal, its ?site= address, focus, its small map.
-  const card = useSiteCard({ model, style, categories: CENTER_PINS, panel });
+  const card = useSiteCard({ model, style, categories: CENTER_PINS });
   const { attach, selectingFromUrl, dialogElement, miniMapElement } = card;
 
   // The sample centers ?dataset= names (logic/dataset.ts), read once: changing them
@@ -200,9 +182,7 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
               <LandingPage leaving={leaving} onOpenMap={() => leaveLanding(true)}
                            onFound={searchFromLanding} />
             )}
-            {/* Here, between the list and the map, so as a panel it sits over the map and
-                comes after the list in the tab order. As a pop-up its place does not matter. */}
-            <SiteDialog ref={dialogElement} miniMapElement={miniMapElement} panel={panel}
+            <SiteDialog ref={dialogElement} miniMapElement={miniMapElement}
                         feature={card.feature} group={card.group} model={model}
                         onStep={card.step} onClose={card.close}
                         card={(feature) => (
@@ -212,7 +192,6 @@ export default function App({ lang, basemap, panel = false }: AppProps) {
             <WarmingMap key="map" lang={lang} basemap={basemap} data={model && model.data}
                         shown={shown} padForList={view === "map"} onReady={onMapReady}
                         onSelect={onMapSelect}
-                        focusPoint={panel ? panelFocusPoint : undefined}
                         onInteract={view === "landing" ? () => leaveLanding() : undefined} />
           </div>
         )}

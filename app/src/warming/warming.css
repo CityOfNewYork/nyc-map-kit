@@ -145,15 +145,6 @@
 .status.closed { color: #7a4a00; }
 .status svg { flex: none; }
 
-/* The card as a panel starts beside this list, which is wider than the kit's, and below
-   the toolbar. App.tsx works out where the panel ends from the same numbers. */
-@media (min-width: 768px) {
-  .stage > .site-dialog.side-panel {
-    top: calc(var(--bar-h) + 10px);
-    left: calc(10px + 360px + 10px);
-  }
-}
-
 /* ------------------------------------------------------------------ toolbar ------ */
 
 /* The map view in two rows: a white bar across the top with the search box and the

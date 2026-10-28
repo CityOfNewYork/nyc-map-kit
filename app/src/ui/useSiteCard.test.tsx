@@ -45,8 +45,8 @@ function fakeMiniMap() {
 
 /** The parts of an app that wire up a card: a main map that reports each select() to the
  *  card, as map-core does, a list of rows, a heading, and the dialog. */
-function Harness({ data, panel = false }: { data: Model; panel?: boolean }) {
-  const card = useSiteCard({ model: data, style: {} as StyleSpecification, panel });
+function Harness({ data }: { data: Model }) {
+  const card = useSiteCard({ model: data, style: {} as StyleSpecification });
   const onSelect = useRef(card.onSelect);
   onSelect.current = card.onSelect;
   const [map] = useState(() => ({
@@ -78,7 +78,7 @@ function Harness({ data, panel = false }: { data: Model; panel?: boolean }) {
         Follow a link to Gamma
       </button>
       <SiteDialog ref={card.dialogElement} miniMapElement={card.miniMapElement}
-                  feature={card.feature} group={card.group} model={data} panel={panel}
+                  feature={card.feature} group={card.group} model={data}
                   onStep={card.step} onClose={card.close} />
     </>
   );
@@ -200,15 +200,5 @@ describe("useSiteCard", () => {
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Gamma");
     expect(window.dataLayer?.at(-1)).toEqual(
       { event: "map_pin_open", org_id: "c", site_id: "c", via: "mini_map" });
-  });
-
-  test("as a panel it opens beside the map, with no small map, and Escape closes it", async () => {
-    render(<Harness data={theModel()} panel />);
-    openRow("Gamma");
-    expect(dialog.show).toHaveBeenCalledTimes(1);
-    expect(dialog.showModal).not.toHaveBeenCalled();
-    expect(createMap).not.toHaveBeenCalled();
-    fireEvent.keyDown(siteDialog(), { key: "Escape" });
-    await waitFor(() => expect(siteDialog()).not.toHaveAttribute("open"));
   });
 });

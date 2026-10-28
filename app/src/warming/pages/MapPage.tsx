@@ -93,7 +93,7 @@ export function MapPage({
   );
 }
 
-/** The map view as it is now, with its filters, language and card style, but without an
+/** The map view as it is now, with its filters and language, but without an
  *  open center's card, which has a Share result of its own: what the list's Share results
  *  copies. */
 function resultsUrl(): URL {

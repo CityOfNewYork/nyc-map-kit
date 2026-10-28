@@ -46,12 +46,9 @@ interface SiteCardOptions {
   style: StyleSpecification | null;
   /** The main map's pin categories, so the small map's pins match. */
   categories?: PinCategories | null;
-  /** Open the card as a panel beside the list, with the map still in use and no small
-   *  map of its own, rather than as a modal. */
-  panel?: boolean;
 }
 
-export function useSiteCard({ model, style, categories = null, panel = false }: SiteCardOptions) {
+export function useSiteCard({ model, style, categories = null }: SiteCardOptions) {
   // The site whose card is open. `seq` counts selections, so selecting a site again (Back
   // to it, say) still runs the effect that opens and focuses the card.
   const [selection, setSelection] = useState<{ feature: Site | null; seq: number }>(
@@ -118,11 +115,8 @@ export function useSiteCard({ model, style, categories = null, panel = false }: 
   // focus. Runs as a layout effect so focus moves before the browser paints.
   const showCard = useEffectEvent((feature: Site) => {
     const dialog = dialogRef.current!;
-    if (!dialog.open) {
-      if (panel) dialog.show();
-      else dialog.showModal();
-    }
-    if (!panel) showMiniMap(feature);
+    if (!dialog.open) dialog.showModal();
+    showMiniMap(feature);
 
     // Focus the card's heading so a keyboard or screen-reader user lands on the content
     // they just asked for instead of being left behind in the list. Where others share

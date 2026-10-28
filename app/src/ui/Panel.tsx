@@ -15,8 +15,7 @@ const METRES_PER_MILE = 1609.344;
  *  whole is slow, and long to Tab through. */
 const LIST_PAGE = 50;
 
-/** The bottom sheet's two heights on a phone; the handle switches between them. At its
- *  tallest the sheet stays lower than the card that opens over it as a panel (style.css). */
+/** The bottom sheet's two heights on a phone; the handle switches between them. */
 const SHEET_HEIGHTS = { collapsed: "48px", half: "45dvh" };
 type SheetStep = keyof typeof SHEET_HEIGHTS;
 const NEXT_STEP: Record<SheetStep, SheetStep> = { collapsed: "half", half: "collapsed" };

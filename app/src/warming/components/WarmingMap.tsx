@@ -23,15 +23,13 @@ interface WarmingMapProps {
   /** The map exists, drawn in `style`. */
   onReady?: (map: MapCore<SiteProperties>, style: StyleSpecification) => void;
   onSelect?: (feature: Site | null, info: SelectInfo) => void;
-  /** Where a selected pin lands, in the map's pixels (see map-core). Its centre unless given. */
-  focusPoint?: () => [number, number] | null;
   /** The reader clicked, dragged, zoomed or panned the map. Moves the map makes on its
    *  own, such as framing a search result, do not count. */
   onInteract?: () => void;
 }
 
 export function WarmingMap({
-  lang, basemap, data, shown, padForList = false, onReady, onSelect, focusPoint, onInteract,
+  lang, basemap, data, shown, padForList = false, onReady, onSelect, onInteract,
 }: WarmingMapProps) {
   const { containerRef, create, destroy } = useMapCore<SiteProperties>();
   const [map, setMap] = useState<MapCore<SiteProperties> | null>(null);
@@ -49,7 +47,7 @@ export function WarmingMap({
       .then((style) => {
         if (cancelled) return;
         const created = create({
-          style: structuredClone(style), data, categories: CENTER_PINS, counts: true, focusPoint,
+          style: structuredClone(style), data, categories: CENTER_PINS, counts: true,
           onSelect: (feature, info) => select(feature, info),
         });
         // Only the reader's own input carries an originalEvent. A wheel zoom's movestart
@@ -69,7 +67,7 @@ export function WarmingMap({
       setMap(null);
       destroy();
     };
-  }, [lang, basemap, data, focusPoint, create, destroy]);
+  }, [lang, basemap, data, create, destroy]);
 
   // Its own effect, so a filter changes the pins without making the map again.
   useEffect(() => {
