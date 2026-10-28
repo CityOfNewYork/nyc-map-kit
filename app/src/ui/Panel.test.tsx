@@ -57,7 +57,6 @@ describe("Panel", () => {
 
   test("omits site rows when list is off, and keeps the summary", () => {
     renderPanel({ list: "off" });
-    fireEvent.click(screen.getByRole("button", { name: /^Show list/ }));
     expect(rows()).toEqual([]);
     expect(screen.getByText("3 sites")).toBeInTheDocument();
   });
@@ -87,27 +86,26 @@ describe("Panel", () => {
     ]);
   }, 15_000);   // 120 rows take seconds to render under coverage, beside the other files
 
-  test("on a desktop the list starts shut, and the handle shows it and hides it again", () => {
+  test("on a desktop the list starts open, and the handle hides it and shows it again", () => {
     renderPanel();
-    const handle = screen.getByRole("button", { name: /^Show list/ });
-    expect(screen.getByRole("region")).toHaveClass("shut");
-    expect(handle).toHaveAttribute("aria-expanded", "false");
-    expect(handle.querySelector(".counts")).toHaveTextContent(/^Show list$/);
-    fireEvent.click(handle);
+    const handle = screen.getByRole("button", { name: /Show or hide the list/ });
     expect(screen.getByRole("region")).not.toHaveClass("shut");
     expect(handle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("3 sites")).toBeInTheDocument();
     fireEvent.click(handle);
+    expect(screen.getByRole("region")).toHaveClass("shut");
     expect(handle).toHaveAttribute("aria-expanded", "false");
-    expect(handle).toHaveTextContent("Show list");
+    expect(handle.querySelector(".counts")).toHaveTextContent(/^Show list$/);
+    fireEvent.click(handle);
+    expect(handle).toHaveAttribute("aria-expanded", "true");
   });
 
   test("its top line is a heading whose button says how many sites, open or shut", () => {
     renderPanel();
-    const handle = screen.getByRole("button", { name: "Show list, 3 sites" });
+    const handle = screen.getByRole("button", { name: /^3 sites\s*Show or hide the list$/ });
     expect(screen.getByRole("heading", { level: 2 })).toContainElement(handle);
     fireEvent.click(handle);
-    expect(handle).toHaveAccessibleName(/^3 sites\s*Show or hide the list$/);
+    expect(handle).toHaveAccessibleName("Show list, 3 sites");
   });
 
   test("on a phone the handle steps the sheet between collapsed and half height", () => {

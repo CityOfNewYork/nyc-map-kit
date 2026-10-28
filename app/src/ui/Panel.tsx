@@ -79,10 +79,10 @@ export function Panel({
   const [step, setStep] = useState<SheetStep>("collapsed");
   const [dragging, setDragging] = useState(false);
   // On a desktop the handle is the panel's top line, and hides the list under it; the
-  // panel then shrinks to a box that says "Show list". It starts that way, leaving the
-  // map whole. On a phone it steps the sheet's height.
+  // panel then shrinks to a box that says "Show list". On a phone it steps the sheet's
+  // height.
   const [desktop, setDesktop] = useState(() => matchMedia(DESKTOP).matches);
-  const [shut, setShut] = useState(true);
+  const [shut, setShut] = useState(false);
   useEffect(() => {
     const query = matchMedia(DESKTOP);
     const onChange = () => setDesktop(query.matches);
