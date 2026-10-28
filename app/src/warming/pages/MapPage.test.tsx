@@ -15,7 +15,7 @@ vi.hoisted(() => vi.stubEnv("VITE_GEOCLIENT_KEY", ""));
 
 const centers = [
   site("jacobi", { org: "Jacobi", address: "1400 Pelham Parkway South, Bronx", borough: "Bronx",
-    type: "hospital", opens: "00:00", closes: "24:00" }, [-73.85, 40.86]),
+    type: "hospital", opens: "00:00", closes: "24:00", wheelchair: true }, [-73.85, 40.86]),
   site("lincoln-bus", { org: "Lincoln Warming Bus", address: "234 East 149th Street, Bronx",
     borough: "Bronx", type: "bus", opens: "22:00", closes: "05:00" }, [-73.92, 40.82]),
   site("living-room", { org: "The Living Room", address: "800 Barretto Street, Bronx",
@@ -61,6 +61,16 @@ describe("MapPage", () => {
       expect(bus).toHaveTextContent("Warming bus");
       expect(bus).toHaveTextContent("Closed");
       expect(bus).toHaveTextContent("234 East 149th Street, Bronx");
+    });
+
+    test("an accessible center's row says so after whether it is open; others say nothing", () => {
+      renderPage();
+      const jacobi = rows().find((r) => r.dataset.siteId === "jacobi")!;
+      expect(jacobi).toHaveAccessibleName(
+        /^Jacobi,\s*Hospital,\s*Open 24 hours,\s*Wheelchair accessible,\s*1400 Pelham/);
+      expect(jacobi.querySelector(".row-access svg")).toHaveAttribute("aria-hidden", "true");
+      const bus = rows().find((r) => r.dataset.siteId === "lincoln-bus")!;
+      expect(bus).not.toHaveTextContent("Wheelchair");
     });
 
     test("shows the count, and how many of how many with filters on", () => {

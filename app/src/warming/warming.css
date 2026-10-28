@@ -145,6 +145,9 @@
   font-size: 0.875rem;
   font-weight: 600;
 }
+/* In a row, the wheelchair symbol follows the status, in the text's black. */
+.row-status { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; }
+.row-access { display: inline-flex; color: var(--ink); }
 .status.open { color: #0a6b3a; }
 .status.closed { color: #7a4a00; }
 .status svg { flex: none; }

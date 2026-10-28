@@ -2,18 +2,15 @@ import { useRef, useState } from "react";
 import type { Found } from "../../logic/places.ts";
 import type { Model, Site } from "../../logic/types.ts";
 import { CopyLink } from "../../ui/Card.tsx";
-import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
 import { FiltersButton } from "../../ui/Filters.tsx";
 import { Panel } from "../../ui/Panel.tsx";
-import { Pause } from "../../ui/Pause.tsx";
 import { Search } from "../../ui/Search.tsx";
 import { siteUrl } from "../../ui/useSiteCard.ts";
+import { centerMarker, centerRow } from "../components/CenterRow.tsx";
 import { CodeBlueNotice } from "../components/CodeBlueNotice.tsx";
 import { FilterBar } from "../components/FilterBar.tsx";
 import { FilterPanel } from "../components/FilterPanel.tsx";
-import { OpenStatusLine } from "../components/OpenStatusLine.tsx";
 import { useNycMinute } from "../components/useNycMinute.ts";
-import { CENTER_MARK, centerKind, centerStatus } from "../logic/centers.ts";
 import { activeFilters, NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
 import { number, plural, t } from "../../logic/i18n.ts";
@@ -90,8 +87,8 @@ export function MapPage({
   );
 }
 
-/** The map view as it is now, with its filters and language, but without an
- *  open center's card, which has a Share result of its own: what the list's Share results
+/** The map view as it is now, with its filters and language, but without an open
+ *  center's card, which has a Share result of its own: what the list's Share results
  *  copies. */
 function resultsUrl(): URL {
   const url = siteUrl(null);
@@ -110,29 +107,6 @@ function ListCount({ total, shown, filtered }: {
         { shown: number(shown) })}
     </span>
   ) : <CenterCount count={total} />;
-}
-
-/** A row's lines: the center's name, what kind of center it is, whether it is open at
- *  `minute`, and its address. A hospital and the warming bus parked at it share a name
- *  and an address, so the kind is what tells their rows apart. */
-function centerRow(feature: Site, minute: number) {
-  const p = feature.properties;
-  const kind = centerKind(feature);
-  const status = centerStatus(feature, minute);
-  return (
-    <>
-      <span className="name">{p.org}</span>
-      {kind && <><Pause /><span className="type">{t(kind.label)}</span></>}
-      {status && <><Pause /><OpenStatusLine status={status} /></>}
-      <Pause />
-      <span className="addr">{p.address}</span>
-    </>
-  );
-}
-
-/** Every center's mark, as its pin carries it. */
-function centerMarker() {
-  return <CategoryIcon {...CENTER_MARK} />;
 }
 
 /** "26 locations", in the form the language gives that number. Nothing until the data
