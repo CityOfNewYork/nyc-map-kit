@@ -9,12 +9,14 @@ import type { Config, Org, OrgsDoc, PreparedData, Site, SiteCollection } from ".
 
 /**
  * How close two records have to be, in metres, for the card to offer a stepper between
- * them. A map sets its own with `coLocationRadiusM` in config.json.
+ * them, and for their pin to open on a list of them. A map sets its own with
+ * `coLocationRadiusM` in config.json.
  *
- * It is a fixed ground distance rather than a function of zoom, so which records are
- * grouped does not change as the reader zooms in or out.
+ * About as wide as a pin's head at the map's closest zoom, so these are the records whose
+ * pins no zoom pulls apart. It is a fixed ground distance rather than a function of zoom,
+ * so which records are grouped does not change as the reader zooms in or out.
  */
-export const CO_LOCATION_RADIUS_M = 35;
+export const CO_LOCATION_RADIUS_M = 10;
 
 /**
  * The order the list presents the boroughs in — neither alphabetical nor by site count,

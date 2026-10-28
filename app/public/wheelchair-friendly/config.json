@@ -4,7 +4,6 @@
   "listLabel": "Restaurants",
   "count": { "one": "{n} restaurant", "other": "{n} restaurants" },
   "filterLabel": "Cuisine",
-  "coLocationRadiusM": 35,
   "openInMaps": {
     "query": [
       { "key": "address", "source": "site" }

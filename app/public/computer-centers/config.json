@@ -5,7 +5,6 @@
   "count": { "one": "{n} center", "other": "{n} centers" },
   "filterLabel": "Overseen by",
   "pins": { "field": "org_type" },
-  "coLocationRadiusM": 35,
   "openInMaps": {
     "query": [
       { "key": "address", "source": "site" }
