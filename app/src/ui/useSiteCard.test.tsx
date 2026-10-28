@@ -34,6 +34,7 @@ function fakeMiniMap() {
       getContainer: () => container,
       resize: vi.fn(),
       jumpTo: vi.fn(),
+      getMaxZoom: () => 18,
     },
     ready: (fn: () => void) => { fn(); return mini; },
     select: vi.fn(),
@@ -267,12 +268,12 @@ describe("useSiteCard", () => {
     const options = miniMapOptions();
     expect(options.zoomButtons).toBe(false);
     expect(miniMap.raw.scrollZoom.disable).toHaveBeenCalled();
-    expect(miniMap.raw.jumpTo).toHaveBeenLastCalledWith({ center: [-73.95, 40.75], zoom: 15.5 });
+    expect(miniMap.raw.jumpTo).toHaveBeenLastCalledWith({ center: [-73.95, 40.75], zoom: 18 });
     expect(miniMap.select).toHaveBeenLastCalledWith("a");
     fireEvent.click(screen.getByRole("button", { name: "Close card" }));
     openRow("Gamma");
     expect(createMap).toHaveBeenCalledTimes(1);
-    expect(miniMap.raw.jumpTo).toHaveBeenLastCalledWith({ center: [-73.9, 40.8], zoom: 15.5 });
+    expect(miniMap.raw.jumpTo).toHaveBeenLastCalledWith({ center: [-73.9, 40.8], zoom: 18 });
   });
 
   test("a pin on the small map opens that site's card", () => {

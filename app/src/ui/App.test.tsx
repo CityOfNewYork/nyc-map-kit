@@ -30,7 +30,7 @@ function fakeMap(options: MapCoreOptions<SiteProperties>) {
     raw: {
       isMoving: () => false, once: vi.fn(), off: vi.fn(), easeTo: vi.fn(),
       setPadding: vi.fn(), getPadding: () => ({ left: 0 }),
-      scrollZoom: { disable: vi.fn() }, resize: vi.fn(), jumpTo: vi.fn(),
+      scrollZoom: { disable: vi.fn() }, resize: vi.fn(), jumpTo: vi.fn(), getMaxZoom: () => 18,
       getCanvas: () => document.createElement("canvas"),
       getContainer: () => document.createElement("div"),
     },

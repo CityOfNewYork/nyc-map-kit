@@ -44,10 +44,6 @@ import type { Model, Site, SiteProperties } from "../logic/types.ts";
 import type { StepDirection } from "./SiteDialog.tsx";
 import { t } from "../logic/i18n.ts";
 
-/** Street level, a little closer than the main map's: the card's map answers "where is
- *  this" for one place, not "what is near me". */
-const MINI_MAP_ZOOM = 15.5;
-
 interface SiteCardOptions {
   /** null until the data has loaded. */
   model: Model | null;
@@ -209,9 +205,11 @@ export function useSiteCard({
     }
     // The dialog was display:none until a moment ago; the canvas has to measure again.
     miniMap.raw.resize();
+    // At the map's closest zoom: the card's map answers "where is this" for one place, not
+    // "what is near me", and there the pins of sites a few metres apart come furthest apart.
     miniMap.ready(() => {
       miniMap.raw.jumpTo({
-        center: feature.geometry.coordinates as [number, number], zoom: MINI_MAP_ZOOM,
+        center: feature.geometry.coordinates as [number, number], zoom: miniMap.raw.getMaxZoom(),
       });
       miniMap.select(feature.properties.id);
     });

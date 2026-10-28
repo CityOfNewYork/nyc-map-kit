@@ -76,7 +76,8 @@ beforeEach(() => {
   };
   const mini = {
     raw: { scrollZoom: { disable() {} }, getCanvas: () => document.createElement("canvas"),
-      getContainer: () => document.createElement("div"), resize() {}, jumpTo() {} },
+      getContainer: () => document.createElement("div"), resize() {}, jumpTo() {},
+      getMaxZoom: () => 18 },
     ready: (fn: () => void) => { fn(); return mini; }, select() {}, announce() {}, destroy() {},
   };
   vi.mocked(createMap).mockReturnValue(mini as unknown as ReturnType<typeof createMap>);
