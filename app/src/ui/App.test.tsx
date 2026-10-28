@@ -129,6 +129,25 @@ describe("App", () => {
     expect(screen.queryByText("2 organizations")).toBeNull();
   });
 
+  test("a pin that holds two sites lists them under the map's own count, then opens one", async () => {
+    const pair = [...sites, site("d", { org: "Delta", org_id: "o3", org_type: "Library",
+      borough: "Bronx" }, [-73.9, 40.88])];
+    serve({
+      "config.json": { ...config, count: { one: "{n} center", other: "{n} centers" } },
+      "sites.geojson": { type: "FeatureCollection", features: pair },
+    });
+    await renderApp();
+    await waitFor(() => expect(rows()).toHaveLength(4));
+    act(() => mainMap().options.onSelect!(pair[2], { via: "map" }));
+    const dialog = document.getElementById("site-dialog")!;
+    expect(within(dialog).getByRole("heading", { level: 2 })).toHaveTextContent("2 centers");
+    const choices = [...dialog.querySelectorAll<HTMLElement>(".site-button")];
+    expect(choices.map((b) => b.dataset.siteId)).toEqual(["c", "d"]);
+    fireEvent.click(choices[1]);
+    expect(mainMap().select).toHaveBeenLastCalledWith("d");
+    expect(within(dialog).getByRole("heading", { level: 2, name: "Delta" })).toBeInTheDocument();
+  });
+
   test("a row opens its site's card through the map", async () => {
     await renderApp();
     fireEvent.click(rows()[0]);

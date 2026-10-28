@@ -8,6 +8,7 @@ import type { Model, Site, SiteCollection, SiteProperties } from "../logic/types
 import { SiteDialog } from "../ui/SiteDialog.tsx";
 import { useSiteCard } from "../ui/useSiteCard.ts";
 import { CenterCard } from "./components/CenterCard.tsx";
+import { centerMarker, centerRow } from "./components/CenterRow.tsx";
 import { TopBar } from "./components/TopBar.tsx";
 import { useNycMinute } from "./components/useNycMinute.ts";
 import { WarmingMap } from "./components/WarmingMap.tsx";
@@ -19,7 +20,7 @@ import { viewFromUrl } from "./logic/view.ts";
 import type { View } from "./logic/view.ts";
 import { LandingPage } from "./pages/LandingPage.tsx";
 import { MapPage } from "./pages/MapPage.tsx";
-import { t } from "../logic/i18n.ts";
+import { plural, t } from "../logic/i18n.ts";
 import { useLanguage } from "../ui/useLanguage.ts";
 
 /** How long the hero takes to fold away: .hero's transition in warming.css. */
@@ -184,6 +185,12 @@ export default function App({ lang, basemap }: AppProps) {
             )}
             <SiteDialog ref={dialogElement} miniMapElement={miniMapElement}
                         feature={card.feature} group={card.group} model={model}
+                        choices={card.choices} onChoose={card.choose}
+                        choosing={{
+                          heading: (n) => <span>{plural(n, "{n} location", "{n} locations")}</span>,
+                          intro: <span>{t("These warming centers are in the same place.")}</span>,
+                          row: (f) => centerRow(f, minute), marker: centerMarker,
+                        }}
                         onStep={card.step} onClose={card.close}
                         card={(feature) => (
                           <CenterCard feature={feature} model={model!}

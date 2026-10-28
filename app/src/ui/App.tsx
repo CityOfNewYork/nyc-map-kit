@@ -220,6 +220,7 @@ export default function App({ settings }: AppProps) {
   // ------------------------------------------------------------------------- render
 
   const feature = card.feature;
+  const countWords = model?.config.count;   // "{n} centers", where the config says so
   return (
     <>
       {/* The stage is the page's <main>: the search, the list and the map. */}
@@ -297,6 +298,12 @@ export default function App({ settings }: AppProps) {
 
       <SiteDialog ref={dialogElement} miniMapElement={miniMapElement}
                   feature={feature} group={card.group}
+                  choices={card.choices} onChoose={card.choose}
+                  choosing={{
+                    heading: countWords && ((n) => (
+                      <span>{plural(n, countWords.one, countWords.other)}</span>)),
+                    row: (f) => siteRow(f, pinField === "org_type" ? pinStyles : null),
+                  }}
                   model={model} origin={found && found.center}
                   onStep={card.step} onClose={card.close} />
     </>

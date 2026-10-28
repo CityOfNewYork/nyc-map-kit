@@ -2,7 +2,8 @@ import type { MouseEvent, ReactNode, Ref, SyntheticEvent } from "react";
 import type { LngLat } from "../logic/places.ts";
 import type { Model, Site } from "../logic/types.ts";
 import { Card } from "./Card.tsx";
-import { number, t } from "../logic/i18n.ts";
+import { SiteRow } from "./SiteRow.tsx";
+import { number, plural, t } from "../logic/i18n.ts";
 
 /** Which stepper arrow was pressed: towards the previous record in the group, or the next. */
 export type StepDirection = "prev" | "next";
@@ -13,6 +14,14 @@ interface SiteDialogProps {
   miniMapElement: Ref<HTMLDivElement>;
   feature: Site | null;
   group: Site[];
+  /** The sites a pin holds, to choose one from before any card opens; [] for none. */
+  choices?: Site[];
+  /** A site was picked from `choices`. */
+  onChoose?: (feature: Site) => void;
+  /** How the list of choices says and draws them, as the app's list does: its heading
+   *  for `n` sites ("2 sites" unless given), a line under it, and each row's lines and
+   *  mark (see SiteRow). */
+  choosing?: ChoosingProps;
   model: Model | null;
   /** Where the reader searched for, or null: the block's own Card says how far away the
    *  site is from it. */
@@ -22,6 +31,13 @@ interface SiteDialogProps {
   /** The card's content for a site. It must include the heading, id "card-title", that
    *  focus moves to. The block's own Card unless given. */
   card?: (feature: Site) => ReactNode;
+}
+
+interface ChoosingProps {
+  heading?: (n: number) => ReactNode;
+  intro?: ReactNode;
+  row?: (feature: Site) => ReactNode;
+  marker?: (feature: Site) => ReactNode;
 }
 
 /**
@@ -37,13 +53,19 @@ interface SiteDialogProps {
  * card's content is never mixed with the controls around it. Close is last in the box so
  * Tab walks the card first.
  *
+ * Before a card, a pin that holds several sites opens the box on a list of them instead,
+ * with no small map: a heading, which names the dialog, then one row per site, as the
+ * app's list draws them. Picking one opens its card, with the stepper. Each card still
+ * holds one record; the list is a step before the cards, not part of one.
+ *
  * useSiteCard.ts opens and closes it (showModal / close) and owns what is selected; this
  * file is only its markup. `group` is every record at the selected one's location. The
  * card's content is `card`'s, or the block's own Card.
  */
 export function SiteDialog(
   {
-    ref, miniMapElement, feature, group, model, origin = null, onStep, onClose, card,
+    ref, miniMapElement, feature, group, choices = [], onChoose, choosing = {}, model,
+    origin = null, onStep, onClose, card,
   }: SiteDialogProps,
 ) {
   // Escape arrives as `cancel`. Taken over so it closes through history like every other
@@ -58,19 +80,24 @@ export function SiteDialog(
     if (e.target === e.currentTarget) onClose();
   };
 
+  const choosingNow = choices.length > 0;
+  const describedBy = group.length > 1 ? "step-count"
+    : choosingNow && choosing.intro ? "choices-intro" : undefined;
+
   return (
     <dialog className="site-dialog" id="site-dialog" aria-labelledby="card-title"
-            aria-describedby={group.length > 1 ? "step-count" : undefined} ref={ref}
+            aria-describedby={describedBy} ref={ref}
             onCancel={onCancel} onClick={onBackdropClick}>
       <Stepper group={group} currentId={feature && feature.properties.id} onStep={onStep} />
-      <div className="card-box">
-        <div className="mini-map" id="mini-map" ref={miniMapElement} />
+      <div className={choosingNow ? "card-box choosing" : "card-box"}>
+        <div className="mini-map" id="mini-map" ref={miniMapElement} hidden={choosingNow} />
         {/* A plain box, not an <article>: inside the dialog, already named for the place,
             an article only made VoiceOver say the name again. */}
         <div className="card" id="card" hidden={!feature}>
           {feature && (card ? card(feature)
             : <Card feature={feature} model={model!} origin={origin} />)}
         </div>
+        {choosingNow && <Choices sites={choices} onChoose={onChoose!} {...choosing} />}
         <button className="card-close" id="card-close" type="button" onClick={onClose}>
           <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20">
             <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2.2"
@@ -80,6 +107,32 @@ export function SiteDialog(
         </button>
       </div>
     </dialog>
+  );
+}
+
+/** The sites at one place, to choose one from: the heading the dialog is named by (its
+ *  `card-title`, as a card's name is), the app's line under it, and a row for each. */
+function Choices({ sites, onChoose, heading, intro, row, marker }: ChoosingProps & {
+  sites: Site[]; onChoose: (feature: Site) => void;
+}) {
+  return (
+    <div className="choices">
+      <div className="choices-head">
+        <h2 id="card-title" tabIndex={-1}>
+          {heading ? heading(sites.length)
+            : <span>{plural(sites.length, "{n} site", "{n} sites")}</span>}
+        </h2>
+        {intro && <p id="choices-intro">{intro}</p>}
+      </div>
+      <ul className="site-list">
+        {sites.map((feature) => (
+          <li key={feature.properties.id}>
+            <SiteRow feature={feature} row={row} marker={marker}
+                     onClick={() => onChoose(feature)} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

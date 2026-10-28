@@ -21,6 +21,13 @@
  * replaces the entry instead of adding one: Back closes the card, whichever site it has
  * reached, rather than stepping back through each one.
  *
+ * A pin on the main map that holds more than one site (logic/data.ts, coincidentWith)
+ * opens the pop-up on a list of them instead, to choose one from; the chosen site's card
+ * then opens in its place, with the stepper above it. The list has a history entry of its
+ * own, as a card does but without ?site=, and the chosen card takes it over: Back closes
+ * the pop-up at either step. A row in the app's list, a link and the small map open a
+ * card directly.
+ *
  * Inside an iframe the address that changes is the frame's, not the host page's, so the
  * link is the frame's own address with ?site=<id>. Back still works, because the browser
  * keeps one history for the page and its frames.
@@ -50,10 +57,12 @@ interface SiteCardOptions {
 }
 
 export function useSiteCard({ model, style, pin = null, categories = null }: SiteCardOptions) {
-  // The site whose card is open. `seq` counts selections, so selecting a site again (Back
-  // to it, say) still runs the effect that opens and focuses the card.
-  const [selection, setSelection] = useState<{ feature: Site | null; seq: number }>(
-    { feature: null, seq: 0 });
+  // The site whose card is open, or the sites a pin holds that the reader is choosing
+  // between. `seq` counts selections, so selecting a site again (Back to it, say) still
+  // runs the effect that opens and focuses the card.
+  const [selection, setSelection] = useState<{
+    feature: Site | null; choices: Site[]; seq: number;
+  }>({ feature: null, choices: [], seq: 0 });
   const dialogRef = useRef<HTMLDialogElement>(null);
   const miniContainer = useRef<HTMLDivElement>(null);
   const miniMapRef = useRef<MapCore<SiteProperties>>(null);   // the card's map; made on first open
@@ -61,6 +70,7 @@ export function useSiteCard({ model, style, pin = null, categories = null }: Sit
   // Bookkeeping that event handlers read and write but nothing renders: refs, not state.
   const selectedId = useRef<string | null>(null);   // what map-core has selected, readable at once
   const stepFocus = useRef<StepDirection | null>(null);  // while a stepper click is in flight
+  const chosen = useRef(false);        // while a pick from the list of choices is in flight
   const returnFocusTo = useRef<HTMLElement | null>(null);  // the row that opened the card; see closedCardFocus
   const pushed = useRef(false);        // the open card has a history entry of its own
   const urlDriven = useRef(false);     // the URL, not the reader, chose the site
@@ -94,13 +104,25 @@ export function useSiteCard({ model, style, pin = null, categories = null }: Sit
   function onSelect(feature: Site | null, info: SelectInfo) {
     if (!feature) {
       selectedId.current = null;
-      setSelection((s) => (s.feature ? { feature: null, seq: s.seq } : s));
+      setSelection((s) => (s.feature || s.choices.length
+        ? { feature: null, choices: [], seq: s.seq } : s));
       return;
     }
     const p = feature.properties;
     selectedId.current = p.id;
+    // A pin that holds more than one site: the list of them first, with a history entry
+    // of its own, so Back closes it (see the top of this file). The pin stays selected.
+    const group = coincidentWith(model!.atCoord, feature);
+    if (info.via === "map" && group.length > 1) {
+      history.pushState({ mapkitSite: p.id }, "", siteUrl(null));
+      pushed.current = true;
+      returnFocusTo.current = null;
+      setSelection((s) => ({ feature: null, choices: group, seq: s.seq + 1 }));
+      track("map_pin_choices", { count: group.length });
+      return;
+    }
     recordInUrl(p.id);
-    setSelection((s) => ({ feature, seq: s.seq + 1 }));
+    setSelection((s) => ({ feature, choices: [], seq: s.seq + 1 }));
     // Opening a card moves focus into it, where the name is heard, so announcing it as
     // well only says it twice. A stepper press leaves focus on the arrow, so the place
     // stepped to is announced: through the card's own map when it is a pop-up, since
@@ -125,9 +147,12 @@ export function useSiteCard({ model, style, pin = null, categories = null }: Sit
     // sees the stepper above the card: a screen reader hears the dialog's description,
     // "1 of 2 at this location" (SiteDialog.tsx), then "Next site at this location,
     // button", and reading on goes into the card. After a stepper click, focus goes back
-    // to the arrow they pressed, so a second press steps again.
-    const arrow = dialog.querySelector<HTMLElement>(`.step-${stepFocus.current ?? "next"}`);
+    // to the arrow they pressed, so a second press steps again. A site picked from the
+    // list of choices is the one the reader asked for, so focus goes to its name.
+    const arrow = chosen.current ? null
+      : dialog.querySelector<HTMLElement>(`.step-${stepFocus.current ?? "next"}`);
     stepFocus.current = null;
+    chosen.current = false;
     (arrow || dialog.querySelector<HTMLElement>("#card-title")!).focus();
   });
 
@@ -180,8 +205,16 @@ export function useSiteCard({ model, style, pin = null, categories = null }: Sit
     });
   }
 
+  // The list of choices: the modal opens on it, focused on its heading, which names it.
+  const showChoices = useEffectEvent(() => {
+    const dialog = dialogRef.current!;
+    if (!dialog.open) dialog.showModal();
+    dialog.querySelector<HTMLElement>("#card-title")!.focus();
+  });
+
   useLayoutEffect(() => {
     if (selection.feature) showCard(selection.feature);
+    else if (selection.choices.length) showChoices();
   }, [selection]);
 
   /** A row in the list was chosen: open its card, and come back to the row on close. */
@@ -192,6 +225,15 @@ export function useSiteCard({ model, style, pin = null, categories = null }: Sit
     map.select(feature.properties.id);
     track("map_pin_open", {
       org_id: feature.properties.org_id, site_id: feature.properties.id, via: "list",
+    });
+  }
+
+  /** A site was picked from the list of choices: its card opens in the list's place. */
+  function choose(feature: Site) {
+    chosen.current = true;
+    mainMap()!.select(feature.properties.id);
+    track("map_pin_open", {
+      org_id: feature.properties.org_id, site_id: feature.properties.id, via: "chooser",
     });
   }
 
@@ -273,11 +315,14 @@ export function useSiteCard({ model, style, pin = null, categories = null }: Sit
     feature,
     /** Every record at the open site's location, itself included. */
     group: feature && model ? coincidentWith(model.atCoord, feature) : [],
+    /** The sites a pin holds, to choose one from, while the pop-up lists them; else []. */
+    choices: selection.choices,
     dialogElement,
     miniMapElement,
     attach,
     onSelect,
     openFromList,
+    choose,
     selectingFromUrl,
     step,
     close,
@@ -293,11 +338,11 @@ function focusLost(dialog: HTMLDialogElement) {
 
 /** Where focus goes when a card closes that no list row opened — a link with ?site=, or a
  *  pin: the site's row in the list, so the reader is left where it is in the list, or, if
- *  the list is shut or off, the map's heading (the element marked data-card-return). */
+ *  the list is shut or off, the map's heading (the element marked data-card-return). The
+ *  row is the list's (#site-list), not the pop-up's own list of choices. */
 function closedCardFocus(id: string | null): HTMLElement | null {
-  const row = id
-    ? document.querySelector<HTMLElement>(`.site-button[data-site-id="${CSS.escape(id)}"]`)
-    : null;
+  const row = id ? document.querySelector<HTMLElement>(
+    `#site-list .site-button[data-site-id="${CSS.escape(id)}"]`) : null;
   if (row && row.getClientRects().length) return row;   // not in a shut list
   return document.querySelector<HTMLElement>("[data-card-return]");
 }

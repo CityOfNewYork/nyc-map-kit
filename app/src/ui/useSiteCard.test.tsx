@@ -64,7 +64,7 @@ function Harness({ data }: { data: Model }) {
   return (
     <>
       <h1 data-card-return tabIndex={-1}>Map</h1>
-      <ul>
+      <ul id="site-list">
         {data.features.map((f) => (
           <li key={f.properties.id}>
             <button type="button" className="site-button" data-site-id={f.properties.id}
@@ -77,8 +77,16 @@ function Harness({ data }: { data: Model }) {
       <button type="button" onClick={() => { card.selectingFromUrl(); map.select("c"); }}>
         Follow a link to Gamma
       </button>
+      {/* What map-core does on a pin click: onSelect with via "map". */}
+      {data.features.map((f) => (
+        <button key={f.properties.id} type="button"
+                onClick={() => onSelect.current(f, { via: "map" })}>
+          {`Click ${f.properties.org}'s pin`}
+        </button>
+      ))}
       <SiteDialog ref={card.dialogElement} miniMapElement={card.miniMapElement}
                   feature={card.feature} group={card.group} model={data}
+                  choices={card.choices} onChoose={card.choose}
                   onStep={card.step} onClose={card.close} />
     </>
   );
@@ -87,6 +95,10 @@ function Harness({ data }: { data: Model }) {
 let dialog: ReturnType<typeof stubDialog>;
 const siteDialog = () => document.getElementById("site-dialog")!;
 const openRow = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
+const clickPin = (name: string) =>
+  fireEvent.click(screen.getByRole("button", { name: `Click ${name}'s pin` }));
+/** The rows of the pop-up's list of choices. */
+const choiceRows = () => [...siteDialog().querySelectorAll<HTMLElement>(".site-button")];
 const miniMapOptions = () =>
   vi.mocked(createMap).mock.calls[0][1] as unknown as MapCoreOptions<SiteProperties>;
 
@@ -173,6 +185,70 @@ describe("useSiteCard", () => {
     expect(miniMap.announce).toHaveBeenCalledWith("Selected: Beta, b Main Street");
     fireEvent.click(next);
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Alpha");
+  });
+
+  test("a pin that holds several sites opens on a list of them, with no address of its own", () => {
+    render(<Harness data={theModel()} />);
+    const length = history.length;
+    clickPin("Alpha");
+    expect(dialog.showModal).toHaveBeenCalledTimes(1);
+    const heading = screen.getByRole("heading", { level: 2 });
+    expect(heading).toHaveTextContent("2 sites");
+    expect(heading).toHaveFocus();
+    expect(heading).toHaveAttribute("id", siteDialog().getAttribute("aria-labelledby"));
+    expect(choiceRows().map((r) => r.dataset.siteId)).toEqual(["a", "b"]);
+    expect(document.getElementById("stepper")).toHaveAttribute("hidden");
+    expect(document.getElementById("mini-map")).toHaveAttribute("hidden");
+    expect(location.search).toBe("");
+    expect(history.length).toBe(length + 1);
+    expect(window.dataLayer).toEqual([{ event: "map_pin_choices", count: 2 }]);
+  });
+
+  test("picking one opens its card in place, with the stepper, focused on its name", () => {
+    render(<Harness data={theModel()} />);
+    clickPin("Alpha");
+    const length = history.length;
+    fireEvent.click(choiceRows()[1]);
+    expect(mainMap.select).toHaveBeenLastCalledWith("b");
+    const heading = screen.getByRole("heading", { level: 2 });
+    expect(heading).toHaveTextContent("Beta");
+    expect(heading).toHaveFocus();
+    expect(screen.getByText("2 of 2 at this location")).toBeInTheDocument();
+    expect(choiceRows()).toEqual([]);
+    expect(document.getElementById("mini-map")).not.toHaveAttribute("hidden");
+    expect(location.search).toBe("?site=b");
+    expect(history.length).toBe(length);
+    expect(window.dataLayer?.at(-1)).toEqual(
+      { event: "map_pin_open", org_id: "b", site_id: "b", via: "chooser" });
+  });
+
+  test("Back and Escape close the list, as they close a card picked from it", async () => {
+    render(<Harness data={theModel()} />);
+    clickPin("Alpha");
+    act(() => history.back());
+    await waitFor(() => expect(siteDialog()).not.toHaveAttribute("open"));
+    expect(mainMap.select).toHaveBeenLastCalledWith(null);
+    clickPin("Alpha");
+    fireEvent(siteDialog(), new Event("cancel", { cancelable: true }));
+    await waitFor(() => expect(siteDialog()).not.toHaveAttribute("open"));
+    clickPin("Alpha");
+    fireEvent.click(choiceRows()[0]);
+    act(() => history.back());
+    await waitFor(() => expect(siteDialog()).not.toHaveAttribute("open"));
+    expect(location.search).toBe("");
+    expect(history.state).toBeNull();
+  });
+
+  test("a pin with one site, and a row in the list, open the card directly", async () => {
+    render(<Harness data={theModel()} />);
+    clickPin("Gamma");
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Gamma");
+    expect(location.search).toBe("?site=c");
+    fireEvent.click(screen.getByRole("button", { name: "Close card" }));
+    await waitFor(() => expect(siteDialog()).not.toHaveAttribute("open"));
+    openRow("Alpha");
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Alpha");
+    expect(choiceRows()).toEqual([]);
   });
 
   test("draws the place on the card's own small map, made once", () => {

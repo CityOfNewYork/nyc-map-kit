@@ -162,6 +162,37 @@ describe("warming App", () => {
     });
   });
 
+  describe("a pin with two centers", () => {
+    test("opens on a list of both, in the list's words, and picking one opens its card", async () => {
+      const pair: SiteCollection = { type: "FeatureCollection", features: [
+        ...centers.features,
+        site("lincoln", { org: "Lincoln Hospital", borough: "Bronx", type: "hospital",
+          opens: "00:00", closes: "24:00", wheelchair: true }, [-73.92, 40.82]),
+      ] };
+      vi.stubGlobal("fetch", vi.fn(async (url: string) =>
+        ({ ok: true, json: async () => (url === "places.json" ? places : pair) })));
+      stub.map.select = vi.fn((id: string | null) => stub.props?.onSelect?.(
+        pair.features.find((f) => f.properties.id === id) ?? null, { via: "api" }));
+      renderApp("/warming.html?view=map");
+      await waitFor(() => expect(rows()).toHaveLength(3));
+
+      act(() => stub.props!.onSelect!(pair.features[1], { via: "map" }));
+      const dialog = document.getElementById("site-dialog")!;
+      expect(dialog).toHaveAttribute("open");
+      expect(within(dialog).getByRole("heading", { level: 2 })).toHaveTextContent("2 locations");
+      expect(dialog).toHaveAccessibleDescription("These warming centers are in the same place.");
+      const choices = [...dialog.querySelectorAll<HTMLElement>(".site-button")];
+      expect(choices.map((b) => b.dataset.siteId)).toEqual(["lincoln-bus", "lincoln"]);
+      expect(choices[1]).toHaveTextContent("Hospital");
+      expect(choices[1].querySelector(".category-icon")).toBeInTheDocument();
+
+      fireEvent.click(choices[1]);
+      expect(screen.getByRole("heading", { level: 2, name: "Lincoln Hospital" })).toHaveFocus();
+      expect(screen.getByText("2 of 2 at this location")).toBeInTheDocument();
+      expect(location.search).toBe("?view=map&site=lincoln");
+    });
+  });
+
   describe("data", () => {
     test("loads the sample centers ?dataset= names once, and gives them to the map", async () => {
       const fetch = serve();

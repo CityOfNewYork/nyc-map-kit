@@ -2,13 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent, ReactNode } from "react";
 import { track } from "../logic/analytics.ts";
 import { compareSites, metresBetween } from "../logic/data.ts";
-import { number, t } from "../logic/i18n.ts";
+import { t } from "../logic/i18n.ts";
 import type { Settings } from "../logic/params.ts";
 import type { Found } from "../logic/places.ts";
 import type { Model, Site } from "../logic/types.ts";
 import { PlaceName } from "./Search.tsx";
-
-const METRES_PER_MILE = 1609.344;
+import { SiteRow } from "./SiteRow.tsx";
 
 /** How many rows the list shows at first, and how many more each "Show more" adds. Every
  *  row is a Tab stop and part of the page's layout, so a list of thousands of sites drawn
@@ -249,49 +248,18 @@ export function Panel({
         other lines through `row`; the distance always comes last.
 
         Sorted north to south, borough by borough — see `compareSites` in logic/data.ts —
-        or, after a search, nearest first. The distance is straight-line, in its own
-        elements: the number, then "mi" for the eye and "miles" for a screen reader, then
-        "away".
+        or, after a search, nearest first. The distance is straight-line (see SiteRow).
       */}
       <div className="site-scroll" ref={scrollRef} inert={hidden}>
         {intro && <div className="list-intro">{intro}</div>}
         <ul className="site-list" id="site-list">
-          {sites.slice(0, count).map(({ feature, metres }) => {
-            const p = feature.properties;
-            const lines = (
-              <>
-                {row ? row(feature) : (
-                  <>
-                    <span className="name">{p.org}</span>
-                    <span className="addr">{p.address}</span>
-                  </>
-                )}
-                {metres != null && (
-                  <span className="dist">
-                    <span aria-hidden="true">{t("{miles} mi away", { miles: miles(metres) })}</span>
-                    <span className="visually-hidden">
-                      {t("{miles} miles away", { miles: miles(metres) })}
-                    </span>
-                  </span>
-                )}
-              </>
-            );
-            return (
-              <li key={p.id}>
-                <button type="button" className={marker ? "site-button marked" : "site-button"}
-                        data-site-id={p.id}
-                        aria-current={p.id === selectedId ? "true" : undefined}
-                        onClick={(e) => onOpen(e.currentTarget, feature)}>
-                  {marker ? (
-                    <>
-                      <span className="site-marker">{marker(feature)}</span>
-                      <span className="site-lines">{lines}</span>
-                    </>
-                  ) : lines}
-                </button>
-              </li>
-            );
-          })}
+          {sites.slice(0, count).map(({ feature, metres }) => (
+            <li key={feature.properties.id}>
+              <SiteRow feature={feature} row={row} marker={marker} metres={metres}
+                       current={feature.properties.id === selectedId}
+                       onClick={(button) => onOpen(button, feature)} />
+            </li>
+          ))}
         </ul>
         {count < sites.length && (
           <button type="button" className="list-more" onClick={showMore}>
@@ -301,9 +269,4 @@ export function Panel({
       </div>
     </section>
   );
-}
-
-/** One decimal place; never "0.0", which would read as "here". */
-function miles(metres: number): string {
-  return number(Math.max(0.1, metres / METRES_PER_MILE), 1);
 }
