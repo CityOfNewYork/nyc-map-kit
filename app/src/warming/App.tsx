@@ -190,7 +190,7 @@ export default function App({ lang, basemap }: AppProps) {
                                       origin={found && found.center} />
                         )} />
             <WarmingMap key="map" lang={lang} basemap={basemap} data={model && model.data}
-                        shown={shown} padForList={view === "map"} onReady={onMapReady}
+                        shown={shown} onReady={onMapReady}
                         onSelect={onMapSelect}
                         onInteract={view === "landing" ? () => leaveLanding() : undefined} />
           </div>

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { t } from "../../logic/i18n.ts";
+import { CategoryIcon } from "../../ui/CategoryIcon.tsx";
+import { CENTER_MARK } from "../logic/centers.ts";
 import { LanguageMenu } from "./LanguageMenu.tsx";
 
 /** The NYC logo, without the registration mark as the design system has it at this size
@@ -8,9 +10,9 @@ import { LanguageMenu } from "./LanguageMenu.tsx";
 const NYC_LOGO = "M430.8,60.7l9.2-8.6v-26.1L412.5,0h-91.6l-27.5,26.1V8.7L284.2,0h-36.7l-9.2,8.7v17.4l-18.3,17.4-18.3-17.4V8.7L192.5,0h-36.7l-9.2,8.7L137.5,0h-36.7l-9.2,8.7v34.8L45.8,0H9.2L0,8.7v121.6l9.2,8.7h36.7l9.2-8.7v-34.7l45.8,43.4h36.7l9.2-8.7V60.8l45.8,43.4v26.1l9.2,8.7h36.6l9.2-8.7v-26.1l45.8-43.4v52.1l27.5,26.1h91.6l27.5-26.1v-26.1l-9.2-8.7h-45.9v8.7h-36.6v-34.8h36.6v8.6h45.9Z";
 
 /**
- * The bar across the top of the page: the NYC logo followed by "Warming Centers", the
- * site's name, "Official website", which opens the line every nyc.gov page carries to
- * say it is the City's, and at the far end the language menu.
+ * The bar across the top of the page: the NYC logo followed by the centers' mark and
+ * "Warming Centers", the site's name; "Official website", which opens the line every
+ * nyc.gov page carries to say it is the City's; and at the far end the language menu.
  *
  * The name is not a heading: each view's <h1> opens its own content, inside <main>
  * (LandingPage, MapPage).
@@ -25,6 +27,7 @@ export function TopBar() {
             <path d={NYC_LOGO} fill="currentColor" />
           </svg>
           <span className="visually-hidden">NYC</span>{" "}
+          <CategoryIcon {...CENTER_MARK} />
           <span className="site-title">{t("Warming Centers")}</span>
         </p>
         <button type="button" className="official-toggle" aria-expanded={open}

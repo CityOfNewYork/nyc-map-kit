@@ -9,10 +9,13 @@
   src: url("/fonts/ClashGrotesk-Semibold.woff2") format("woff2");
 }
 
-/* The top bar: the NYC logo followed by the page's name, then "Official website",
-   white on black, and the official-site notice that opens under it. */
+/* The top bar: the NYC logo followed by the page's mark and name, then "Official
+   website", white on navy, and the official-site notice that opens under it. The navy is
+   the hero's, and the map view's toolbar and frame (see .stage below), so the page's
+   chrome is one colour; a faint rule parts the bar from what is under it. */
 .site-header {
-  background: var(--ink);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--link-hover);
   color: var(--surface);
 }
 .header-bar {
@@ -35,6 +38,8 @@
   white-space: nowrap;
 }
 .nyc-logo { display: block; width: auto; height: 26px; }
+/* The centers' mark before the name, as on their pins. */
+.site-name .category-icon { flex: none; width: 24px; height: 24px; margin-inline-end: -4px; }
 .official-toggle {
   display: inline-flex;
   align-items: center;
@@ -88,13 +93,13 @@
 .language-list a:focus-visible { outline-color: var(--ink); outline-offset: -4px; }
 .official-notice {
   padding: 12px 20px 14px;
-  border-top: 1px solid #333333;
-  background: #111111;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  background: #03033f;
   font-size: 0.875rem;
   line-height: 1.5;
 }
 .official-notice p { margin: 0; }
-/* The kit's black focus ring does not show on black. */
+/* The kit's black focus ring does not show on navy. */
 .site-header :focus-visible { outline-color: var(--surface); }
 
 .site-main {
@@ -105,8 +110,7 @@
 
 /* ------------------------------------------------------------------ list --------- */
 
-/* Wider than the kit's 320 px, for the icon beside each row. WarmingMap.tsx pads the
-   camera by the same width. */
+/* Wider than the kit's 320 px, for the icon beside each row. */
 .side { width: 360px; }
 .site-marker .category-icon { width: 26px; height: 26px; }
 
@@ -147,24 +151,45 @@
 
 /* ------------------------------------------------------------------ toolbar ------ */
 
-/* The map view in two rows: a white bar across the top with the search box and the
-   Filters button, then the map, with the list floating over its left edge. The bar keeps
-   its height; what the search box has to say opens under it, over the map. */
+/* The map view in two rows on navy: a bar across the top with the search box and the
+   filters, then the list and the map. The bar keeps its height; what the search box has
+   to say opens under it, over the map. */
 .stage {
   --bar-h: calc(var(--search-h) + 20px);
   grid-template-rows: var(--bar-h) minmax(0, 1fr);
+  background: var(--link-hover);
 }
 .stage > .map,
 .stage > .side { grid-area: 2 / 1; }
 .toolbar {
   position: relative;
   z-index: 5;
-  grid-area: 1 / 1;
+  grid-area: 1 / 1 / 2 / -1;
   min-height: 0;
   padding: 10px;
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
 }
+/* On a desktop the list is a column of its own and the map a card beside it, each 10 px
+   in from the frame and from each other. Shut, the list is a box over the map's corner,
+   and the map takes the width of both. */
+@media (min-width: 768px) {
+  .stage { grid-template-columns: auto minmax(0, 1fr); }
+  .stage > .side { margin: 0 0 10px 10px; }
+  .stage > .map {
+    grid-area: 2 / 2;
+    margin: 0 10px 10px;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+  .stage:has(.panel.shut) > .map { grid-column: 1 / -1; }
+  .stage:has(.panel.shut) > .side { margin: 10px 0 0 20px; }
+}
+/* The kit's black focus ring does not show on navy: white around the buttons that sit on
+   it. Inside the search box and the menus, on white, it stays black. */
+.toolbar :is(.pill, .filters-button):focus-visible { outline-color: var(--surface); }
+/* The search box on navy, in the bar and in the hero: a grey outline, and a grey search
+   button under the pointer, for contrast against the navy. */
+:is(.hero, .toolbar) .search-bar { border-color: #888888; }
+:is(.hero, .toolbar) .search-submit:hover { background: #707070; }
 
 /* ------------------------------------------------------------------ filters ------ */
 
@@ -327,7 +352,6 @@
 /* A grey outline around the whole bar, button included. */
 .hero .search-bar {
   height: 54px;
-  border: 2px solid #888888; /* grey outline for contrast ratio */
   border-radius: var(--radius-pill);
   background: var(--surface);
   overflow: hidden;
@@ -346,9 +370,6 @@
   border-left: 0;
   background: var(--ink);
   color: var(--surface);
-}
-.hero .search-submit:hover { 
-  background: #707070; /* darker grey on hover for contrast ratio */
 }
 /* The status line and the choices float over the page below, in the cards they are over
    the map, so the hero keeps its height. */
@@ -387,6 +408,7 @@
   /* style.css floats the search box over the map on a phone; the hero's sits in the hero. */
   .hero .search { z-index: auto; margin: 0; }
   .nyc-logo { height: 20px; }
+  .site-name .category-icon { width: 20px; height: 20px; }
   .site-title { font-size: 1.125rem; }
   /* "Official website" takes a thin line of its own above the logo, as nyc.gov's header
      does on a phone, and a long title is cut short rather than widen the page. */

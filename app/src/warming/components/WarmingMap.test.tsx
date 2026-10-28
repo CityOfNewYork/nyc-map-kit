@@ -71,14 +71,10 @@ describe("WarmingMap", () => {
       { type: "FeatureCollection", features: [data.features[1]] });
   });
 
-  test("keeps the camera clear of the list only when padForList is set", async () => {
-    const { rerender } = render(<WarmingMap lang="en" basemap="protomaps" data={data} />);
+  test("leaves the camera unpadded: the map is beside the list, not under it", async () => {
+    render(<WarmingMap lang="en" basemap="protomaps" data={data} />);
     await waitFor(() => expect(createMap).toHaveBeenCalled());
     expect(map.raw.setPadding).not.toHaveBeenCalled();
-    rerender(<WarmingMap lang="en" basemap="protomaps" data={data} padForList />);
-    expect(map.raw.setPadding).toHaveBeenLastCalledWith({ left: 380 });
-    rerender(<WarmingMap lang="en" basemap="protomaps" data={data} padForList={false} />);
-    expect(map.raw.off).toHaveBeenCalled();
   });
 
   test("calls onReady with the map, and onSelect when a pin is selected", async () => {

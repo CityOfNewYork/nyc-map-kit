@@ -4,13 +4,9 @@ import type { BasemapId } from "../../core/basemaps/names.ts";
 import type { StyleSpecification } from "maplibre-gl";
 import type { MapCore, SelectInfo } from "../../core/map-core.ts";
 import type { Site, SiteCollection, SiteProperties } from "../../logic/types.ts";
-import { keepClearOfList } from "../../ui/layout.ts";
 import { useMapCore } from "../../ui/useMapCore.ts";
 import { CENTER_MARK } from "../logic/centers.ts";
 import { t } from "../../logic/i18n.ts";
-
-/** The list's width on a desktop: .side in warming.css. */
-const LIST_WIDTH = 360;
 
 interface WarmingMapProps {
   lang: string;
@@ -18,8 +14,6 @@ interface WarmingMapProps {
   data: SiteCollection | null;
   /** The centers to draw, when only some of `data` should show. */
   shown?: Site[];
-  /** Keep the camera's centre clear of the list. It can change while the map is showing. */
-  padForList?: boolean;
   /** The map exists, drawn in `style`. */
   onReady?: (map: MapCore<SiteProperties>, style: StyleSpecification) => void;
   onSelect?: (feature: Site | null, info: SelectInfo) => void;
@@ -29,7 +23,7 @@ interface WarmingMapProps {
 }
 
 export function WarmingMap({
-  lang, basemap, data, shown, padForList = false, onReady, onSelect, onInteract,
+  lang, basemap, data, shown, onReady, onSelect, onInteract,
 }: WarmingMapProps) {
   const { containerRef, create, destroy } = useMapCore<SiteProperties>();
   const [map, setMap] = useState<MapCore<SiteProperties> | null>(null);
@@ -73,12 +67,6 @@ export function WarmingMap({
   useEffect(() => {
     if (map && shown) map.setData({ type: "FeatureCollection", features: shown });
   }, [map, shown]);
-
-  // Its own effect, so the list arriving or leaving changes the padding, not the map.
-  useEffect(() => {
-    if (!map || !padForList) return;
-    return keepClearOfList(map, LIST_WIDTH);
-  }, [map, padForList]);
 
   return (
     <div className="map" id="map" ref={containerRef}>
