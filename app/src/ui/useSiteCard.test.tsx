@@ -45,8 +45,8 @@ function fakeMiniMap() {
 
 /** The parts of an app that wire up a card: a main map that reports each select() to the
  *  card, as map-core does, a list of rows, a heading, and the dialog. */
-function Harness({ data }: { data: Model }) {
-  const card = useSiteCard({ model: data, style: {} as StyleSpecification });
+function Harness({ data, shown }: { data: Model; shown?: Site[] }) {
+  const card = useSiteCard({ model: data, style: {} as StyleSpecification, shown });
   const onSelect = useRef(card.onSelect);
   onSelect.current = card.onSelect;
   const [map] = useState(() => ({
@@ -237,6 +237,15 @@ describe("useSiteCard", () => {
     await waitFor(() => expect(siteDialog()).not.toHaveAttribute("open"));
     expect(location.search).toBe("");
     expect(history.state).toBeNull();
+  });
+
+  test("the list of choices and the stepper leave out what the filters hide", () => {
+    render(<Harness data={theModel()} shown={[sites[0], sites[2]]} />);
+    clickPin("Alpha");
+    expect(choiceRows()).toEqual([]);
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Alpha");
+    expect(document.getElementById("stepper")).toHaveAttribute("hidden");
+    expect(location.search).toBe("?site=a");
   });
 
   test("a pin with one site, and a row in the list, open the card directly", async () => {

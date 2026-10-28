@@ -91,7 +91,7 @@ export default function App({ settings }: AppProps) {
   const main = useMapCore<SiteProperties>();
   const { containerRef } = main;
   // The card: what is selected, its modal, its ?site= address, focus and its small map.
-  const card = useSiteCard({ model, style: basemap, categories });
+  const card = useSiteCard({ model, style: basemap, categories, shown });
   const { attach, selectingFromUrl, dialogElement, miniMapElement } = card;
 
   // ------------------------------------------------------------------------- loading

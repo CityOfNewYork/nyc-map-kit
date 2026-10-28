@@ -52,7 +52,7 @@ export default function App({ lang, basemap }: AppProps) {
     () => (model ? model.features.filter((f) => passes(f, filters, clock)) : []),
     [model, filters, clock]);
   // A center's card: what is selected, its modal, its ?site= address, focus, its small map.
-  const card = useSiteCard({ model, style, pin: CENTER_MARK });
+  const card = useSiteCard({ model, style, pin: CENTER_MARK, shown });
   const { attach, selectingFromUrl, dialogElement, miniMapElement } = card;
 
   // The sample centers ?dataset= names (logic/dataset.ts), read once: changing them

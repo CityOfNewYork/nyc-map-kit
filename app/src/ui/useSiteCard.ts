@@ -21,18 +21,20 @@
  * replaces the entry instead of adding one: Back closes the card, whichever site it has
  * reached, rather than stepping back through each one.
  *
- * A pin on the main map that holds more than one site (logic/data.ts, coincidentWith)
- * opens the pop-up on a list of them instead, to choose one from; the chosen site's card
- * then opens in its place, with the stepper above it. The list has a history entry of its
- * own, as a card does but without ?site=, and the chosen card takes it over: Back closes
- * the pop-up at either step. A row in the app's list, a link and the small map open a
- * card directly.
+ * A pin on the main map that holds more than one site the filters leave (`shown`; see
+ * coincidentWith in logic/data.ts) opens the pop-up on a list of them instead, to choose
+ * one from; the chosen site's card then opens in its place, with the stepper above it.
+ * The list has a history entry of its own, as a card does but without ?site=, and the
+ * chosen card takes it over: Back closes the pop-up at either step. A row in the app's
+ * list, a link and the small map open a card directly.
  *
  * Inside an iframe the address that changes is the frame's, not the host page's, so the
  * link is the frame's own address with ?site=<id>. Back still works, because the browser
  * keeps one history for the page and its frames.
  */
-import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState,
+} from "react";
 import type { StyleSpecification } from "maplibre-gl";
 import { createMap } from "../core/map-core.ts";
 import type { MapCore, PinCategories, PinStyle, SelectInfo } from "../core/map-core.ts";
@@ -54,9 +56,14 @@ interface SiteCardOptions {
   /** The main map's pin and pin categories, so the small map's pins match. */
   pin?: PinStyle | null;
   categories?: PinCategories | null;
+  /** The sites the filters leave, when the app has filters: the list of choices and the
+   *  stepper offer only these. Every site unless given. */
+  shown?: Site[] | null;
 }
 
-export function useSiteCard({ model, style, pin = null, categories = null }: SiteCardOptions) {
+export function useSiteCard({
+  model, style, pin = null, categories = null, shown = null,
+}: SiteCardOptions) {
   // The site whose card is open, or the sites a pin holds that the reader is choosing
   // between. `seq` counts selections, so selecting a site again (Back to it, say) still
   // runs the effect that opens and focuses the card.
@@ -76,6 +83,11 @@ export function useSiteCard({ model, style, pin = null, categories = null }: Sit
   const urlDriven = useRef(false);     // the URL, not the reader, chose the site
   const mainMapRef = useRef<MapCore<SiteProperties> | null>(null);   // see attach
   const mainMap = () => mainMapRef.current;
+
+  // The records at a site's location that the filters leave, the site itself always.
+  const showing = useMemo(() => shown && new Set(shown.map((f) => f.properties.id)), [shown]);
+  const groupOf = (feature: Site) => coincidentWith(model!.atCoord, feature).filter((f) =>
+    !showing || showing.has(f.properties.id) || f.properties.id === feature.properties.id);
 
   /** The main map, once the app has made it, or null when it is gone. Call it from the
    *  effect that makes the map. */
@@ -112,7 +124,7 @@ export function useSiteCard({ model, style, pin = null, categories = null }: Sit
     selectedId.current = p.id;
     // A pin that holds more than one site: the list of them first, with a history entry
     // of its own, so Back closes it (see the top of this file). The pin stays selected.
-    const group = coincidentWith(model!.atCoord, feature);
+    const group = groupOf(feature);
     if (info.via === "map" && group.length > 1) {
       history.pushState({ mapkitSite: p.id }, "", siteUrl(null));
       pushed.current = true;
@@ -243,7 +255,7 @@ export function useSiteCard({ model, style, pin = null, categories = null }: Sit
 
   /** Step to the previous (-1) or next (+1) record in this group, wrapping round. */
   function step(delta: number, dir: StepDirection) {
-    const group = coincidentWith(model!.atCoord, selection.feature!);
+    const group = groupOf(selection.feature!);
     const index = group.findIndex((f) => f.properties.id === selection.feature!.properties.id);
     const next = group[(index + delta + group.length) % group.length];
     stepFocus.current = dir;
@@ -314,7 +326,7 @@ export function useSiteCard({ model, style, pin = null, categories = null }: Sit
     /** The site whose card is open, or null. */
     feature,
     /** Every record at the open site's location, itself included. */
-    group: feature && model ? coincidentWith(model.atCoord, feature) : [],
+    group: feature && model ? groupOf(feature) : [],
     /** The sites a pin holds, to choose one from, while the pop-up lists them; else []. */
     choices: selection.choices,
     dialogElement,
