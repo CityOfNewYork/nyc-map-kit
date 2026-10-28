@@ -67,7 +67,7 @@ variables:
 
   # Container image
   - name: imageRepository
-    value: static/nyc-map-kit
+    value: nyc-map-kit
   # Deployed by build ID, not "latest": deploy/manifests/deployment.yaml uses imagePullPolicy IfNotPresent,
   # so a moving tag would never be re-pulled.
   - name: imageVersion
