@@ -5,7 +5,7 @@ import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import places from "../../../public/places.json";
 import type { Found } from "../../logic/places.ts";
-import { model, site, stubScreen } from "../../test/fixtures.ts";
+import { model, site, stubDialog, stubScreen } from "../../test/fixtures.ts";
 import { CENTER_CONFIG } from "../logic/centers.ts";
 import { NO_FILTERS } from "../logic/filters.ts";
 import { MapPage } from "./MapPage.tsx";
@@ -143,6 +143,18 @@ describe("MapPage", () => {
       const { onFilters } = renderPage();
       fireEvent.click(screen.getByRole("button", { name: "Open now" }));
       expect(onFilters).toHaveBeenCalledWith({ ...NO_FILTERS, openNow: true });
+    });
+
+    test("More filters opens the filters panel, and closing it puts focus back on it", () => {
+      stubDialog();
+      renderPage();
+      const more = screen.getByRole("button", { name: "More filters" });
+      fireEvent.click(more);
+      expect(more).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByRole("dialog", { name: "Filters" })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Close the filters" }));
+      expect(screen.queryByRole("dialog", { name: "Filters" })).toBeNull();
+      expect(more).toHaveFocus();
     });
 
     test("Share map copies the map view with its filters", async () => {

@@ -17,44 +17,32 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+/** The bar, with a More filters that does nothing unless given `onMore`. */
+function renderBar(filters = NO_FILTERS, props: { onChange?: () => void; onMore?: () => void } = {}) {
+  return render(<FilterBar filters={filters} onChange={props.onChange ?? (() => {})}
+                           onMore={props.onMore ?? (() => {})} moreOpen={false} />);
+}
+
 describe("FilterBar", () => {
   test("open now, wheelchair and pets come first, then More filters", () => {
-    render(<FilterBar filters={NO_FILTERS} onChange={() => {}} />);
+    renderBar();
     expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(
       ["Open now", "Wheelchair accessible", "Pets allowed", "More filters"]);
   });
 
-  test("More filters opens a menu of kinds, and a kind filters the centers", () => {
-    const onChange = vi.fn();
-    render(<FilterBar filters={NO_FILTERS} onChange={onChange} />);
+  test("More filters asks for the filters panel, which it names and says is shut", () => {
+    const onMore = vi.fn();
+    renderBar(NO_FILTERS, { onMore });
     const button = screen.getByRole("button", { name: "More filters" });
     expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(button).toHaveAttribute("aria-controls", "filters");
     fireEvent.click(button);
-    expect(button).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("group", { name: "Location type" })).toBeVisible();
-    fireEvent.click(screen.getByRole("checkbox", { name: "Hospital" }));
-    expect(onChange).toHaveBeenCalledWith({ ...NO_FILTERS, types: ["hospital"] });
-    expect(window.dataLayer).toEqual([{ event: "map_filter", filter: "type", value: "hospital:true" }]);
-  });
-
-  test("the menu closes on Done, Escape or a press elsewhere, focus back on its button", () => {
-    render(<><FilterBar filters={NO_FILTERS} onChange={() => {}} /><p>Elsewhere</p></>);
-    const button = screen.getByRole("button", { name: "More filters" });
-    fireEvent.click(button);
-    fireEvent.click(screen.getByRole("button", { name: "Done" }));
-    expect(button).toHaveAttribute("aria-expanded", "false");
-    expect(button).toHaveFocus();
-    fireEvent.click(button);
-    fireEvent.keyDown(screen.getByRole("checkbox", { name: "Hospital" }), { key: "Escape" });
-    expect(button).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(button);
-    fireEvent.pointerDown(screen.getByText("Elsewhere"));
-    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(onMore).toHaveBeenCalledWith(button);
   });
 
   test("open now, wheelchair and pets are toggles, tinted while on", () => {
     const onChange = vi.fn();
-    const { rerender } = render(<FilterBar filters={NO_FILTERS} onChange={onChange} />);
+    renderBar(NO_FILTERS, { onChange });
     fireEvent.click(screen.getByRole("button", { name: "Open now" }));
     expect(onChange).toHaveBeenLastCalledWith({ ...NO_FILTERS, openNow: true });
     fireEvent.click(screen.getByRole("button", { name: "Pets allowed" }));
@@ -63,7 +51,8 @@ describe("FilterBar", () => {
       { event: "map_filter", filter: "open", value: true },
       { event: "map_filter", filter: "pets", value: true },
     ]);
-    rerender(<FilterBar filters={{ ...NO_FILTERS, wheelchair: true, types: ["bus"] }} onChange={onChange} />);
+    cleanup();
+    renderBar({ ...NO_FILTERS, wheelchair: true, types: ["bus"] });
     expect(screen.getByRole("button", { name: "Wheelchair accessible" }))
       .toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("button", { name: "More filters" })).toHaveClass("on");
@@ -77,34 +66,31 @@ describe("FilterBar in a narrow bar", () => {
       return this.classList.contains("filter-bar") ? 400 : 0;
     });
     vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockImplementation(function (this: HTMLElement) {
-      return this.classList.contains("toggle-pill") ? 150 : this.classList.contains("dropdown") ? 140 : 0;
+      return this.classList.contains("toggle-pill") ? 150
+        : this.classList.contains("more-filters") ? 140 : 0;
     });
   }
 
-  test("keeps the toggles that fit and moves the rest into More filters, from the right", () => {
+  test("keeps the toggles that fit and leaves the rest to the panel, from the right", () => {
     narrow();
-    render(<FilterBar filters={NO_FILTERS} onChange={() => {}} />);
+    renderBar();
     const bar = screen.getByRole("group", { name: "Filters" });
     expect([...bar.querySelectorAll(":scope > button")].map((b) => b.textContent))
-      .toEqual(["Open now"]);
-    fireEvent.click(screen.getByRole("button", { name: "More filters" }));
-    const menu = document.querySelector(".dropdown-panel")!;
-    expect([...menu.querySelectorAll(".toggle-pill")].map((b) => b.textContent))
-      .toEqual(["Wheelchair accessible", "Pets allowed"]);
+      .toEqual(["Open now", "More filters"]);
   });
 
-  test("tints More filters while a toggle in its menu is on", () => {
+  test("tints More filters while a toggle the row leaves out is on", () => {
     narrow();
-    render(<FilterBar filters={{ ...NO_FILTERS, pets: true }} onChange={() => {}} />);
+    renderBar({ ...NO_FILTERS, pets: true });
     expect(screen.getByRole("button", { name: "More filters" })).toHaveClass("on");
     cleanup();
-    render(<FilterBar filters={{ ...NO_FILTERS, openNow: true }} onChange={() => {}} />);
+    renderBar({ ...NO_FILTERS, openNow: true });
     expect(screen.getByRole("button", { name: "More filters" })).not.toHaveClass("on");
   });
 });
 
 describe("FilterPanel", () => {
-  test("holds the kinds and the toggles, counts what they leave, and clears them", () => {
+  test("holds the kinds, then the toggles, counts what they leave, and clears them", () => {
     stubScreen(false);
     stubDialog();
     const onChange = vi.fn();
@@ -114,7 +100,7 @@ describe("FilterPanel", () => {
     // Each button's name, less the count Location type carries of the kinds chosen.
     expect([...body.querySelectorAll(":scope > * > button")]
       .map((b) => b.textContent!.replace(/\d.*$/, "")))
-      .toEqual(["Open now", "Wheelchair accessible", "Pets allowed", "Location type"]);
+      .toEqual(["Location type", "Open now", "Wheelchair accessible", "Pets allowed"]);
     fireEvent.click(screen.getByRole("button", { name: /^Location type/ }));
     expect(screen.getByRole("checkbox", { name: "Warming bus" })).toBeChecked();
     fireEvent.click(screen.getByRole("checkbox", { name: "Warming bus" }));

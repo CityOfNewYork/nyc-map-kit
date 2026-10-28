@@ -39,13 +39,20 @@ export function MapPage({
   const minute = useNycMinute();
   const [filtering, setFiltering] = useState(false);
   const filterButton = useRef<HTMLButtonElement>(null);
+  const opener = useRef<HTMLButtonElement | null>(null);   // the button that opened the filters
   const active = activeFilters(filters);
   // The list shows only what the filters leave; the counts say how many of how many.
   const listed = model && { ...model, features: shown };
 
+  /** Filters on a phone, More filters on a desktop: open the filters panel, or close it. */
+  function toggleFilters(button: HTMLButtonElement) {
+    if (filtering) return closeFilters();
+    opener.current = button;
+    setFiltering(true);
+  }
   function closeFilters() {
     setFiltering(false);
-    filterButton.current?.focus();
+    opener.current?.focus();
   }
 
   return (
@@ -58,9 +65,10 @@ export function MapPage({
         <div className="search-row" role="search">
           <Search onFound={onFound} onClear={onClear} landmark={false} />
           <FiltersButton ref={filterButton} controls="filters" open={filtering} active={active}
-                         onClick={() => (filtering ? closeFilters() : setFiltering(true))} />
+                         onClick={() => toggleFilters(filterButton.current!)} />
           {/* Made again in a new language, to measure its words (see FilterBar). */}
-          <FilterBar key={language()} filters={filters} onChange={onFilters} />
+          <FilterBar key={language()} filters={filters} onChange={onFilters}
+                     onMore={toggleFilters} moreOpen={filtering} />
         </div>
         {/* Share map at the bar's end on a desktop or tablet; a phone has it in the list's
             top line instead (see warming.css). Outside the search landmark: it shares the
@@ -76,11 +84,13 @@ export function MapPage({
                      filtered={active > 0} />
         </p>
       </div>
+      {/* After the bar in the tab order: a panel at the map's right on a desktop, and a
+          modal card on a phone (see warming.css). */}
+      {filtering && (
+        <FilterPanel id="filters" filters={filters} shown={shown.length}
+                     onChange={onFilters} onClose={closeFilters} />
+      )}
       <div className="side">
-        {filtering && (
-          <FilterPanel id="filters" filters={filters} shown={shown.length}
-                       onChange={onFilters} onClose={closeFilters} />
-        )}
         <Panel model={listed} list="on" found={found} selectedId={selectedId}
                onClearFilters={active > 0 ? () => onFilters(NO_FILTERS) : undefined}
                onOpen={onOpen} intro={<CodeBlueNotice />}

@@ -13,14 +13,14 @@ interface FilterPanelProps {
   /** How many centers the filters leave. */
   shown: number;
   onChange: (filters: Filters) => void;
-  /** Done: close the panel. Focus goes back to the Filters button. */
+  /** Done: close the panel. Focus goes back to the button that opened it. */
   onClose: () => void;
 }
 
 /**
- * The warming filters in the kit's panel (ui/Filters.tsx), in the bar's order: open now,
- * wheelchair access and pets, as the same toggles the bar shows, then the kinds of
- * center, which the bar keeps under More filters.
+ * Every warming filter, in the kit's panel (ui/Filters.tsx): the kinds of center, then
+ * open now, wheelchair access and pets, a row each, as the same toggles the bar shows.
+ * More filters opens it on a desktop or tablet, and the Filters button on a phone.
  */
 export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPanelProps) {
   function set(next: Partial<Filters>, filter: string, value: string | boolean) {
@@ -38,10 +38,6 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
 
   return (
     <FiltersPanel id={id} shown={shown} onClear={clear} onClose={onClose}>
-      <div className="filter-toggles">
-        <FilterToggles filters={filters} set={set} />
-      </div>
-
       <FilterDisclosure label={t("Location type")} chosen={filters.types.length}>
         {[...CENTER_KINDS].map(([type, kind]) => (
           <Check key={type} className="filter-check" checked={filters.types.includes(type)}
@@ -50,6 +46,10 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
           </Check>
         ))}
       </FilterDisclosure>
+
+      <div className="filter-toggles">
+        <FilterToggles filters={filters} set={set} />
+      </div>
     </FiltersPanel>
   );
 }
