@@ -421,14 +421,6 @@ export function pinZoom(count: number): number {
   return Math.max(0, Math.ceil(PINS_FIT.zoom + Math.log2(count / PINS_FIT.sites)));
 }
 
-/** Push a map-side analytics event. The host page's tag reads window.dataLayer. */
-function track(event: string, payload: Record<string, unknown>): void {
-  window.dataLayer = window.dataLayer || [];
-  const row = Object.assign({ event }, payload);
-  window.dataLayer.push(row);
-  // The prototype has no tag wired up, so the console is the observable surface.
-  console.log("[dataLayer]", row);
-}
 
 /** The smallest box centred on `center` that holds every one of `points`: each point is
  *  taken with its mirror image across the centre. Mirrored in degrees rather than on
@@ -840,7 +832,6 @@ export function createMap<P extends PointProperties>(
           center: (feature.geometry as Point).coordinates as LngLat, zoom,
         }))
         .catch(() => {});
-      track("map_cluster_expand", { count });
       onClusterExpand(count);
     });
 
@@ -1046,7 +1037,7 @@ export function createMap<P extends PointProperties>(
     /** Speak through the map's live region. Takes a string or a DOM node. */
     announce,
 
-    /** Resolve once the style and layers are up — used for the map_load event. */
+    /** Resolve once the style and layers are up. */
     ready(fn) { whenReady(fn); return api; },
 
     destroy() {
@@ -1059,4 +1050,4 @@ export function createMap<P extends PointProperties>(
   return api;
 }
 
-export { PIN, CLUSTER_MAX_ZOOM, NYC_BOUNDS, track };
+export { PIN, CLUSTER_MAX_ZOOM, NYC_BOUNDS };

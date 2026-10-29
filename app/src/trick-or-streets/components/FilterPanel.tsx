@@ -1,4 +1,3 @@
-import { track } from "../../logic/analytics.ts";
 import { Check } from "../../ui/Check.tsx";
 import { FilterDisclosure, FiltersPanel } from "../../ui/Filters.tsx";
 import { EVENT_KINDS } from "../logic/events.ts";
@@ -24,23 +23,18 @@ interface FilterPanelProps {
  * modal card over the blurred map.
  */
 export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPanelProps) {
-  function set(next: Partial<Filters>, filter: string, value: string | boolean) {
+  function set(next: Partial<Filters>) {
     onChange({ ...filters, ...next });
-    track("map_filter", { filter, value });
   }
   function toggleType(type: string, on: boolean) {
-    const types = on ? [...filters.types, type] : filters.types.filter((t) => t !== type);
-    set({ types }, "type", `${type}:${on}`);
-  }
-  function clear() {
-    onChange(NO_FILTERS);
-    track("map_filter", { filter: "clear" });
+    set({ types: on ? [...filters.types, type] : filters.types.filter((t) => t !== type) });
   }
 
   const chosen = filters.types.map((type) => t(EVENT_KINDS.get(type)?.label ?? type));
 
   return (
-    <FiltersPanel id={id} shown={shown} onClear={clear} onClose={onClose} modal>
+    <FiltersPanel id={id} shown={shown} onClear={() => onChange(NO_FILTERS)} onClose={onClose}
+                  modal>
       <FilterDisclosure label={t("Event type")} chosen={chosen}>
         {[...EVENT_KINDS].map(([type, kind]) => (
           <Check key={type} className="filter-check" checked={filters.types.includes(type)}

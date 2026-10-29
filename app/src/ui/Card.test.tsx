@@ -3,7 +3,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Config } from "../logic/types.ts";
-import { model, site } from "../test/fixtures.ts";
+import { model, pushed, site } from "../test/fixtures.ts";
 import { Card, CopyLink } from "./Card.tsx";
 
 const config: Config = {
@@ -32,6 +32,9 @@ const orgs = [{
   sites: [{ id: "lincoln", address: "234 East 149th Street, Bronx", lon: -73.95, lat: 40.75 }],
 }];
 const lincolnModel = () => model(config, [lincoln], orgs, "2026-09-15");
+const LINCOLN = {
+  feature_id: "lincoln", feature_name: "Lincoln Center", feature_type: null, feature_borough: null,
+};
 
 beforeEach(() => {
   window.dataLayer = [];
@@ -67,10 +70,32 @@ describe("Card", () => {
     fireEvent.click(screen.getByRole("link", { name: /^Call/ }));
     fireEvent.click(screen.getByRole("link", { name: /^Website/ }));
     fireEvent.click(screen.getByRole("link", { name: /^Directions/ }));
-    expect(window.dataLayer).toEqual([
-      { event: "map_action_click", org_id: "o1", site_id: "lincoln", action: "phone" },
-      { event: "map_action_click", org_id: "o1", site_id: "lincoln", action: "website" },
-      { event: "map_open_in_maps_click", org_id: "o1", site_id: "lincoln" },
+    expect(pushed()).toEqual([
+      { event: "call_action", ...LINCOLN },
+      { event: "website_action", ...LINCOLN },
+      { event: "direction_action", ...LINCOLN },
+    ]);
+  });
+
+  test("a phone number or website shown as a fact records the same, with the site's type", () => {
+    const facts: Config = {
+      facts: [
+        { key: "phone", source: "site", label: "Phone", as: "tel" },
+        { key: "website", source: "site", label: "Website", as: "url" },
+      ],
+    };
+    const pantry = site("p1", {
+      org: "Pantry", borough: "Queens", org_type: "Food pantry", phone: "718-555-0100",
+      website: "example.org",
+    });
+    render(<Card feature={pantry} model={model(facts, [pantry])} />);
+    fireEvent.click(screen.getByRole("link", { name: "718-555-0100" }));
+    fireEvent.click(screen.getByRole("link", { name: /^example\.org/ }));
+    const pantryFields = {
+      feature_id: "p1", feature_name: "Pantry", feature_type: "Food pantry", feature_borough: "Queens",
+    };
+    expect(pushed()).toEqual([
+      { event: "call_action", ...pantryFields }, { event: "website_action", ...pantryFields },
     ]);
   });
 
@@ -129,7 +154,7 @@ describe("the address", () => {
     await waitFor(() => expect(button).toHaveTextContent("234 East 149th Street, Bronx Copied"));
     expect(screen.getAllByRole("status").map((s) => s.textContent)).toContain("Copied");
     expect(writeText).toHaveBeenCalledWith("234 East 149th Street, Bronx");
-    expect(window.dataLayer).toEqual([{ event: "map_copy_address", org_id: "o1", site_id: "lincoln" }]);
+    expect(window.dataLayer).toEqual([]);   // not an event Tag Manager is sent
     vi.unstubAllGlobals();
   });
 
@@ -149,26 +174,40 @@ describe("CopyLink", () => {
   const url = () => new URL("https://example.org/app/?site=lincoln");
 
   test("uses the label provided by the card", () => {
-    render(<CopyLink url={url} payload={{}} label="Share result" />);
+    render(<CopyLink url={url} label="Share result" />);
     expect(screen.getByRole("button", { name: "Share result" })).toBeInTheDocument();
   });
 
   test("copies the link and says so, on the button and to a screen reader", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
-    render(<CopyLink url={url} payload={{ site_id: "lincoln", via: "card" }} />);
+    render(<CopyLink url={url} about={LINCOLN} />);
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     await waitFor(() => expect(screen.getByRole("button")).toHaveTextContent("Link copied"));
     expect(screen.getByRole("status")).toHaveTextContent("Link copied");
     expect(writeText).toHaveBeenCalledWith("https://example.org/app/?site=lincoln");
-    expect(window.dataLayer).toEqual([{ event: "map_copy_link", site_id: "lincoln", via: "card" }]);
+    expect(pushed()).toEqual([{ event: "share_action", ...LINCOLN, share_scope: "feature" }]);
+    vi.unstubAllGlobals();
+  });
+
+  test("without a feature, it shares the map view", async () => {
+    vi.stubGlobal("navigator", {
+      ...navigator, clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+    render(<CopyLink url={url} label="Share map" />);
+    fireEvent.click(screen.getByRole("button", { name: "Share map" }));
+    await waitFor(() => expect(screen.getByRole("button")).toHaveTextContent("Link copied"));
+    expect(pushed()).toEqual([{
+      event: "share_action", feature_id: null, feature_name: null, feature_type: null,
+      feature_borough: null, share_scope: "map",
+    }]);
     vi.unstubAllGlobals();
   });
 
   test("says when the link could not be copied", async () => {
     const writeText = vi.fn().mockRejectedValue(new Error("denied"));
     vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
-    render(<CopyLink url={url} payload={{}} />);
+    render(<CopyLink url={url} />);
     fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Could not copy the link"));
     expect(window.dataLayer).toEqual([]);

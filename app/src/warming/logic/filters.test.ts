@@ -1,7 +1,9 @@
 import { describe, expect, test } from "vitest";
 import type { Site } from "../../logic/types.ts";
 import type { CenterDetails } from "./centers.ts";
-import { NO_FILTERS, activeFilters, filtersFromUrl, passes, withFilters } from "./filters.ts";
+import {
+  NO_FILTERS, activeFilters, filterChanges, filtersFromUrl, passes, withFilters,
+} from "./filters.ts";
 import type { Filters } from "./filters.ts";
 
 /** A center with `details`, open around the clock unless they say otherwise. */
@@ -42,6 +44,39 @@ describe("activeFilters", () => {
     expect(activeFilters(NO_FILTERS)).toBe(0);
     expect(activeFilters({ ...NO_FILTERS, types: ["hospital", "bus"] })).toBe(1);
     expect(activeFilters({ types: ["bus"], openNow: true, wheelchair: true, pets: true })).toBe(4);
+  });
+});
+
+describe("filterChanges", () => {
+  test("one change is one event, with the count of filters on after it", () => {
+    expect(filterChanges(NO_FILTERS, { ...NO_FILTERS, wheelchair: true })).toEqual([
+      { filter_name: "wheelchair", filter_value: "on", active_filter_count: 1 },
+    ]);
+    expect(filterChanges({ ...NO_FILTERS, pets: true, openNow: true },
+      { ...NO_FILTERS, openNow: true })).toEqual([
+      { filter_name: "pets", filter_value: "off", active_filter_count: 1 },
+    ]);
+  });
+
+  test("open now is the when filter; types are the chosen ones, joined", () => {
+    expect(filterChanges(NO_FILTERS, { ...NO_FILTERS, openNow: true })).toEqual([
+      { filter_name: "when", filter_value: "now", active_filter_count: 1 },
+    ]);
+    expect(filterChanges({ ...NO_FILTERS, types: ["hospital"] },
+      { ...NO_FILTERS, types: ["hospital", "bus"] })).toEqual([
+      { filter_name: "type", filter_value: "hospital,bus", active_filter_count: 1 },
+    ]);
+  });
+
+  test("clearing them all reports each filter it turned off, and no change reports none", () => {
+    const all: Filters = { types: ["bus"], openNow: true, wheelchair: true, pets: true };
+    expect(filterChanges(all, NO_FILTERS)).toEqual([
+      { filter_name: "type", filter_value: "", active_filter_count: 0 },
+      { filter_name: "when", filter_value: "any", active_filter_count: 0 },
+      { filter_name: "wheelchair", filter_value: "off", active_filter_count: 0 },
+      { filter_name: "pets", filter_value: "off", active_filter_count: 0 },
+    ]);
+    expect(filterChanges(all, { ...all })).toEqual([]);
   });
 });
 

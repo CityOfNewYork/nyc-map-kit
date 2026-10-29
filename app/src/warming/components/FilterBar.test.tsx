@@ -8,7 +8,6 @@ import { FilterBar } from "./FilterBar.tsx";
 import { FilterPanel } from "./FilterPanel.tsx";
 
 beforeEach(() => {
-  window.dataLayer = [];
   vi.spyOn(console, "log").mockImplementation(() => {});
 });
 afterEach(() => {
@@ -47,10 +46,6 @@ describe("FilterBar", () => {
     expect(onChange).toHaveBeenLastCalledWith({ ...NO_FILTERS, openNow: true });
     fireEvent.click(screen.getByRole("button", { name: "Pets allowed" }));
     expect(onChange).toHaveBeenLastCalledWith({ ...NO_FILTERS, pets: true });
-    expect(window.dataLayer).toEqual([
-      { event: "map_filter", filter: "open", value: true },
-      { event: "map_filter", filter: "pets", value: true },
-    ]);
     cleanup();
     renderBar({ ...NO_FILTERS, wheelchair: true, types: ["bus"] });
     expect(screen.getByRole("button", { name: "Wheelchair accessible" }))
@@ -111,6 +106,5 @@ describe("FilterPanel", () => {
     onChange.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(onChange).toHaveBeenCalledWith(NO_FILTERS);
-    expect(window.dataLayer?.at(-1)).toEqual({ event: "map_filter", filter: "clear" });
   });
 });

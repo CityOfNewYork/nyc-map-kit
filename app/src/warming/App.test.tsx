@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import places from "../../public/places.json";
 import { createMap } from "../core/map-core.ts";
 import type { SiteCollection } from "../logic/types.ts";
-import { site, stubDialog, stubScreen } from "../test/fixtures.ts";
+import { pushed, site, stubDialog, stubScreen } from "../test/fixtures.ts";
 import App from "./App.tsx";
 import type { WarmingMap } from "./components/WarmingMap.tsx";
 
@@ -215,6 +215,11 @@ describe("warming App", () => {
       await waitFor(() => expect(document.getElementById("site-dialog")).toHaveAttribute("open"));
       expect(screen.getByRole("heading", { level: 2, name: "Lincoln Warming Bus" })).toBeInTheDocument();
       expect(mapHeading()).toBeInTheDocument();
+      // A center's type is its `type` (CENTER_CONFIG's featureType).
+      expect(pushed()).toEqual([expect.objectContaining({
+        event: "card_open", feature_id: "lincoln-bus", feature_name: "Lincoln Warming Bus",
+        feature_type: "bus",
+      })]);
     });
 
     test("filters in the address filter the list and the map", async () => {
@@ -223,6 +228,9 @@ describe("warming App", () => {
       expect(stub.props?.shown?.map((f) => f.properties.id)).toEqual(["lincoln-bus"]);
       fireEvent.click(screen.getByRole("button", { name: "Pets allowed" }));
       expect(location.search).toBe("?view=map&type=bus&pets=1");
+      expect(pushed()).toEqual([
+        { event: "filter_select", filter_name: "pets", filter_value: "on", active_filter_count: 2 },
+      ]);
     });
   });
 });

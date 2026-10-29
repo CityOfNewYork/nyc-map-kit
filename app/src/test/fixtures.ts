@@ -1,6 +1,6 @@
 /**
- * Small records and stubs for tests: a site, the model an app holds for a set of them, and
- * a screen of a given width.
+ * Small records and stubs for tests: a site, the model an app holds for a set of them, a
+ * screen of a given width, and what the page pushed for analytics.
  */
 import { vi } from "vitest";
 import { prepareData } from "../logic/data.ts";
@@ -24,6 +24,14 @@ export function model(
 ): Model {
   const data: SiteCollection = { type: "FeatureCollection", features, generated };
   return { config, data, ...prepareData(config, data, orgs) };
+}
+
+/** What the page pushed to window.dataLayer, each push without the four fields every
+ *  push carries (logic/analytics.test.ts checks those). */
+export function pushed(): Record<string, unknown>[] {
+  const common = new Set(["view_mode", "language", "ga_id", "gtm_id"]);
+  return (window.dataLayer || []).map((row) =>
+    Object.fromEntries(Object.entries(row).filter(([key]) => !common.has(key))));
 }
 
 /** <dialog>'s show, showModal and close, which jsdom lacks: each sets or removes `open`. */

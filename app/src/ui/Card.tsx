@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { track } from "../logic/analytics.ts";
+import { NO_FEATURE, featureFields, track } from "../logic/analytics.ts";
+import type { FeatureFields } from "../logic/analytics.ts";
 import {
   cardActions, cardFacts, cardFields, cardUpdated, displayUrl, hrefFor, mapsLink,
   parseStructure, telHref,
@@ -44,6 +45,7 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
   const p = feature.properties;
   const org = model.orgById.get(p.org_id) || {};
   const { config } = model;
+  const about = featureFields(p, config);
   const facts = cardFacts(config, p, org);
   const sections = cardFields(config, p, org);
   const miles = origin
@@ -68,17 +70,17 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
         </div>
       )}
 
-      <Buttons feature={feature} actions={cardActions(config, p, org)}
+      <Buttons about={about} actions={cardActions(config, p, org)}
                directions={mapsLink(config, feature, org)} />
 
       <div className="card-facts">
         <Fact icon="pin" label={t("Address")}>
-          <CopyAddress key={p.id} address={p.address} payload={{ org_id: p.org_id, site_id: p.id }} />
+          <CopyAddress key={p.id} address={p.address} />
         </Fact>
         {hours && <Fact icon="clock" label={t("Hours")}>{hours}</Fact>}
         {facts.map((fact) => (
           <Fact key={fact.key} icon={fact.icon} label={t(fact.label)}>
-            <FieldValue field={fact} feature={feature} />
+            <FieldValue field={fact} about={about} />
           </Fact>
         ))}
       </div>
@@ -86,14 +88,13 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
       {sections.map((section) => (
         <section key={section.key} className="card-section">
           <h3>{t(section.label)}</h3>
-          <FieldValue field={section} feature={feature} block />
+          <FieldValue field={section} about={about} block />
         </section>
       ))}
 
       <div className="card-foot">
         <Updated date={cardUpdated(config, p, org, model.generated)} />
-        <CopyLink key={p.id} url={() => siteUrl(p.id)} payload={{ site_id: p.id, via: "card" }}
-            label="Share result" />
+        <CopyLink key={p.id} url={() => siteUrl(p.id)} about={about} label="Share result" />
       </div>
     </div>
   );
@@ -108,10 +109,9 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
  * does nothing. Directions opens Google Maps on the place (see mapsLink in
  * logic/card.ts), from which a route is one tap.
  */
-function Buttons({ feature, actions, directions }: {
-  feature: Site; actions: CardAction[]; directions: string | null;
+function Buttons({ about, actions, directions }: {
+  about: FeatureFields; actions: CardAction[]; directions: string | null;
 }) {
-  const p = feature.properties;
   if (!actions.length && !directions) return null;
   return (
     <div className="card-buttons">
@@ -119,9 +119,7 @@ function Buttons({ feature, actions, directions }: {
         <a key={action.key} className="card-button" href={action.href}
            target={action.external ? "_blank" : undefined}
            rel={action.external ? "noopener" : undefined}
-           onClick={() => track("map_action_click", {
-             org_id: p.org_id, site_id: p.id, action: action.key,
-           })}>
+           onClick={() => track(action.as === "tel" ? "call_action" : "website_action", about)}>
           {action.as === "tel" ? (
             <>
               <Icon name="phone" size={20} />
@@ -139,7 +137,7 @@ function Buttons({ feature, actions, directions }: {
       ))}
       {directions && (
         <a className="card-button" href={directions} target="_blank" rel="noopener"
-           onClick={() => track("map_open_in_maps_click", { org_id: p.org_id, site_id: p.id })}>
+           onClick={() => track("direction_action", about)}>
           <Icon name="directions" size={20} />
           <span>{t("Directions")}</span>
           <span className="visually-hidden">{t("(opens in a new tab)")}</span>
@@ -168,21 +166,26 @@ function Fact({ icon, label, children }: {
 
 /** One field's value: a link, or text broken into paragraphs and lists. `block` sets a
  *  single line as a paragraph, for a section rather than a fact row. */
-function FieldValue({ field, feature, block = false }: {
-  field: CardField; feature: Site; block?: boolean;
+function FieldValue({ field, about, block = false }: {
+  field: CardField; about: FeatureFields; block?: boolean;
 }) {
   const { as, value } = field;
-  const p = feature.properties;
   if (as === "url") {
     return (
       <a href={hrefFor(value)} target="_blank" rel="noopener"
-         onClick={() => track("map_action_click", { org_id: p.org_id, site_id: p.id, action: field.key })}>
+         onClick={() => track("website_action", about)}>
         <span>{displayUrl(value)}</span>
         <span className="visually-hidden">{t("(opens in a new tab)")}</span>
       </a>
     );
   }
-  if (as === "tel") return <a href={telHref(value)}><span>{value}</span></a>;
+  if (as === "tel") {
+    return (
+      <a href={telHref(value)} onClick={() => track("call_action", about)}>
+        <span>{value}</span>
+      </a>
+    );
+  }
 
   const s = parseStructure(value);
   const list = (items: string[]) => (
@@ -217,13 +220,16 @@ function Updated({ date }: { date: string }) {
 }
 
 /** Copies `url()`, read at the press, and says it did: the card copies its own address,
- *  ?site=<id>. Inside an iframe that is the frame's address (see useSiteCard). `payload`
- *  goes with the analytics event. Give it a `key` that changes with what the link
- *  carries, so the button returns to its label for a new one. */
-export function CopyLink({ url, payload, label = "Copy link" }: {
-  url: () => URL; payload: Record<string, unknown>; label?: string;
+ *  ?site=<id>. Inside an iframe that is the frame's address (see useSiteCard). `about` is
+ *  the site the link is to, for analytics; without it the link is to the map view. Give
+ *  it a `key` that changes with what the link carries, so the button returns to its label
+ *  for a new one. */
+export function CopyLink({ url, about, label = "Copy link" }: {
+  url: () => URL; about?: FeatureFields; label?: string;
 }) {
-  const [result, copy] = useCopy(() => url().href, "map_copy_link", payload);
+  const [result, copy] = useCopy(() => url().href, () => track("share_action", {
+    ...(about || NO_FEATURE), share_scope: about ? "feature" : "map",
+  }));
   return (
     <>
       <button type="button" className="copy-link" onClick={copy}>
@@ -242,12 +248,10 @@ export function CopyLink({ url, payload, label = "Copy link" }: {
 }
 
 /** The address as a button that copies it, with a copy icon after it, and a check and
- *  "Copied" once it has. `payload` goes with the analytics event. Give it a `key` that
- *  changes with the site, so a new card's address starts without "Copied". */
-function CopyAddress({ address, payload }: {
-  address: string; payload: Record<string, unknown>;
-}) {
-  const [result, copy] = useCopy(() => address, "map_copy_address", payload);
+ *  "Copied" once it has. Give it a `key` that changes with the site, so a new card's
+ *  address starts without "Copied". */
+function CopyAddress({ address }: { address: string }) {
+  const [result, copy] = useCopy(() => address);
   return (
     <>
       <button type="button" className="copy-address" onClick={copy}>
@@ -268,15 +272,15 @@ function CopyAddress({ address, payload }: {
   );
 }
 
-/** Copies `text()`, read at the press, and pushes `event` with `payload` once it has.
- *  Returns how the last copy went, for the button to say, and the press handler. */
-function useCopy(text: () => string, event: string, payload: Record<string, unknown>) {
+/** Copies `text()`, read at the press, and calls `copied` once it has. Returns how the
+ *  last copy went, for the button to say, and the press handler. */
+function useCopy(text: () => string, copied?: () => void) {
   const [result, setResult] = useState<"copied" | "failed" | null>(null);
   async function copy() {
     try {
       await navigator.clipboard.writeText(text());
       setResult("copied");
-      track(event, payload);
+      copied?.();
     } catch {
       setResult("failed");
     }

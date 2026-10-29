@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createMap } from "../core/map-core.ts";
 import type { MapCore, MapCoreOptions, SelectInfo } from "../core/map-core.ts";
 import type { Model, Site, SiteProperties } from "../logic/types.ts";
-import { model, site, stubDialog } from "../test/fixtures.ts";
+import { model, pushed, site, stubDialog } from "../test/fixtures.ts";
 import { SiteDialog } from "./SiteDialog.tsx";
 import { useSiteCard } from "./useSiteCard.ts";
 
@@ -128,9 +128,10 @@ describe("useSiteCard", () => {
     expect(history.length).toBe(length + 1);
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Gamma");
     expect(screen.getByRole("heading", { level: 2 })).toHaveFocus();
-    expect(window.dataLayer).toEqual([
-      { event: "map_pin_open", org_id: "c", site_id: "c", via: "list" },
-    ]);
+    expect(pushed()).toEqual([{
+      event: "card_open", feature_id: "c", feature_name: "Gamma", feature_type: null,
+      feature_borough: null,
+    }]);
   });
 
   test("closing goes back through history, and focus returns to the row", async () => {
@@ -202,7 +203,7 @@ describe("useSiteCard", () => {
     expect(document.getElementById("mini-map")).toHaveAttribute("hidden");
     expect(location.search).toBe("");
     expect(history.length).toBe(length + 1);
-    expect(window.dataLayer).toEqual([{ event: "map_pin_choices", count: 2 }]);
+    expect(window.dataLayer).toEqual([]);   // a list of sites, not a card
   });
 
   test("picking one opens its card in place, with the stepper, focused on its name", () => {
@@ -219,8 +220,10 @@ describe("useSiteCard", () => {
     expect(document.getElementById("mini-map")).not.toHaveAttribute("hidden");
     expect(location.search).toBe("?site=b");
     expect(history.length).toBe(length);
-    expect(window.dataLayer?.at(-1)).toEqual(
-      { event: "map_pin_open", org_id: "b", site_id: "b", via: "chooser" });
+    expect(pushed()).toEqual([{
+      event: "card_open", feature_id: "b", feature_name: "Beta", feature_type: null,
+      feature_borough: null,
+    }]);
   });
 
   test("Back and Escape close the list, as they close a card picked from it", async () => {
@@ -284,7 +287,9 @@ describe("useSiteCard", () => {
     pick(sites[2], { via: "map" });
     expect(mainMap.select).toHaveBeenLastCalledWith("c");
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Gamma");
-    expect(window.dataLayer?.at(-1)).toEqual(
-      { event: "map_pin_open", org_id: "c", site_id: "c", via: "mini_map" });
+    expect(pushed().at(-1)).toEqual({
+      event: "card_open", feature_id: "c", feature_name: "Gamma", feature_type: null,
+      feature_borough: null,
+    });
   });
 });

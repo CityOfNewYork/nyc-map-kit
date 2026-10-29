@@ -103,7 +103,9 @@
      "houseNumber": "120",
      "houseNumberIn": "120",
      "latitude": 40.708546,
-     "longitude": -74.011041
+     "longitude": -74.011041,
+     "nta2020": "MN0101",
+     "zipCode": "10271"
     },
     "status": "POSSIBLE_MATCH"
    },
@@ -117,9 +119,11 @@
      "houseNumberIn": "120",
      "latitude": 40.710342,
      "longitude": -73.964521,
+     "nta2020": "BK0102",
      "streetName1": "BERRY STREET",
      "streetName6": "BEDFORD AVENUE",
-     "streetName7": "BILLY JONES WAY"
+     "streetName7": "BILLY JONES WAY",
+     "zipCode": "11249"
     },
     "status": "POSSIBLE_MATCH"
    },
@@ -133,8 +137,10 @@
      "houseNumberIn": "120",
      "latitude": 40.638486,
      "longitude": -74.117685,
+     "nta2020": "SI0106",
      "streetName1": "MARKHAM LANE",
-     "streetName6": "WAYNE STREET"
+     "streetName6": "WAYNE STREET",
+     "zipCode": "10310"
     },
     "status": "POSSIBLE_MATCH"
    },

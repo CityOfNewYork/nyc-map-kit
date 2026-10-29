@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import type { StyleSpecification } from "maplibre-gl";
 import type { BasemapId } from "../core/basemaps/names.ts";
 import type { MapCore, SelectInfo } from "../core/map-core.ts";
+import { track } from "../logic/analytics.ts";
 import { nearestIds, prepareData } from "../logic/data.ts";
 import type { Found } from "../logic/places.ts";
 import type { Model, Site, SiteCollection, SiteProperties } from "../logic/types.ts";
@@ -14,7 +15,7 @@ import { useNycMinute } from "./components/useNycMinute.ts";
 import { WarmingMap } from "./components/WarmingMap.tsx";
 import { CENTER_CONFIG, CENTER_MARK } from "./logic/centers.ts";
 import { DATASETS, datasetFromUrl } from "./logic/dataset.ts";
-import { filtersFromUrl, passes, withFilters } from "./logic/filters.ts";
+import { filterChanges, filtersFromUrl, passes, withFilters } from "./logic/filters.ts";
 import type { Filters } from "./logic/filters.ts";
 import { viewFromUrl } from "./logic/view.ts";
 import type { View } from "./logic/view.ts";
@@ -129,6 +130,7 @@ export default function App({ lang, basemap }: AppProps) {
   function changeFilters(next: Filters) {
     setFilters(next);
     history.replaceState(history.state, "", withFilters(new URL(window.location.href), next));
+    for (const fields of filterChanges(filters, next)) track("filter_select", fields);
   }
 
   function openMap() {

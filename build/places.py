@@ -16,6 +16,9 @@ neighborhood or ZIP layer and rejects those names.
               are added by hand (NBHD_ALIASES).
     zips      The Health Department's Modified ZIP Code Tabulation Areas. One area can
               cover several ZIP codes ("10001, 10118"); each code gets the area's shape.
+    ntas      Every 2020 NTA's name by its code ("MN0101"), parks and airports too.
+              Geoclient gives an address's neighborhood by code only, and analytics
+              reports it by name.
 
 Keys are normalized the way app/src/logic/places.ts normalizes what a resident types.
 The point is the centroid of the largest polygon; the box is the whole shape's.
@@ -151,13 +154,20 @@ def build_zips():
     return dict(sorted(out.items()))
 
 
+def build_ntas():
+    rows = fetch(NTAS, {"$select": "nta2020,ntaname", "$limit": 1000})
+    return dict(sorted((r["properties"]["nta2020"], r["properties"]["ntaname"]) for r in rows))
+
+
 def main():
-    places = {"boroughs": build_boroughs(), "nbhds": build_neighborhoods(), "zips": build_zips()}
+    places = {"boroughs": build_boroughs(), "nbhds": build_neighborhoods(), "zips": build_zips(),
+              "ntas": build_ntas()}
     with open(OUT, "w") as f:
         json.dump(places, f, separators=(",", ":"))
         f.write("\n")
     print(f"places: {len(places['boroughs'])} borough names, {len(places['nbhds'])} "
-          f"neighborhood names, {len(places['zips'])} ZIP codes -> {os.path.relpath(OUT, ROOT)}")
+          f"neighborhood names, {len(places['zips'])} ZIP codes, {len(places['ntas'])} NTAs "
+          f"-> {os.path.relpath(OUT, ROOT)}")
 
 
 if __name__ == "__main__":

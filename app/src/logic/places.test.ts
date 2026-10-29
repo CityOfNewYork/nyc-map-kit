@@ -14,6 +14,14 @@ describe("normalize", () => {
   });
 });
 
+describe("ntas", () => {
+  test("names every 2020 NTA by its code, parks and airports too", () => {
+    expect(Object.keys(doc.ntas)).toHaveLength(262);
+    expect(doc.ntas.MN0101).toBe("Financial District-Battery Park City");
+    expect(Object.values(doc.ntas)).toContain("John F. Kennedy International Airport");
+  });
+});
+
 describe("placeMatcher", () => {
   test("neighborhoods, with their borough", () => {
     expect(match("Harlem")).toMatchObject({ kind: "nbhd", name: "Harlem", borough: "Manhattan" });

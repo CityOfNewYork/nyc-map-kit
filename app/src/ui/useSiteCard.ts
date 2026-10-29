@@ -38,7 +38,7 @@ import {
 import type { StyleSpecification } from "maplibre-gl";
 import { createMap } from "../core/map-core.ts";
 import type { MapCore, PinCategories, PinStyle, SelectInfo } from "../core/map-core.ts";
-import { track } from "../logic/analytics.ts";
+import { featureFields, track } from "../logic/analytics.ts";
 import { coincidentWith } from "../logic/data.ts";
 import type { Model, Site, SiteProperties } from "../logic/types.ts";
 import type { StepDirection } from "./SiteDialog.tsx";
@@ -126,20 +126,19 @@ export function useSiteCard({
       pushed.current = true;
       returnFocusTo.current = null;
       setSelection((s) => ({ feature: null, choices: group, seq: s.seq + 1 }));
-      track("map_pin_choices", { count: group.length });
       return;
     }
     recordInUrl(p.id);
     setSelection((s) => ({ feature, choices: [], seq: s.seq + 1 }));
+    // Here, where every way of opening a card arrives: a pin, the list, a link, the
+    // stepper, the small map, Back.
+    track("card_open", featureFields(p, model!.config));
     // Opening a card moves focus into it, where the name is heard, so announcing it as
     // well only says it twice. A stepper press leaves focus on the arrow, so the place
     // stepped to is announced: through the card's own map when it is a pop-up, since
     // the modal hides the main map's live region along with everything else behind it.
     if (stepFocus.current) announceSelected(miniMapRef.current ?? mainMap(), p);
-    if (info.via === "map") {
-      returnFocusTo.current = null;
-      track("map_pin_open", { org_id: p.org_id, site_id: p.id, via: "map" });
-    }
+    if (info.via === "map") returnFocusTo.current = null;
   }
 
   // After a selection renders: open the modal, show the place on the card's map, and move
@@ -181,9 +180,6 @@ export function useSiteCard({
         onSelect: (picked, info) => {
           if (info.via === "map" && picked && picked.properties.id !== selectedId.current) {
             mainMap()!.select(picked.properties.id);
-            track("map_pin_open", {
-              org_id: picked.properties.org_id, site_id: picked.properties.id, via: "mini_map",
-            });
           }
         },
       });
@@ -233,18 +229,12 @@ export function useSiteCard({
     if (!map) return;                  // the list is up before the map is
     returnFocusTo.current = button;
     map.select(feature.properties.id);
-    track("map_pin_open", {
-      org_id: feature.properties.org_id, site_id: feature.properties.id, via: "list",
-    });
   }
 
   /** A site was picked from the list of choices: its card opens in the list's place. */
   function choose(feature: Site) {
     chosen.current = true;
     mainMap()!.select(feature.properties.id);
-    track("map_pin_open", {
-      org_id: feature.properties.org_id, site_id: feature.properties.id, via: "chooser",
-    });
   }
 
   /** Call just before selecting a site because a link with ?site=<id> named it: its card
@@ -259,9 +249,6 @@ export function useSiteCard({
     stepFocus.current = dir;
     // Re-select through the core so the map's own state moves with the card.
     mainMap()!.select(next.properties.id);
-    track("map_pin_open", {
-      org_id: next.properties.org_id, site_id: next.properties.id, via: "stepper",
-    });
   }
 
   /** Put the selected site in the address bar: a new entry when a card opens, else in place. */

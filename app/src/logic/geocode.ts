@@ -103,26 +103,31 @@ function toFound(r: GeoclientResult): Found | null {
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || (lat === 0 && lon === 0)) return null;
   const borough = BOROUGHS[String(p.firstBoroughName)] || null;
   const center: [number, number] = [lon, lat];
+  // For analytics, which reports where a search went but not what it named.
+  const zip = p.zipCode ? String(p.zipCode) : undefined;
+  const nta = p.nta2020 ? String(p.nta2020) : undefined;
   if (r.request.startsWith("intersection")) {
     return {
       kind: "intersection",
       name: streetName(String(p.firstStreetNameNormalized || p.streetName1 || "")),
       cross: streetName(String(p.secondStreetNameNormalized || p.streetName2 || "")),
-      borough, center, bbox: null,
+      borough, center, bbox: null, zip, nta,
     };
   }
   if (r.request.startsWith("address")) {
     const street = streetName(String(p.firstStreetNameNormalized || ""));
     return {
       kind: "address", name: `${p.houseNumber || ""} ${street}`.trim(), cross: null,
-      borough, center, bbox: null,
+      borough, center, bbox: null, zip, nta,
     };
   }
   // A named place: "yankee stadium", "jfk airport". The preferred name is the full one
   // ("JOHN F KENNEDY AIRPORT"); the normalized one is closer to what was typed.
   if (r.request.startsWith("place")) {
     const name = titleCase(String(p.boePreferredStreetName || p.firstStreetNameNormalized || ""));
-    return name ? { kind: "landmark", name, cross: null, borough, center, bbox: null } : null;
+    return name
+      ? { kind: "landmark", name, cross: null, borough, center, bbox: null, zip, nta }
+      : null;
   }
   return null;
 }
