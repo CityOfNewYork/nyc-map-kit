@@ -33,14 +33,14 @@ export const CENTER_KINDS = new Map<string, CenterKind>([
   ["bus", { label: "Warming bus" }],
 ]);
 
-/** Every center's mark, whatever its kind: a red pin outlined in pink with a pink house in
- *  its head, and the same red circle and pink house beside each center in the list and
- *  the card. The red clears 3:1 against the
- *  basemap's land. The house, with its eaves and its door, is a solid mark within the 40%
- *  of its square that core/pins.ts holds marks to. */
+/** Every center's mark, whatever its kind: a red pin outlined in pale pink with a pale
+ *  pink house in its head, and the same red circle and house beside each center in the
+ *  list and the card. The red clears 3:1 against the basemap's land, and the pink 3:1
+ *  against the red. The house, with its eaves and its door, is a solid mark within the
+ *  40% of its square that core/pins.ts holds marks to. */
 export const CENTER_MARK: PinStyle = {
   color: "#f74226",
-  accent: "#ffabac",
+  accent: "#ffe5e6",
   glyph: "M10.95 3.95Q12 3 13.05 3.95L21.1 11.2Q21.6 11.65 21 12.2H19V18.6Q19 20 17.6 20H6.4"
     + "Q5 20 5 18.6V12.2H3Q2.4 11.65 2.9 11.2ZM10.4 14.6Q10.4 14 11 14H13Q13.6 14 13.6 14.6V18"
     + "H10.4Z",
