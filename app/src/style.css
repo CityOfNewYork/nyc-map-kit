@@ -386,18 +386,20 @@ body {
 }
 
 /* The filters: a card under the search box, pushing the list down, and shrinking to fit
-   the column. A <dialog>, so the browser's own placement and frame are taken off. */
+   the column. A <dialog>, so the browser's own placement and frame are taken off. Its
+   heading, its filters and its buttons are three bands, with a rule between each, inset
+   by --filters-pad at their sides. */
 .filters-panel {
+  --filters-pad: 16px;
   position: static;
   flex: 0 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
   width: auto;
   max-width: none;
   margin: 0;
-  padding: 14px 16px 16px;
+  padding: 0;
   border: 0;
   border-radius: var(--radius-card);
   background: var(--surface);
@@ -405,34 +407,58 @@ body {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
 }
 .filters-panel:not([open]) { display: none; }
+/* Opened as a modal (on a phone, or on any screen when its page asks): a card in the
+   middle of the screen, over the blurred map, as the site card opens. */
+.filters-panel:modal {
+  position: fixed;
+  inset: 0;
+  width: min(360px, calc(100% - 32px));
+  height: fit-content;
+  max-height: calc(100% - 48px);
+  margin: auto;
+}
+.filters-panel::backdrop {
+  background: rgba(27, 27, 27, 0.32);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
 .filters-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  padding-block: 11px;
+  padding-inline: var(--filters-pad) 12px;
+  border-bottom: 1px solid var(--line);
 }
-.filters-head h3 { margin: 0; font-size: 1.125rem; }
+.filters-head h3 { margin: 0; font-size: 1.5rem; }
 /* The filters themselves, between the head and the foot, scrolling when there are more
-   than fit. The padding, taken back by the margin, keeps focus rings inside the scroll. */
+   than fit: each its name, then its control. */
 .filters-body {
   flex: 0 1 auto;
   min-height: 0;
   display: grid;
-  gap: 14px;
-  margin: -4px;
-  padding: 4px;
+  gap: 28px;
+  padding: 24px var(--filters-pad);
   overflow-y: auto;
 }
+/* Close: an × and the word. */
 .filters-close {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap);
+  padding: 0 12px;
   border: 0;
-  border-radius: 50%;
-  background: var(--surface-2);
+  border-radius: var(--radius);
+  background: none;
   color: var(--ink);
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 500;
   cursor: pointer;
 }
+.filters-close:hover { background: var(--surface-2); }
 .filters-panel fieldset {
   display: grid;
   gap: 6px;
@@ -440,48 +466,46 @@ body {
   padding: 0;
   border: 0;
 }
-.filters-panel legend {
-  margin-bottom: 4px;
+/* A filter's name, above its control. */
+.filter-label {
+  margin: 0;
   padding: 0;
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 500;
 }
-/* A filter with several options: a full-width button, its options under it once open. */
-.filter-disclosure { display: grid; gap: 6px; }
+legend.filter-label { margin-bottom: 8px; }
+/* A filter with several options: its name, then a box like a select's, which shows the
+   options chosen on one line, or "Select option" in grey, and its options under it once
+   open. */
+.filter-disclosure { display: grid; gap: 8px; }
 .filter-disclosure > button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: var(--tap);
-  padding: 0 12px;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 14px 0 16px;
   border: 1px solid #bbbbbb;
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  text-align: left;
+  font-size: 1rem;
+  text-align: start;
   cursor: pointer;
 }
 .filter-disclosure > button:hover { background: var(--hover); }
-.filter-disclosure > button > :first-child { flex: 1; }
+.filter-disclosure > button > svg { flex: none; }
 .filter-disclosure > button[aria-expanded="true"] svg { transform: rotate(180deg); }
+.filter-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.filter-value.none { color: var(--ink-muted); }
 .filter-disclosure fieldset { padding: 0 4px; }
 .filter-disclosure fieldset[hidden] { display: none; }
-/* How many of its options are checked. */
-.filter-chosen {
-  display: grid;
-  place-items: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: var(--radius-pill);
-  background: var(--primary);
-  color: var(--surface);
-  font-size: 0.75rem;
-  font-weight: 700;
-}
 .filter-check {
   display: flex;
   align-items: center;
@@ -497,7 +521,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-top: 12px;
+  padding: 16px var(--filters-pad) 20px;
   border-top: 1px solid var(--line);
 }
 .filters-clear {
@@ -1206,22 +1230,6 @@ body {
   }
   /* The list's sheet stops under the bar at its tallest. */
   .stage .panel { max-height: calc(100% - var(--bar-h)); }
-
-  /* The filters as a modal card in the middle of the screen, over the blurred map, as the
-     site card opens. */
-  .filters-panel:modal {
-    position: fixed;
-    inset: 0;
-    width: min(360px, calc(100% - 32px));
-    height: fit-content;
-    max-height: calc(100% - 48px);
-    margin: auto;
-  }
-  .filters-panel::backdrop {
-    background: rgba(27, 27, 27, 0.32);
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-  }
 
   /* Keep the zoom buttons and the attribution clear of the sheet. */
   .map .maplibregl-ctrl-bottom-left,

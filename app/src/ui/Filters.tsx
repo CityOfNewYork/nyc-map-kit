@@ -50,6 +50,8 @@ interface FiltersPanelProps {
   onClear: () => void;
   /** Done: close the panel. Focus goes back to the Filters button. */
   onClose: () => void;
+  /** A modal card at every width, not only on a phone. */
+  modal?: boolean;
   /** The filters themselves: fieldsets of checkboxes, say. */
   children: ReactNode;
 }
@@ -62,21 +64,24 @@ interface FiltersPanelProps {
  * scroll between them.
  *
  * On a desktop it opens under the search box, in the column, with the map still in use.
- * On a phone it is a modal card over the blurred map, as the site card is: showModal()
- * keeps keyboard and screen-reader focus inside it until it closes.
+ * On a phone, or on any screen when `modal`, it is a modal card over the blurred map, as
+ * the site card is: showModal() keeps keyboard and screen-reader focus inside it until
+ * it closes.
  */
-export function FiltersPanel({ id, shown, onClear, onClose, children }: FiltersPanelProps) {
+export function FiltersPanel(
+  { id, shown, onClear, onClose, modal = false, children }: FiltersPanelProps,
+) {
   const panel = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
 
   // A layout effect, so it is open before the browser first paints it.
   useLayoutEffect(() => {
     const dialog = panel.current!;
-    if (matchMedia("(min-width: 768px)").matches) dialog.show();
+    if (!modal && matchMedia("(min-width: 768px)").matches) dialog.show();
     else dialog.showModal();
     heading.current?.focus();
     return () => dialog.close();
-  }, []);
+  }, [modal]);
 
   function onKeyDown(e: KeyboardEvent<HTMLDialogElement>) {
     if (e.key === "Escape") {
@@ -97,10 +102,10 @@ export function FiltersPanel({ id, shown, onClear, onClose, children }: FiltersP
         <h3 id={`${id}-title`} ref={heading} tabIndex={-1}>{t("Filters")}</h3>
         <button type="button" className="filters-close" onClick={onClose}>
           <svg aria-hidden="true" viewBox="0 0 20 20" width="18" height="18">
-            <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2.2"
+            <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2"
                   strokeLinecap="round" />
           </svg>
-          <span className="visually-hidden">{t("Close the filters")}</span>
+          <span>{t("Close")}</span>
         </button>
       </div>
 
@@ -121,33 +126,32 @@ export function FiltersPanel({ id, shown, onClear, onClose, children }: FiltersP
 interface FilterDisclosureProps {
   /** The filter's name: "Location type". */
   label: string;
-  /** How many of its options are checked, shown on the button when any are. */
-  chosen: number;
+  /** The names of the options checked, which the box shows. */
+  chosen: string[];
   /** Its options: checkboxes, say. */
   children: ReactNode;
 }
 
 /**
- * A filter with several options, in the panel: one button that shows or hides them. A
- * keyboard user tabs from filter to filter, and into a filter's options only after
- * opening it; a screen reader hears the filter's name as the group's.
+ * A filter with several options, in the panel: its name, then a box like a select's that
+ * shows the options checked, or "Select option" while none is, and shows or hides them.
+ * A keyboard user tabs from filter to filter, and into a filter's options only after
+ * opening it; a screen reader hears the name and then the box's text as the button's
+ * name, and the name as the group's.
  */
 export function FilterDisclosure({ label, chosen, children }: FilterDisclosureProps) {
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
     <div className="filter-disclosure">
+      <span className="filter-label" id={`${id}-label`}>{label}</span>
       <button type="button" aria-expanded={open} aria-controls={id}
-              onClick={() => setOpen((o) => !o)}>
-        <span>{label}</span>
-        {chosen > 0 && (
-          <span className="filter-chosen">
-            <span aria-hidden="true">{number(chosen)}</span>
-            <span className="visually-hidden">{plural(chosen, "{n} chosen", "{n} chosen")}</span>
-          </span>
-        )}
-        <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14">
-          <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="2"
+              aria-labelledby={`${id}-label ${id}-value`} onClick={() => setOpen((o) => !o)}>
+        <span id={`${id}-value`} className={chosen.length ? "filter-value" : "filter-value none"}>
+          {chosen.length ? chosen.join(", ") : t("Select option")}
+        </span>
+        <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
+          <path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" strokeWidth="1.8"
                 strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>

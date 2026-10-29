@@ -152,7 +152,7 @@ describe("MapPage", () => {
       fireEvent.click(more);
       expect(more).toHaveAttribute("aria-expanded", "true");
       expect(screen.getByRole("dialog", { name: "Filters" })).toBeInTheDocument();
-      fireEvent.click(screen.getByRole("button", { name: "Close the filters" }));
+      fireEvent.click(screen.getByRole("button", { name: "Close" }));
       expect(screen.queryByRole("dialog", { name: "Filters" })).toBeNull();
       expect(more).toHaveFocus();
     });

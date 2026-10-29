@@ -39,7 +39,7 @@
   "{index} of {count} at this location": "{index} из {count} по этому адресу",
   "Next site at this location": "Следующее место по этому адресу",
   "Filters": "Фильтры",
-  "Close the filters": "Закрыть фильтры",
+  "Close": "Закрыть",
   "Clear filters": "Сбросить фильтры",
   "{n} filters on": {
     "one": "Включён {n} фильтр",
@@ -52,12 +52,6 @@
     "few": "Показать {n} места",
     "many": "Показать {n} мест",
     "other": "Показать {n} места"
-  },
-  "{n} chosen": {
-    "one": "Выбран {n}",
-    "few": "Выбрано {n}",
-    "many": "Выбрано {n}",
-    "other": "Выбрано {n}"
   },
   "Enter an address or neighborhood": "Введите адрес или район",
   "Neighborhood, borough or ZIP code": "Район, округ или почтовый индекс",
@@ -92,8 +86,10 @@
   "An nyc.gov website belongs to an official New York City government organization.": "Сайт nyc.gov принадлежит официальной организации правительства города Нью-Йорка.",
   "The map could not load.": "Не удалось загрузить карту.",
   "Location type": "Тип места",
+  "Select option": "Выберите вариант",
   "More filters": "Ещё фильтры",
   "Open now": "Открыто сейчас",
+  "Show only": "Показывать только",
   "Done": "Готово",
   "Code Blue is in effect.": "Действует «Синий код».",
   "Warming centers are open to anyone who needs them.": "Пункты обогрева открыты для всех, кому они нужны.",

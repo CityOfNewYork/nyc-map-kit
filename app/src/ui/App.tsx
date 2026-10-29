@@ -255,7 +255,7 @@ export default function App({ settings }: AppProps) {
             <FiltersPanel id="filters" shown={shown.length} onClose={closeFilters}
                           onClear={clearTypes}>
               <FilterDisclosure label={t(model.config.filterLabel || "Organization type")}
-                                chosen={types.length}>
+                                chosen={types}>
                 {orgTypes(model.features).map(({ type }) => (
                   <Check key={type} className="filter-check" checked={types.includes(type)}
                          onChange={(on) => toggleType(type, on)}

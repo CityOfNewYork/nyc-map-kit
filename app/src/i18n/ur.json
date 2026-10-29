@@ -35,7 +35,7 @@
   "{index} of {count} at this location": "اس مقام پر {count} میں سے {index}",
   "Next site at this location": "اس مقام پر اگلی جگہ",
   "Filters": "فلٹرز",
-  "Close the filters": "فلٹرز بند کریں",
+  "Close": "بند کریں",
   "Clear filters": "فلٹرز صاف کریں",
   "{n} filters on": {
     "one": "{n} فلٹر فعال",
@@ -45,7 +45,6 @@
     "one": "{n} مقام دکھائیں",
     "other": "{n} مقامات دکھائیں"
   },
-  "{n} chosen": "{n} منتخب",
   "Enter an address or neighborhood": "پتہ یا محلہ درج کریں",
   "Neighborhood, borough or ZIP code": "محلہ، بورو یا زپ کوڈ",
   "Clear the search": "تلاش صاف کریں",
@@ -79,8 +78,10 @@
   "An nyc.gov website belongs to an official New York City government organization.": "nyc.gov ویب سائٹ نیو یارک سٹی حکومت کے ایک سرکاری ادارے کی ہے۔",
   "The map could not load.": "نقشہ لوڈ نہیں ہو سکا۔",
   "Location type": "مقام کی قسم",
+  "Select option": "ایک آپشن منتخب کریں",
   "More filters": "مزید فلٹرز",
   "Open now": "ابھی کھلا ہے",
+  "Show only": "صرف دکھائیں",
   "Done": "ہو گیا",
   "Code Blue is in effect.": "کوڈ بلیو نافذ ہے۔",
   "Warming centers are open to anyone who needs them.": "گرمائش مراکز ہر اس شخص کے لیے کھلے ہیں جسے ان کی ضرورت ہو۔",

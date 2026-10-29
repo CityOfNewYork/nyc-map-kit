@@ -35,7 +35,7 @@
   "{index} of {count} at this location": "{index} פֿון {count} ביי דער אַדרעס",
   "Next site at this location": "קומעדיקער אָרט ביי דער אַדרעס",
   "Filters": "פֿילטערס",
-  "Close the filters": "פֿאַרמאַכן די פֿילטערס",
+  "Close": "פֿאַרמאַכן",
   "Clear filters": "אויסמעקן פֿילטערס",
   "{n} filters on": {
     "one": "{n} פֿילטער אָן",
@@ -45,7 +45,6 @@
     "one": "ווײַזן {n} אָרט",
     "other": "ווײַזן {n} ערטער"
   },
-  "{n} chosen": "{n} אויסגעקליבן",
   "Enter an address or neighborhood": "שרײַבט אַן אַדרעס אָדער געגנט",
   "Neighborhood, borough or ZIP code": "געגנט, באָראָ אָדער פּאָסט־קאָד",
   "Clear the search": "אויסמעקן דאָס זוכן",
@@ -79,8 +78,10 @@
   "An nyc.gov website belongs to an official New York City government organization.": "אַ nyc.gov וועבזײַטל געהערט צו אַן אָפֿיציעלער אָרגאַניזאַציע פֿון דער ניו יאָרק שטאָט־רעגירונג.",
   "The map could not load.": "די מאַפּע האָט נישט געקענט אַרויפֿלאָדן.",
   "Location type": "סאָרט אָרט",
+  "Select option": "קלײַבט אויס אַן אָפּציע",
   "More filters": "מער פֿילטערס",
   "Open now": "איצט אָפֿן",
+  "Show only": "װײַזט נאָר",
   "Done": "פֿאַרטיק",
   "Code Blue is in effect.": "קאָד בלוי איז אין קראַפֿט.",
   "Warming centers are open to anyone who needs them.": "וואַרעמונג־צענטערס זענען אָפֿן פֿאַר יעדן וועמען עס דאַרף זיי.",

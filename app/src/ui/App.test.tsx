@@ -167,7 +167,7 @@ describe("App", () => {
   test("filters by organization type in the list, on the map and in the address", async () => {
     await renderApp();
     fireEvent.click(screen.getByRole("button", { name: "Filters" }));
-    fireEvent.click(screen.getByRole("button", { name: "Organization type" }));
+    fireEvent.click(screen.getByRole("button", { name: "Organization type Select option" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Library" }));
     expect(rows().map((r) => r.dataset.siteId)).toEqual(["c"]);
     expect(mainMap().setData).toHaveBeenLastCalledWith({

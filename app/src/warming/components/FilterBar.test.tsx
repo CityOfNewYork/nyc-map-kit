@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { stubDialog, stubScreen } from "../../test/fixtures.ts";
 import { NO_FILTERS } from "../logic/filters.ts";
@@ -90,18 +90,19 @@ describe("FilterBar in a narrow bar", () => {
 });
 
 describe("FilterPanel", () => {
-  test("holds the kinds, then the toggles, counts what they leave, and clears them", () => {
-    stubScreen(false);
-    stubDialog();
+  test("a modal on a desktop: the kinds, the toggles under Show only, a count, Clear", () => {
+    stubScreen(true);
+    const dialog = stubDialog();
     const onChange = vi.fn();
     render(<FilterPanel id="filters" filters={{ ...NO_FILTERS, types: ["bus"] }} shown={8}
                         onChange={onChange} onClose={() => {}} />);
+    expect(dialog.showModal).toHaveBeenCalledTimes(1);
     const body = document.querySelector(".filters-body")!;
-    // Each button's name, less the count Location type carries of the kinds chosen.
-    expect([...body.querySelectorAll(":scope > * > button")]
-      .map((b) => b.textContent!.replace(/\d.*$/, "")))
-      .toEqual(["Location type", "Open now", "Wheelchair accessible", "Pets allowed"]);
-    fireEvent.click(screen.getByRole("button", { name: /^Location type/ }));
+    expect([...body.querySelectorAll("button")].map((b) => b.textContent))
+      .toEqual(["Warming bus", "Open now", "Wheelchair accessible", "Pets allowed"]);
+    expect(within(screen.getByRole("group", { name: "Show only" })).getAllByRole("button"))
+      .toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: "Location type Warming bus" }));
     expect(screen.getByRole("checkbox", { name: "Warming bus" })).toBeChecked();
     fireEvent.click(screen.getByRole("checkbox", { name: "Warming bus" }));
     expect(onChange).toHaveBeenLastCalledWith(NO_FILTERS);

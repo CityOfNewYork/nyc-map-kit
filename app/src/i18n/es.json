@@ -35,7 +35,7 @@
   "{index} of {count} at this location": "{index} de {count} en esta ubicación",
   "Next site at this location": "Siguiente sitio en esta ubicación",
   "Filters": "Filtros",
-  "Close the filters": "Cerrar los filtros",
+  "Close": "Cerrar",
   "Clear filters": "Borrar filtros",
   "{n} filters on": {
     "one": "{n} filtro activo",
@@ -44,10 +44,6 @@
   "Show {n} locations": {
     "one": "Mostrar {n} ubicación",
     "other": "Mostrar {n} ubicaciones"
-  },
-  "{n} chosen": {
-    "one": "{n} seleccionado",
-    "other": "{n} seleccionados"
   },
   "Enter an address or neighborhood": "Escriba una dirección o vecindario",
   "Neighborhood, borough or ZIP code": "Vecindario, distrito o código postal",
@@ -82,8 +78,10 @@
   "An nyc.gov website belongs to an official New York City government organization.": "Un sitio web nyc.gov pertenece a una organización oficial del gobierno de la ciudad de Nueva York.",
   "The map could not load.": "No se pudo cargar el mapa.",
   "Location type": "Tipo de lugar",
+  "Select option": "Seleccione una opción",
   "More filters": "Más filtros",
   "Open now": "Abierto ahora",
+  "Show only": "Mostrar solo",
   "Done": "Listo",
   "Code Blue is in effect.": "El Código Azul está en vigor.",
   "Warming centers are open to anyone who needs them.": "Los centros de calentamiento están abiertos para cualquier persona que los necesite.",

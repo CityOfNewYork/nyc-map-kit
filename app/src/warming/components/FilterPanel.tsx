@@ -18,9 +18,10 @@ interface FilterPanelProps {
 }
 
 /**
- * Every warming filter, in the kit's panel (ui/Filters.tsx): the kinds of center, then
- * open now, wheelchair access and pets, a row each, as the same toggles the bar shows.
- * More filters opens it on a desktop or tablet, and the Filters button on a phone.
+ * Every warming filter, in the kit's panel (ui/Filters.tsx): the kinds of center, then,
+ * under "Show only", open now, wheelchair access and pets, a row each, as the same
+ * toggles the bar shows. More filters opens it on a desktop or tablet, and the Filters
+ * button on a phone; either way it is a modal card over the blurred map.
  */
 export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPanelProps) {
   function set(next: Partial<Filters>, filter: string, value: string | boolean) {
@@ -36,9 +37,11 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
     track("map_filter", { filter: "clear" });
   }
 
+  const chosen = filters.types.map((type) => t(CENTER_KINDS.get(type)?.label ?? type));
+
   return (
-    <FiltersPanel id={id} shown={shown} onClear={clear} onClose={onClose}>
-      <FilterDisclosure label={t("Location type")} chosen={filters.types.length}>
+    <FiltersPanel id={id} shown={shown} onClear={clear} onClose={onClose} modal>
+      <FilterDisclosure label={t("Location type")} chosen={chosen}>
         {[...CENTER_KINDS].map(([type, kind]) => (
           <Check key={type} className="filter-check" checked={filters.types.includes(type)}
                  onChange={(on) => toggleType(type, on)}>
@@ -47,9 +50,12 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
         ))}
       </FilterDisclosure>
 
-      <div className="filter-toggles">
-        <FilterToggles filters={filters} set={set} />
-      </div>
+      <fieldset>
+        <legend className="filter-label">{t("Show only")}</legend>
+        <div className="filter-toggles">
+          <FilterToggles filters={filters} set={set} />
+        </div>
+      </fieldset>
     </FiltersPanel>
   );
 }
