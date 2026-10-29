@@ -3,6 +3,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import places from "../../public/places.json";
+import { pushed } from "../test/fixtures.ts";
 
 // Search reads the key when it loads: set it first, so the test does not depend on a
 // developer's .env.local. Without a key the box finds boroughs, neighborhoods and ZIP
@@ -52,7 +53,21 @@ describe("Search without a Geoclient key", () => {
     expect(screen.getByRole("status")).toHaveTextContent(/^Closest to Harlem/);
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(fetch).toHaveBeenCalledWith("places.json");
-    expect(window.dataLayer).toEqual([{ event: "map_search", via: "search", result: "nbhd" }]);
+    expect(pushed()).toEqual([{
+      event: "map_search", search_zip: null, search_borough: "Manhattan",
+      search_neighborhood: "Harlem",
+    }]);
+  });
+
+  test("a ZIP code reports the ZIP, and a search that finds nothing reports nothing", async () => {
+    const { onFound, input } = renderSearch();
+    search(input, "120 Broadway");
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("No match"));
+    search(input, "10027");
+    await waitFor(() => expect(onFound).toHaveBeenCalled());
+    expect(pushed()).toEqual([{
+      event: "map_search", search_zip: "10027", search_borough: null, search_neighborhood: null,
+    }]);
   });
 
   test("says when nothing matches, and drops the place it showed before", async () => {
@@ -92,6 +107,7 @@ describe("Search without a Geoclient key", () => {
     expect(onFound).toHaveBeenCalledWith(expect.objectContaining({
       kind: "location", center: [-73.95, 40.8],
     }));
+    expect(window.dataLayer).toEqual([]);   // where the reader is, not a search
 
     getCurrentPosition.mockImplementation((_ok: PositionCallback, fail?: PositionErrorCallback | null) =>
       fail?.({ code: 1 } as GeolocationPositionError));

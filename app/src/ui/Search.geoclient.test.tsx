@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import places from "../../public/places.json";
 import { geocode } from "../logic/geocode.ts";
 import type { Found } from "../logic/places.ts";
+import { pushed } from "../test/fixtures.ts";
 
 // The box with a Geoclient key, set before Search loads; Geoclient itself is stubbed.
 vi.hoisted(() => vi.stubEnv("VITE_GEOCLIENT_KEY", "test-key"));
@@ -55,12 +56,17 @@ describe("Search with a Geoclient key", () => {
   });
 
   test("asks Geoclient for anything else, and shows a single match", async () => {
-    vi.mocked(geocode).mockResolvedValue({ type: "found", matches: [broadway("Manhattan", -74.01)] });
+    const found = { ...broadway("Manhattan", -74.01), zip: "10271", nta: "MN0101" };
+    vi.mocked(geocode).mockResolvedValue({ type: "found", matches: [found] });
     const { onFound, search } = renderSearch();
     search("120 Broadway");
-    await waitFor(() => expect(onFound).toHaveBeenCalledWith(broadway("Manhattan", -74.01)));
+    await waitFor(() => expect(onFound).toHaveBeenCalledWith(found));
     expect(geocode).toHaveBeenCalledWith("120 Broadway", "test-key", expect.any(AbortSignal));
-    expect(window.dataLayer).toEqual([{ event: "map_search", via: "search", result: "address" }]);
+    // Its ZIP code, borough and neighborhood, by name from places.json; never the address.
+    expect(pushed()).toEqual([{
+      event: "map_search", search_zip: "10271", search_borough: "Manhattan",
+      search_neighborhood: "Financial District-Battery Park City",
+    }]);
   });
 
   test("offers a choice when the address is in more than one borough", async () => {
@@ -138,6 +144,6 @@ describe("Search with a Geoclient key", () => {
     search("120 Broadway");
     await waitFor(() => expect(screen.getByRole("status"))
       .toHaveTextContent("Address search is not working right now."));
-    expect(window.dataLayer).toEqual([{ event: "map_search", via: "search", result: "error" }]);
+    expect(window.dataLayer).toEqual([]);
   });
 });

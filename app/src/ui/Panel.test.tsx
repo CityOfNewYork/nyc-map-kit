@@ -27,7 +27,6 @@ const rows = () => within(screen.getByRole("list")).queryAllByRole("button");
 
 beforeEach(() => {
   stubScreen(true);
-  window.dataLayer = [];
   vi.spyOn(console, "log").mockImplementation(() => {});
 });
 afterEach(() => {
@@ -81,9 +80,6 @@ describe("Panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show more" }));
     expect(rows()).toHaveLength(120);
     expect(screen.queryByRole("button", { name: "Show more" })).toBeNull();
-    expect(window.dataLayer).toEqual([
-      { event: "map_list_more", shown: 100 }, { event: "map_list_more", shown: 120 },
-    ]);
   }, 15_000);   // 120 rows take seconds to render under coverage, beside the other files
 
   test("on a desktop the list starts open, and the handle hides it and shows it again", () => {

@@ -18,6 +18,18 @@ describe("parseGeoclient", () => {
     });
   });
 
+  test("keeps each match's ZIP code and 2020 NTA code, for analytics", () => {
+    const result = parseGeoclient(response("120 broadway"));
+    if (result.type !== "found") throw new Error(result.type);
+    expect(result.matches.map((m) => [m.zip, m.nta])).toEqual([
+      ["10271", "MN0101"], ["11249", "BK0102"], ["10310", "SI0106"],
+    ]);
+    // A response without them leaves them out.
+    const corner = parseGeoclient(response("broadway and w 100 st"));
+    if (corner.type !== "found") throw new Error(corner.type);
+    expect(corner.matches[0].zip).toBeUndefined();
+  });
+
   test("a match whose house number Geoclient altered gives way to a clean one", () => {
     const result = parseGeoclient(response("37-11 74th st"));
     expect(result).toMatchObject({

@@ -5,6 +5,7 @@
  * so a copied link carries it: ?type=hospital,bus&open=1&wheelchair=1&pets=1. No types
  * named means every type.
  */
+import type { Events } from "../../logic/analytics.ts";
 import type { Site } from "../../logic/types.ts";
 import { centerDetails, centerStatus } from "./centers.ts";
 
@@ -47,6 +48,26 @@ export function withFilters(url: URL, filters: Filters): URL {
 export function activeFilters(filters: Filters): number {
   return (filters.types.length ? 1 : 0) + Number(filters.openNow) + Number(filters.wheelchair)
     + Number(filters.pets);
+}
+
+/** What analytics hears of a change from `before` to `after`: one filter_select for each
+ *  filter that changed, so Clear filters reports every filter it turned off. Open now is
+ *  the "when" filter, "now" or "any". */
+export function filterChanges(before: Filters, after: Filters): Events["filter_select"][] {
+  const active_filter_count = activeFilters(after);
+  const changed = (filter_name: string, filter_value: string) =>
+    ({ filter_name, filter_value, active_filter_count });
+  const onOff = (on: boolean) => (on ? "on" : "off");
+  const out: Events["filter_select"][] = [];
+  if (before.types.join() !== after.types.join()) {
+    out.push(changed("type", after.types.join(",")));
+  }
+  if (before.openNow !== after.openNow) out.push(changed("when", after.openNow ? "now" : "any"));
+  if (before.wheelchair !== after.wheelchair) {
+    out.push(changed("wheelchair", onOff(after.wheelchair)));
+  }
+  if (before.pets !== after.pets) out.push(changed("pets", onOff(after.pets)));
+  return out;
 }
 
 /** Whether a center passes the filters at `minute` past midnight, New York time. */

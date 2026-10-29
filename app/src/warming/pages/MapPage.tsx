@@ -74,8 +74,7 @@ export function MapPage({
             top line instead (see warming.css). Outside the search landmark: it shares the
             map rather than searching it. */}
         <div className="share-map">
-          <CopyLink key={JSON.stringify(filters)} url={resultsUrl}
-                    payload={{ via: "toolbar" }} label="Share map" />
+          <CopyLink key={JSON.stringify(filters)} url={resultsUrl} label="Share map" />
         </div>
         {/* The count again, as a live region the eye does not see, so a screen reader
             hears what a filter left. Here, not in the list, which a shut list hides. */}
@@ -98,7 +97,7 @@ export function MapPage({
                summary={<ListCount total={model && model.features.length} shown={shown.length}
                                    filtered={active > 0} />}
                action={<CopyLink key={JSON.stringify(filters)} url={resultsUrl}
-                                 payload={{ via: "list" }} label="Share map" />}
+                                 label="Share map" />}
                row={(feature) => centerRow(feature, minute)} marker={centerMarker} />
       </div>
     </>

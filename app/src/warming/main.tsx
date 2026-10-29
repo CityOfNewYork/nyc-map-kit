@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { basemapId } from "../core/basemaps/names.ts";
+import { landingType, track } from "../logic/analytics.ts";
 import { chooseLanguage, loadLanguage, translateMarked } from "../logic/i18n.ts";
 import App from "./App.tsx";
 import { wireNoteClose } from "../ui/note.ts";
@@ -17,6 +18,10 @@ const lang = "en";
 const basemap = basemapId(params.get("basemap"));
 await loadLanguage(language);
 translateMarked();
+
+// Once per page load, in the language it opened in, before the map has drawn: a visitor
+// on a slow phone counts too.
+track("map_view", { landing_type: landingType(window.location.search) });
 
 // The note's ×.
 wireNoteClose();

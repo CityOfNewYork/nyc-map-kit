@@ -8,7 +8,7 @@ import type { MapCoreOptions } from "../core/map-core.ts";
 import { readSettings } from "../logic/params.ts";
 import type { Settings } from "../logic/params.ts";
 import type { Config, SiteProperties } from "../logic/types.ts";
-import { site, stubDialog, stubScreen } from "../test/fixtures.ts";
+import { pushed, site, stubDialog, stubScreen } from "../test/fixtures.ts";
 import App from "./App.tsx";
 
 // MapLibre needs WebGL, which jsdom lacks: each map is a stub that reports select() to
@@ -119,7 +119,6 @@ describe("App", () => {
     expect(screen.getByText("2 organizations")).toBeInTheDocument();
     expect(screen.getByText("3 sites")).toBeInTheDocument();
     expect(mainMap().options.data?.features).toHaveLength(3);
-    expect(window.dataLayer).toContainEqual({ event: "map_load", sites: 3, orgs: 2, lang: "en" });
   });
 
   test("a config's own count replaces the organization and site counts", async () => {
@@ -162,6 +161,11 @@ describe("App", () => {
     expect(mainMap().select).toHaveBeenCalledWith("b");
     // The card opens once the selection renders, a step after the map is made.
     await waitFor(() => expect(document.getElementById("site-dialog")).toHaveAttribute("open"));
+    // Once, with the site's type, from its org_type.
+    expect(pushed()).toEqual([{
+      event: "card_open", feature_id: "b", feature_name: "Alpha", feature_type: "Nonprofit",
+      feature_borough: "Bronx",
+    }]);
   });
 
   test("filters by organization type in the list, on the map and in the address", async () => {
@@ -179,6 +183,11 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(rows()).toHaveLength(3);
     expect(location.search).toBe("");
+    const typeFilter = { event: "filter_select", filter_name: "type" };
+    expect(pushed()).toEqual([
+      { ...typeFilter, filter_value: "Library", active_filter_count: 1 },
+      { ...typeFilter, filter_value: "", active_filter_count: 0 },
+    ]);
   });
 
   test("a type in the address filters from the start", async () => {

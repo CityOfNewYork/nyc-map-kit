@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
-import { track } from "../logic/analytics.ts";
+import { searchFields, track } from "../logic/analytics.ts";
 import { geocode } from "../logic/geocode.ts";
 import type { Suggestion } from "../logic/geocode.ts";
 import { placeMatcher } from "../logic/places.ts";
@@ -65,6 +65,7 @@ export function Search({ onFound, onClear, landmark = true }: SearchProps) {
   const [status, setStatus] = useState<Status>({ type: "idle" });
   const inputRef = useRef<HTMLInputElement>(null);
   const places = useRef<Promise<((q: string) => Found | null) | null>>(null);
+  const ntas = useRef<Record<string, string>>({});   // places.json's NTA names, once loaded
   const inflight = useRef<AbortController>(null);
   const showing = useRef(false);   // the map and list are showing a result
 
@@ -72,16 +73,21 @@ export function Search({ onFound, onClear, landmark = true }: SearchProps) {
   function loadPlaces() {
     places.current ??= fetch("places.json")
       .then((r) => (r.ok ? r.json() as Promise<PlacesDoc> : null))
-      .then((doc) => (doc ? placeMatcher(doc) : null))
+      .then((doc) => {
+        if (!doc) return null;
+        ntas.current = doc.ntas;
+        return placeMatcher(doc);
+      })
       .catch(() => null);
     return places.current;
   }
 
-  function show(place: Found, via: string) {
+  function show(place: Found) {
     showing.current = true;
     setStatus({ type: "found", place });
     onFound(place);
-    track("map_search", { via, result: place.kind });
+    // The reader's own location is where they are, not a search.
+    if (place.kind !== "location") track("map_search", searchFields(place, ntas.current));
   }
 
   /** Any outcome but a place: the previous place goes too, so the list is never left
@@ -94,7 +100,7 @@ export function Search({ onFound, onClear, landmark = true }: SearchProps) {
     setStatus(next);
   }
 
-  async function search(query: string, via: string) {
+  async function search(query: string) {
     inflight.current?.abort();
     const controller = new AbortController();
     inflight.current = controller;
@@ -103,10 +109,9 @@ export function Search({ onFound, onClear, landmark = true }: SearchProps) {
     const match = await loadPlaces();
     if (controller.signal.aborted) return;
     const place = match && match(query);
-    if (place) return show(place, via);
+    if (place) return show(place);
     if (!GEOCLIENT_KEY) {
       settle({ type: "none" });
-      track("map_search", { via, result: "none" });
       return;
     }
 
@@ -114,7 +119,7 @@ export function Search({ onFound, onClear, landmark = true }: SearchProps) {
       const result = await geocode(query, GEOCLIENT_KEY, controller.signal);
       if (controller.signal.aborted) return;
       if (result.type === "found" && result.matches.length === 1) {
-        return show(result.matches[0], via);
+        return show(result.matches[0]);
       }
       if (result.type === "found") {
         settle({ type: "choices", matches: result.matches, active: -1 });
@@ -123,30 +128,28 @@ export function Search({ onFound, onClear, landmark = true }: SearchProps) {
       } else {
         settle({ type: "none" });
       }
-      track("map_search", { via, result: result.type === "found" ? "choices" : result.type });
     } catch (err) {
       if (controller.signal.aborted) return;
       console.warn(`[search] ${(err as Error).message}`);
       settle({ type: "error" });
-      track("map_search", { via, result: "error" });
     }
   }
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     const query = value.trim();
-    if (query) search(query, "search");
+    if (query) search(query);
   }
 
   function choose(place: Found) {
     setValue(plainName(place));
-    show(place, "choice");
+    show(place);
     inputRef.current!.focus();
   }
 
   function retry(s: Suggestion) {
     setValue(s.query);
-    search(s.query, "suggestion");
+    search(s.query);
     inputRef.current!.focus();
   }
 
@@ -164,11 +167,10 @@ export function Search({ onFound, onClear, landmark = true }: SearchProps) {
         show({
           kind: "location", name: "your location", cross: null, borough: null,
           center: [position.coords.longitude, position.coords.latitude], bbox: null,
-        }, "location");
+        });
       },
       () => {
         settle({ type: "no-location" });
-        track("map_search", { via: "location", result: "error" });
       },
       { timeout: 10_000, maximumAge: 60_000 },
     );

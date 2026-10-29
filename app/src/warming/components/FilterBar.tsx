@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
-import { track } from "../../logic/analytics.ts";
 import { FiltersIcon } from "../../ui/Filters.tsx";
 import { itemsThatFit } from "../../ui/layout.ts";
 import { Toggle } from "../../ui/Toggle.tsx";
@@ -32,9 +31,8 @@ interface FilterBarProps {
 export function FilterBar({ filters, onChange, onMore, moreOpen }: FilterBarProps) {
   const bar = useRef<HTMLDivElement>(null);
   const fit = useTogglesThatFit(bar);
-  function set(next: Partial<Filters>, filter: string, value: string | boolean) {
+  function set(next: Partial<Filters>) {
     onChange({ ...filters, ...next });
-    track("map_filter", { filter, value });
   }
   const hiddenOn = filters.types.length > 0
     || [filters.openNow, filters.wheelchair, filters.pets].slice(fit).some(Boolean);
@@ -89,21 +87,21 @@ function useTogglesThatFit(bar: RefObject<HTMLDivElement | null>): number {
  *  FilterPanel after the kinds of center. */
 export function FilterToggles({ filters, set, from = 0, to = Infinity }: {
   filters: Filters;
-  set: (next: Partial<Filters>, filter: string, value: boolean) => void;
+  set: (next: Partial<Filters>) => void;
   from?: number;
   to?: number;
 }) {
   return [
     <Toggle key="open" className="pill toggle-pill" pressed={filters.openNow}
-            onChange={(on) => set({ openNow: on }, "open", on)} icon={<ClockIcon />}>
+            onChange={(on) => set({ openNow: on })} icon={<ClockIcon />}>
       {t("Open now")}
     </Toggle>,
     <Toggle key="wheelchair" className="pill toggle-pill" pressed={filters.wheelchair}
-            onChange={(on) => set({ wheelchair: on }, "wheelchair", on)} icon={<WheelchairIcon />}>
+            onChange={(on) => set({ wheelchair: on })} icon={<WheelchairIcon />}>
       {t("Wheelchair accessible")}
     </Toggle>,
     <Toggle key="pets" className="pill toggle-pill" pressed={filters.pets}
-            onChange={(on) => set({ pets: on }, "pets", on)} icon={<PawIcon />}>
+            onChange={(on) => set({ pets: on })} icon={<PawIcon />}>
       {t("Pets allowed")}
     </Toggle>,
   ].slice(from, to);

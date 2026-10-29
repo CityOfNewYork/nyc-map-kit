@@ -27,11 +27,14 @@ interface Entry {
   bb: BBox;
 }
 
-/** places.json, keyed by normalized name. */
+/** places.json, keyed by normalized name, and the 2020 NTAs' names by code. */
 export interface PlacesDoc {
   boroughs: Record<string, Entry & { d: string }>;
   nbhds: Record<string, Entry & { d: string; b: string }>;
   zips: Record<string, Entry>;
+  /** "MN0101" -> "Financial District-Battery Park City": the neighborhood a Geoclient
+   *  result is in, which Geoclient gives by code only. */
+  ntas: Record<string, string>;
 }
 
 /** What a search found: a place from places.json or a match from Geoclient. */
@@ -48,6 +51,10 @@ export interface Found {
   center: LngLat;
   /** The area to frame, for a borough, neighborhood or ZIP code. */
   bbox: BBox | null;
+  /** From Geoclient, when it gives them: the ZIP code, and the 2020 NTA code of the
+   *  neighborhood. */
+  zip?: string;
+  nta?: string;
 }
 
 /** Words a resident adds that name no place smaller than the city. */

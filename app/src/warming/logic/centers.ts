@@ -51,6 +51,7 @@ export const CENTER_MARK: PinStyle = {
  *  a Call button, the website as a fact row, how to get in, and the day it was updated.
  *  The hours row is worked out from `opens` and `closes` instead (see CenterCard). */
 export const CENTER_CONFIG: Config = {
+  featureType: "type",
   actions: [{ key: "phone", source: "site", label: "Call", as: "tel" }],
   facts: [{ key: "website", source: "site", label: "Website", as: "url", icon: "globe" }],
   card: [{ key: "instructions", source: "site", label: "How to get in" }],

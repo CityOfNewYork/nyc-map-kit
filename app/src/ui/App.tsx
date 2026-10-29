@@ -159,12 +159,6 @@ export default function App({ settings }: AppProps) {
     // It exposes only the map-core API, never the app's internals.
     window.nycMapKit = map;
 
-    map.ready(() => track("map_load", {
-      sites: model.features.length,
-      orgs: model.orgs.length,
-      lang: settings.lang,
-    }));
-
     // A link with ?site= opens on that site's card.
     if (settings.site && model.byId.has(settings.site)) {
       selectingFromUrl();
@@ -203,14 +197,17 @@ export default function App({ settings }: AppProps) {
   function changeTypes(next: string[]) {
     setTypes(next);
     history.replaceState(history.state, "", withTypes(new URL(window.location.href), next));
+    if (next.join() !== types.join()) {
+      track("filter_select", {
+        filter_name: "type", filter_value: next.join(","), active_filter_count: next.length ? 1 : 0,
+      });
+    }
   }
   function toggleType(type: string, on: boolean) {
     changeTypes(on ? [...types, type] : types.filter((t) => t !== type));
-    track("map_filter", { filter: "type", value: `${type}:${on}` });
   }
   function clearTypes() {
     changeTypes([]);
-    track("map_filter", { filter: "clear" });
   }
   function closeFilters() {
     setFiltering(false);
@@ -272,7 +269,7 @@ export default function App({ settings }: AppProps) {
                  label={t(model?.config.listLabel || "Volunteer sites")}
                  summary={<SiteCounts sites={listed && shown} count={model?.config.count} />}
                  action={<CopyLink key={types.join()} url={() => siteUrl(null)}
-                                   payload={{ via: "list" }} label="Share results" />}
+                                   label="Share results" />}
                  row={(f) => siteRow(f, pinField === "org_type" ? pinStyles : null)} />
         </div>
         {/* What the map's canvas reads out when it takes focus (map-core's describedBy),

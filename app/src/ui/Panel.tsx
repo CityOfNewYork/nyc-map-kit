@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent, ReactNode } from "react";
-import { track } from "../logic/analytics.ts";
 import { compareSites, metresBetween } from "../logic/data.ts";
 import { t } from "../logic/i18n.ts";
 import type { Settings } from "../logic/params.ts";
@@ -120,7 +119,6 @@ export function Panel({
   function showMore() {
     firstNew.current = count;
     setMore({ sites, count: count + LIST_PAGE });
-    track("map_list_more", { shown: Math.min(count + LIST_PAGE, sites.length) });
   }
 
   // Focus goes to the first new row, so a keyboard or screen-reader user reads on from

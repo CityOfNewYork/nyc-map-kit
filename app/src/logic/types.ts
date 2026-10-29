@@ -53,6 +53,9 @@ export interface Config {
   /** Pins coloured by this property's values, from the pin stock in core/pins.ts, the most
    *  common value first. One colour for every pin when absent. */
   pins?: { field: string };
+  /** The property analytics reports as a site's type (logic/analytics.ts). `org_type`
+   *  when absent. */
+  featureType?: string;
 }
 
 // ------------------------------------------------------------------------ point data
