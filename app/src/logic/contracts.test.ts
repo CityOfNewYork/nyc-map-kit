@@ -4,8 +4,9 @@
  * from a build script would otherwise hide a card row or misplace a pin without an error.
  */
 import { readFileSync, readdirSync } from "node:fs";
-import type { FeatureCollection, Point } from "geojson";
+import type { FeatureCollection, LineString, Point } from "geojson";
 import { describe, expect, test } from "vitest";
+import { EVENT_CONFIG, EVENT_KINDS, eventWhen } from "../trick-or-streets/logic/events.ts";
 import { CENTER_CONFIG, CENTER_KINDS } from "../warming/logic/centers.ts";
 import { DATASETS } from "../warming/logic/dataset.ts";
 import { minutesOf } from "../warming/logic/hours.ts";
@@ -24,6 +25,7 @@ const MAPS = [
 ];
 const WARMING_SAMPLES = Object.values(DATASETS).map((file) => `public/${file}`);
 const WARMING = ["public/warming/centers.geojson", ...WARMING_SAMPLES];
+const EVENTS = "public/trick-or-streets/events.geojson";
 
 /** The fields a config names, by where the card, the Maps link and the pins read them. */
 function fieldRefs(config: Config): FieldRef[] {
@@ -52,7 +54,7 @@ describe("each dataset", () => {
   const [west, east] = [Math.min(...points.map((p) => p[0])), Math.max(...points.map((p) => p[0]))];
   const [south, north] = [Math.min(...points.map((p) => p[1])), Math.max(...points.map((p) => p[1]))];
 
-  test.each([...MAPS.map((m) => m.data), ...WARMING])("%s: unique ids, points in the city", (file) => {
+  test.each([...MAPS.map((m) => m.data), ...WARMING, EVENTS])("%s: unique ids, points in the city", (file) => {
     const features = json<SiteCollection>(file).features;
     const ids = features.map((f) => f.properties.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -86,6 +88,9 @@ describe("config", () => {
   test.each(WARMING_SAMPLES)("every field the warming card names is in %s", (data) => {
     expect(missingFields(fieldRefs(CENTER_CONFIG), data)).toEqual([]);
   });
+  test("every field the Trick-or-Streets card names is in the events", () => {
+    expect(missingFields(fieldRefs(EVENT_CONFIG), EVENTS)).toEqual([]);
+  });
 });
 
 describe("warming centers", () => {
@@ -95,6 +100,25 @@ describe("warming centers", () => {
       .filter((p) => !CENTER_KINDS.has(p.type) || minutesOf(p.opens) === null
         || minutesOf(p.closes) === null);
     expect(bad.map((p) => p.id)).toEqual([]);
+  });
+});
+
+describe("Trick-or-Streets events", () => {
+  const events = json<SiteCollection>(EVENTS).features;
+  test("every event is a known kind, on a day with times that read, ending after it starts", () => {
+    const bad = events.filter((f) => {
+      const when = eventWhen(f);
+      return !EVENT_KINDS.has((f.properties as { type?: string }).type ?? "") || !when
+        || when.to <= when.from;
+    });
+    expect(bad.map((f) => f.properties.id)).toEqual([]);
+  });
+  test("every street belongs to an event", () => {
+    const ids = new Set(events.map((f) => f.properties.id));
+    const streets = json<FeatureCollection<LineString, { event: string }>>(
+      "public/trick-or-streets/streets.geojson").features;
+    expect(streets.length).toBeGreaterThan(0);
+    expect(streets.filter((f) => !ids.has(f.properties.event)).length).toBe(0);
   });
 });
 
@@ -128,6 +152,8 @@ describe("translations", () => {
     for (const field of [...CENTER_CONFIG.actions ?? [], ...CENTER_CONFIG.facts ?? [],
       ...CENTER_CONFIG.card ?? []]) out.add(field.label);
     for (const { label } of CENTER_KINDS.values()) out.add(label);
+    for (const field of EVENT_CONFIG.facts ?? []) out.add(field.label);
+    for (const { label } of EVENT_KINDS.values()) out.add(label);
     return out;
   }
 

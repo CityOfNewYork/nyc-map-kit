@@ -159,5 +159,31 @@
     "many": "{n} مطعمًا",
     "other": "{n} مطعم"
   },
-  "wheelchair friendly restaurant finder": "صفحة البحث عن المطاعم الملائمة للكراسي المتحركة التابعة للمدينة"
+  "wheelchair friendly restaurant finder": "صفحة البحث عن المطاعم الملائمة للكراسي المتحركة التابعة للمدينة",
+  "Trick-or-Streets": "Trick-or-Streets",
+  "Find Trick-or-Streets events near you": "ابحث عن فعاليات Trick-or-Streets بالقرب منك",
+  "All through October, NYC DOT turns Open Streets, plazas and other streets into places for people, with Halloween and harvest activities.": "طوال شهر أكتوبر، تحوّل NYC DOT شوارع Open Streets والساحات وشوارع أخرى إلى أماكن للناس، مع أنشطة للهالوين وموسم الحصاد.",
+  "For official event details, see NYC DOT's page.": "للاطلاع على التفاصيل الرسمية للفعاليات، راجع صفحة NYC DOT.",
+  "Map of Trick-or-Streets events": "خريطة فعاليات Trick-or-Streets",
+  "Trick-or-Streets events": "فعاليات Trick-or-Streets",
+  "Signature event": "فعالية رئيسية",
+  "Partner event": "فعالية شريكة",
+  "Event type": "نوع الفعالية",
+  "Happening now": "جارية الآن",
+  "Today": "اليوم",
+  "Ended": "انتهت",
+  "{from} – {to}": "{from} – {to}",
+  "Hosted by": "الجهة المنظِّمة",
+  "Events are subject to delay or cancellation.": "قد تتأخر الفعاليات أو تُلغى.",
+  "The event data could not load.": "تعذّر تحميل بيانات الفعاليات.",
+  "These events are in the same place.": "هذه الفعاليات في المكان نفسه.",
+  "{n} events": {
+    "zero": "{n} فعاليات",
+    "one": "فعالية واحدة",
+    "two": "فعاليتان",
+    "few": "{n} فعاليات",
+    "many": "{n} فعالية",
+    "other": "{n} فعالية"
+  },
+  "Showing {shown} of {n} events": "عرض {shown} من {n}"
 }

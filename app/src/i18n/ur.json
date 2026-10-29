@@ -148,5 +148,30 @@
     "one": "{n} ریستوران",
     "other": "{n} ریستوران"
   },
-  "wheelchair friendly restaurant finder": "وہیل چیئر کے لیے موزوں ریستوران تلاش کرنے کا صفحہ"
+  "wheelchair friendly restaurant finder": "وہیل چیئر کے لیے موزوں ریستوران تلاش کرنے کا صفحہ",
+  "Trick-or-Streets": "Trick-or-Streets",
+  "Find Trick-or-Streets events near you": "اپنے قریب Trick-or-Streets تقریبات تلاش کریں",
+  "All through October, NYC DOT turns Open Streets, plazas and other streets into places for people, with Halloween and harvest activities.": "پورے اکتوبر میں NYC DOT، Open Streets، پلازوں اور دوسری گلیوں کو لوگوں کے لیے جگہوں میں بدل دیتا ہے، جہاں ہیلووین اور فصل کی کٹائی کی سرگرمیاں ہوتی ہیں۔",
+  "For official event details, see NYC DOT's page.": "تقریبات کی سرکاری تفصیلات کے لیے NYC DOT کا صفحہ دیکھیں۔",
+  "Map of Trick-or-Streets events": "Trick-or-Streets تقریبات کا نقشہ",
+  "Trick-or-Streets events": "Trick-or-Streets تقریبات",
+  "Signature event": "مرکزی تقریب",
+  "Partner event": "شراکتی تقریب",
+  "Event type": "تقریب کی قسم",
+  "Happening now": "ابھی جاری ہے",
+  "Today": "آج",
+  "Ended": "ختم ہو گئی",
+  "{from} – {to}": "{from} – {to}",
+  "Hosted by": "منتظم",
+  "Events are subject to delay or cancellation.": "تقریبات میں تاخیر ہو سکتی ہے یا وہ منسوخ ہو سکتی ہیں۔",
+  "The event data could not load.": "تقریبات کا ڈیٹا لوڈ نہیں ہو سکا۔",
+  "These events are in the same place.": "یہ تقریبات ایک ہی جگہ پر ہیں۔",
+  "{n} events": {
+    "one": "{n} تقریب",
+    "other": "{n} تقریبات"
+  },
+  "Showing {shown} of {n} events": {
+    "one": "{n} تقریب میں سے {shown} دکھائی جا رہی ہیں",
+    "other": "{n} تقریبات میں سے {shown} دکھائی جا رہی ہیں"
+  }
 }

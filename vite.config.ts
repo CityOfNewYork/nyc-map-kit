@@ -7,7 +7,8 @@ import { defineConfig } from "vitest/config";
 // <site>/app/computer-centers.html is the same page. <site>/app/snap.html is the same block
 // on a second dataset, <site>/app/examples.html embeds that one at several sizes, and
 // <site>/app/compare.html shows two basemaps side by side. <site>/app/wheelchair-friendly.html
-// is the block on the City's wheelchair friendly restaurants.
+// is the block on the City's wheelchair friendly restaurants. <site>/app/trick-or-streets.html
+// is the warming page's layout on NYC DOT's Trick-or-Streets events.
 //
 // `base: "./"` makes every built URL relative. The block has to work at localhost, under
 // the GitHub Pages subpath, and wherever a city host puts it, without a rebuild per host.
@@ -32,7 +33,8 @@ export default defineConfig({
         "src/**/*.test.{ts,tsx}",
         "src/test/**",
         "src/main.tsx",
-        "src/warming/main.tsx"
+        "src/warming/main.tsx",
+        "src/trick-or-streets/main.tsx"
       ],
 
       // The pure logic may not fall below a little under what its tests reach, so new
@@ -41,6 +43,7 @@ export default defineConfig({
       thresholds: {
         "src/logic/**": { statements: 95, branches: 85, functions: 95, lines: 95 },
         "src/warming/logic/**": { statements: 95, branches: 95, functions: 95, lines: 95 },
+        "src/trick-or-streets/logic/**": { statements: 95, branches: 95, functions: 95, lines: 95 },
       }
     }
   },
@@ -62,6 +65,7 @@ export default defineConfig({
         warming: resolve(import.meta.dirname, "app/warming.html"),
         "computer-centers": resolve(import.meta.dirname, "app/computer-centers.html"),
         "wheelchair-friendly": resolve(import.meta.dirname, "app/wheelchair-friendly.html"),
+        "trick-or-streets": resolve(import.meta.dirname, "app/trick-or-streets.html"),
       },
     },
   },

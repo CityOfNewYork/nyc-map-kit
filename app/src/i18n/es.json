@@ -148,5 +148,30 @@
     "one": "{n} restaurante",
     "other": "{n} restaurantes"
   },
-  "wheelchair friendly restaurant finder": "página de búsqueda de restaurantes accesibles en silla de ruedas"
+  "wheelchair friendly restaurant finder": "página de búsqueda de restaurantes accesibles en silla de ruedas",
+  "Trick-or-Streets": "Trick-or-Streets",
+  "Find Trick-or-Streets events near you": "Encuentre eventos de Trick-or-Streets cerca de usted",
+  "All through October, NYC DOT turns Open Streets, plazas and other streets into places for people, with Halloween and harvest activities.": "Durante todo octubre, NYC DOT convierte Open Streets, plazas y otras calles en espacios para las personas, con actividades de Halloween y de la cosecha.",
+  "For official event details, see NYC DOT's page.": "Para ver los detalles oficiales de los eventos, visite la página de NYC DOT.",
+  "Map of Trick-or-Streets events": "Mapa de eventos de Trick-or-Streets",
+  "Trick-or-Streets events": "Eventos de Trick-or-Streets",
+  "Signature event": "Evento principal",
+  "Partner event": "Evento de socios",
+  "Event type": "Tipo de evento",
+  "Happening now": "En curso ahora",
+  "Today": "Hoy",
+  "Ended": "Finalizado",
+  "{from} – {to}": "{from} – {to}",
+  "Hosted by": "Organizado por",
+  "Events are subject to delay or cancellation.": "Los eventos pueden retrasarse o cancelarse.",
+  "The event data could not load.": "No se pudieron cargar los datos de los eventos.",
+  "These events are in the same place.": "Estos eventos son en el mismo lugar.",
+  "{n} events": {
+    "one": "{n} evento",
+    "other": "{n} eventos"
+  },
+  "Showing {shown} of {n} events": {
+    "one": "Mostrando {shown} de {n} evento",
+    "other": "Mostrando {shown} de {n} eventos"
+  }
 }

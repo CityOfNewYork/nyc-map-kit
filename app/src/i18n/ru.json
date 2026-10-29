@@ -164,5 +164,34 @@
     "many": "{n} ресторанов",
     "other": "{n} ресторана"
   },
-  "wheelchair friendly restaurant finder": "странице поиска ресторанов, доступных для инвалидных колясок"
+  "wheelchair friendly restaurant finder": "странице поиска ресторанов, доступных для инвалидных колясок",
+  "Trick-or-Streets": "Trick-or-Streets",
+  "Find Trick-or-Streets events near you": "Найдите мероприятия Trick-or-Streets рядом с вами",
+  "All through October, NYC DOT turns Open Streets, plazas and other streets into places for people, with Halloween and harvest activities.": "Весь октябрь NYC DOT превращает Open Streets, площади и другие улицы в пространства для людей, с мероприятиями на тему Хэллоуина и урожая.",
+  "For official event details, see NYC DOT's page.": "Официальные подробности о мероприятиях — на странице NYC DOT.",
+  "Map of Trick-or-Streets events": "Карта мероприятий Trick-or-Streets",
+  "Trick-or-Streets events": "Мероприятия Trick-or-Streets",
+  "Signature event": "Главное мероприятие",
+  "Partner event": "Мероприятие партнёров",
+  "Event type": "Тип мероприятия",
+  "Happening now": "Идёт сейчас",
+  "Today": "Сегодня",
+  "Ended": "Завершено",
+  "{from} – {to}": "{from} – {to}",
+  "Hosted by": "Организатор",
+  "Events are subject to delay or cancellation.": "Мероприятия могут быть перенесены или отменены.",
+  "The event data could not load.": "Не удалось загрузить данные о мероприятиях.",
+  "These events are in the same place.": "Эти мероприятия проходят в одном месте.",
+  "{n} events": {
+    "one": "{n} мероприятие",
+    "few": "{n} мероприятия",
+    "many": "{n} мероприятий",
+    "other": "{n} мероприятия"
+  },
+  "Showing {shown} of {n} events": {
+    "one": "Показано {shown} из {n} мероприятия",
+    "few": "Показано {shown} из {n} мероприятий",
+    "many": "Показано {shown} из {n} мероприятий",
+    "other": "Показано {shown} из {n} мероприятия"
+  }
 }

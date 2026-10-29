@@ -130,5 +130,24 @@
     "one": "{n}টি রেস্তোরাঁ",
     "other": "{n}টি রেস্তোরাঁ"
   },
-  "wheelchair friendly restaurant finder": "হুইলচেয়ার-বান্ধব রেস্তোরাঁ খোঁজার পৃষ্ঠা"
+  "wheelchair friendly restaurant finder": "হুইলচেয়ার-বান্ধব রেস্তোরাঁ খোঁজার পৃষ্ঠা",
+  "Trick-or-Streets": "Trick-or-Streets",
+  "Find Trick-or-Streets events near you": "আপনার কাছের Trick-or-Streets ইভেন্ট খুঁজুন",
+  "All through October, NYC DOT turns Open Streets, plazas and other streets into places for people, with Halloween and harvest activities.": "পুরো অক্টোবর জুড়ে NYC DOT, Open Streets, প্লাজা ও অন্যান্য রাস্তাকে মানুষের জন্য জায়গায় পরিণত করে, সাথে থাকে হ্যালোইন ও ফসল কাটার মৌসুমের নানা আয়োজন।",
+  "For official event details, see NYC DOT's page.": "ইভেন্টের সরকারি বিবরণের জন্য NYC DOT-এর পৃষ্ঠা দেখুন।",
+  "Map of Trick-or-Streets events": "Trick-or-Streets ইভেন্টের মানচিত্র",
+  "Trick-or-Streets events": "Trick-or-Streets ইভেন্ট",
+  "Signature event": "প্রধান ইভেন্ট",
+  "Partner event": "অংশীদার ইভেন্ট",
+  "Event type": "ইভেন্টের ধরন",
+  "Happening now": "এখন চলছে",
+  "Today": "আজ",
+  "Ended": "শেষ হয়েছে",
+  "{from} – {to}": "{from} – {to}",
+  "Hosted by": "আয়োজক",
+  "Events are subject to delay or cancellation.": "ইভেন্ট দেরিতে হতে পারে বা বাতিল হতে পারে।",
+  "The event data could not load.": "ইভেন্টের তথ্য লোড করা যায়নি।",
+  "These events are in the same place.": "এই ইভেন্টগুলো একই জায়গায়।",
+  "{n} events": "{n}টি ইভেন্ট",
+  "Showing {shown} of {n} events": "{n}টি ইভেন্টের মধ্যে {shown}টি দেখানো হচ্ছে"
 }

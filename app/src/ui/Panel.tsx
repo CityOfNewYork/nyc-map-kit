@@ -47,6 +47,9 @@ interface PanelProps {
   intro?: ReactNode;
   /** A mark before a row's lines, such as an icon of the site's kind. None unless given. */
   marker?: (feature: Site) => ReactNode;
+  /** The sites are already in the order to list them, such as events by their day: without
+   *  a search the list keeps it, rather than going north to south. */
+  inOrder?: boolean;
 }
 
 /**
@@ -57,9 +60,9 @@ interface PanelProps {
  * the map filters this list the same way. It exists so that everything the map shows is
  * reachable without a pointer and without sight. After a search (ui/Search.tsx) it is
  * ordered nearest-first from the place found, with each site's distance, so the first
- * rows are the nearest; otherwise north to south. Focus order is title -> search ->
- * list -> map controls, which is why it sits before the map in the DOM. The card is a
- * modal and takes focus when it opens.
+ * rows are the nearest; otherwise north to south, or in the app's own order (`inOrder`).
+ * Focus order is title -> search -> list -> map controls, which is why it sits before the
+ * map in the DOM. The card is a modal and takes focus when it opens.
  *
  * Its top line is a heading holding the button that shows and hides the list (WAI-ARIA
  * APG accordion pattern), so a screen reader moving by headings finds the list, open or
@@ -70,7 +73,7 @@ interface PanelProps {
  */
 export function Panel({
   model, list, selectedId, found, onClearFilters, onOpen, label, summary, action, row,
-  intro, marker,
+  intro, marker, inOrder = false,
 }: PanelProps) {
   const origin = found && found.center;
   const empty = model && onClearFilters && model.features.length === 0;
@@ -106,9 +109,10 @@ export function Panel({
       feature,
       metres: origin ? metresBetween(origin, feature.geometry.coordinates) : null,
     }));
+    if (inOrder && !origin) return rows;
     return rows.sort((a, b) =>
       (a.metres ?? 0) - (b.metres ?? 0) || compareSites(a.feature, b.feature));
-  }, [features, origin]);
+  }, [features, origin, inOrder]);
 
   // How many rows show: a page, and a page more for each "Show more". The count is kept
   // with the order it was for, so a new order (a search, a filter) starts again at one

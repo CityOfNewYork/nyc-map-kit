@@ -148,5 +148,30 @@
     "one": "{n} רעסטאָראַן",
     "other": "{n} רעסטאָראַנען"
   },
-  "wheelchair friendly restaurant finder": "בלאַט צו געפֿינען רעסטאָראַנען צוגענגלעך פֿאַר רעדערשטולן"
+  "wheelchair friendly restaurant finder": "בלאַט צו געפֿינען רעסטאָראַנען צוגענגלעך פֿאַר רעדערשטולן",
+  "Trick-or-Streets": "Trick-or-Streets",
+  "Find Trick-or-Streets events near you": "געפֿינט Trick-or-Streets־אונטערנעמונגען לעבן אײַך",
+  "All through October, NYC DOT turns Open Streets, plazas and other streets into places for people, with Halloween and harvest activities.": "דעם גאַנצן אָקטאָבער מאַכט NYC DOT Open Streets, פּלאַצן און אַנדערע גאַסן פֿאַר ערטער פֿאַר מענטשן, מיט האַלאָווין־ און שניט־אַקטיוויטעטן.",
+  "For official event details, see NYC DOT's page.": "פֿאַר די אָפֿיציעלע פּרטים פֿון די אונטערנעמונגען, זעט דעם בלאַט פֿון NYC DOT.",
+  "Map of Trick-or-Streets events": "מאַפּע פֿון Trick-or-Streets־אונטערנעמונגען",
+  "Trick-or-Streets events": "Trick-or-Streets־אונטערנעמונגען",
+  "Signature event": "הויפּט־אונטערנעמונג",
+  "Partner event": "שותּפֿים־אונטערנעמונג",
+  "Event type": "סאָרט אונטערנעמונג",
+  "Happening now": "גייט איצט פֿאָר",
+  "Today": "הײַנט",
+  "Ended": "פֿאַרענדיקט",
+  "{from} – {to}": "{from} – {to}",
+  "Hosted by": "אָרגאַניזירט פֿון",
+  "Events are subject to delay or cancellation.": "אונטערנעמונגען קענען זיך פֿאַרשפּעטיקן אָדער ווערן אָפּגערופֿן.",
+  "The event data could not load.": "די דאַטן פֿון די אונטערנעמונגען האָבן נישט געקענט אַרויפֿלאָדן.",
+  "These events are in the same place.": "די דאָזיקע אונטערנעמונגען זענען אויף איין אָרט.",
+  "{n} events": {
+    "one": "{n} אונטערנעמונג",
+    "other": "{n} אונטערנעמונגען"
+  },
+  "Showing {shown} of {n} events": {
+    "one": "מען ווײַזט {shown} פֿון {n} אונטערנעמונג",
+    "other": "מען ווײַזט {shown} פֿון {n} אונטערנעמונגען"
+  }
 }

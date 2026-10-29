@@ -130,5 +130,24 @@
     "one": "{n} restoran",
     "other": "{n} restoran"
   },
-  "wheelchair friendly restaurant finder": "paj pou chèche restoran ki aksesib pou chèz woulant Vil la"
+  "wheelchair friendly restaurant finder": "paj pou chèche restoran ki aksesib pou chèz woulant Vil la",
+  "Trick-or-Streets": "Trick-or-Streets",
+  "Find Trick-or-Streets events near you": "Jwenn evènman Trick-or-Streets toupre ou",
+  "All through October, NYC DOT turns Open Streets, plazas and other streets into places for people, with Halloween and harvest activities.": "Pandan tout mwa oktòb la, NYC DOT fè Open Streets, plas ak lòt lari tounen kote pou moun, ak aktivite Halloween ak rekòt.",
+  "For official event details, see NYC DOT's page.": "Pou detay ofisyèl evènman yo, gade paj NYC DOT a.",
+  "Map of Trick-or-Streets events": "Kat evènman Trick-or-Streets yo",
+  "Trick-or-Streets events": "Evènman Trick-or-Streets",
+  "Signature event": "Evènman prensipal",
+  "Partner event": "Evènman patnè",
+  "Event type": "Kalite evènman",
+  "Happening now": "K ap fèt kounye a",
+  "Today": "Jodi a",
+  "Ended": "Fini",
+  "{from} – {to}": "{from} – {to}",
+  "Hosted by": "Òganize pa",
+  "Events are subject to delay or cancellation.": "Evènman yo ka reta oswa anile.",
+  "The event data could not load.": "Done evènman yo pa t ka chaje.",
+  "These events are in the same place.": "Evènman sa yo nan menm kote a.",
+  "{n} events": "{n} evènman",
+  "Showing {shown} of {n} events": "N ap montre {shown} sou {n} evènman"
 }

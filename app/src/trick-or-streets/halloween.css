@@ -1,0 +1,59 @@
+/* Trick-or-Streets' look, on top of the kit's style.css and warming's layout
+   (warming.css), which this page shares. Colours change; the layout does not. */
+
+/* Night purple where warming has navy: the top bar, the hero, the map view's toolbar and
+   frame, all of which take --link-hover. Purple for links, buttons and the selected row,
+   and lilac tints under them. White on the night purple is 17:1, the purple 8.5:1 on
+   white and 7.0:1 on the lilac. */
+:root {
+  --link-hover: #22103a;
+  --primary:    #6a1fb5;
+  --link:       #6a1fb5;
+  --selected:   #efe6ff;
+  --hover:      #f7f2ff;
+}
+
+/* The site's name in pumpkin orange, 7.8:1 on the night purple. */
+.site-title { color: #ff922b; }
+.official-notice { background: #170a28; }
+
+/* A filter that is on: tinted orange, the pumpkins' colour, with dark brown text, 11.6:1. */
+.pill.on,
+.pill[aria-pressed="true"] {
+  border-color: #c2410c;
+  background: #fff1e6;
+  color: #5c1d00;
+}
+
+/* That events can move or be called off: pale orange, with the mark in burnt orange. */
+.notice {
+  border-color: #ffc999;
+  background: #fff4e8;
+}
+.notice svg { color: #c2410c; }
+
+/* Where an event stands: green with a check while it is on, burnt orange later today,
+   purple on a day to come, grey once it is over. Each clears 4.5:1 on a row's white, its
+   hover tint and the selected row's lilac. */
+.status.now { color: #0a6b3a; }
+.status.today { color: #9a3412; }
+.status.upcoming { color: var(--primary); }
+.status.ended { color: #595959; }
+
+/* The hero: a full moon behind a spider's web in its top right corner, a spider hanging
+   from the web, and the search button in pumpkin orange (its white mark is 3.8:1). */
+.hero {
+  background:
+    url("/trick-or-streets/web.svg") right top / 240px no-repeat,
+    radial-gradient(circle at calc(100% - 92px) 96px, #ffe8cc 0 30px,
+                    rgba(255, 232, 204, 0.18) 31px 46px, transparent 47px),
+    var(--link-hover);
+}
+.hero .search-submit { background: #e2550a; }
+.hero .search-submit:hover { background: #c2410c; }
+
+@media (max-width: 767px) {
+  /* On a phone the heading needs the hero's full width, so the web is smaller and faint
+     behind it, the spider beside its shorter second line, and there is no moon. */
+  .hero { background: url("/trick-or-streets/web.svg") right top / 120px no-repeat, var(--link-hover); }
+}

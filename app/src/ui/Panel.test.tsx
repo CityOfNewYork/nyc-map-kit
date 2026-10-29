@@ -55,6 +55,14 @@ describe("Panel", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 
+  test("with inOrder, keeps the sites' own order, until a search orders them nearest first", () => {
+    renderPanel({ inOrder: true });
+    expect(rows().map((r) => r.dataset.siteId)).toEqual(["a", "b", "c"]);
+    cleanup();
+    renderPanel({ inOrder: true, found: harlem });
+    expect(rows().map((r) => r.dataset.siteId)).toEqual(["b", "a", "c"]);
+  });
+
   test("omits site rows when list is off, and keeps the summary", () => {
     renderPanel({ list: "off" });
     expect(rows()).toEqual([]);
