@@ -142,7 +142,8 @@ describe("Trick-or-Streets App", () => {
 
   test("touching a pin on the landing view opens no card", async () => {
     renderApp();
-    await waitFor(() => expect(stub.props?.data).toBeTruthy());
+    // Once App has the map: onMapReady clears the searched-for place first thing.
+    await waitFor(() => expect(stub.map.showPlace).toHaveBeenCalled());
     act(() => stub.props!.onSelect!(events.features[1], { via: "map" }));
     await waitFor(() => expect(stub.map.select).toHaveBeenCalledWith(null));
     expect(document.getElementById("site-dialog")).not.toHaveAttribute("open");
