@@ -64,11 +64,37 @@ export const EVENT_KINDS = new Map<string, EventKind>([
 /** The site's own mark, before its name in the top bar: the jack-o'-lantern. */
 export const SITE_MARK: PinStyle = EVENT_KINDS.get("partner")!.mark;
 
-/** Each kind's pin, for map-core. */
-export const EVENT_PINS: PinCategories = {
+/** An event that is over keeps its kind's mark, on a grey pin, so what is still to come
+ *  stands out. The grey clears 3:1 against the basemap's land (3.2:1), and the ghost's
+ *  white (3.6:1) and the pumpkin's dark (3.9:1) clear it against the grey. */
+const PAST = { color: "#878787", accent: "#2b2b2b" };
+
+/** Each kind's pin by its `type` alone, for a map whose pins do not change as events end:
+ *  the card's small map, which is made once. */
+export const KIND_PINS: PinCategories = {
   field: "type",
   values: Object.fromEntries([...EVENT_KINDS].map(([type, kind]) => [type, kind.mark])),
 };
+
+/** Each kind's pin, for the main map, by an event's `pin` (see withPins): its kind's, or,
+ *  once it is over, the same mark in grey, under its kind with "-past" after it. */
+export const EVENT_PINS: PinCategories = {
+  field: "pin",
+  values: Object.fromEntries([...EVENT_KINDS].flatMap(([type, { mark }]) => [
+    [type, mark],
+    [`${type}-past`, { ...mark, color: PAST.color, ...(mark.accent && { accent: PAST.accent }) }],
+  ])),
+};
+
+/** `features`, each with the `pin` EVENT_PINS draws it by at `minute` past midnight on
+ *  `today`, New York time: its kind, with "-past" once it is over. */
+export function withPins(features: Site[], today: string, minute: number): Site[] {
+  return features.map((f) => {
+    const { type } = eventDetails(f);
+    const past = eventStatus(f, today, minute) === "ended";
+    return { ...f, properties: { ...f.properties, pin: type && (past ? `${type}-past` : type) } };
+  });
+}
 
 /** What an event's card shows, as the block's config.json would say it (see Card in ui/):
  *  who hosts it, and Directions to the point on its street, since a stretch of street

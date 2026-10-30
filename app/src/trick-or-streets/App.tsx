@@ -14,7 +14,7 @@ import { EventMap } from "./components/EventMap.tsx";
 import { eventMarker, eventRow } from "./components/EventRow.tsx";
 import { TopBar } from "./components/TopBar.tsx";
 import { useNycNow } from "./components/useNycNow.ts";
-import { EVENT_CONFIG, EVENT_PINS, SITE_MARK, endedLast } from "./logic/events.ts";
+import { EVENT_CONFIG, KIND_PINS, SITE_MARK, endedLast, withPins } from "./logic/events.ts";
 import { filtersFromUrl, passes, withFilters } from "./logic/filters.ts";
 import type { Filters } from "./logic/filters.ts";
 import { LandingPage } from "./pages/LandingPage.tsx";
@@ -49,14 +49,15 @@ export default function App({ lang, basemap }: AppProps) {
   const now = useNycNow();
   const { today, minute } = now;
   // The events the filters leave: the list and the map show these, and only these. In
-  // date order, with those that are over at the end.
+  // date order, with those that are over at the end, and grey on the map (withPins).
   const shown = useMemo(
     () => (model
-      ? endedLast(model.features.filter((f) => passes(f, filters, today, minute)), today, minute)
+      ? withPins(endedLast(model.features.filter((f) => passes(f, filters, today, minute)),
+        today, minute), today, minute)
       : []),
     [model, filters, today, minute]);
   // An event's card: what is selected, its modal, its ?site= address, focus, its small map.
-  const card = useSiteCard({ model, style, pin: SITE_MARK, categories: EVENT_PINS, shown });
+  const card = useSiteCard({ model, style, pin: SITE_MARK, categories: KIND_PINS, shown });
   const { attach, selectingFromUrl, dialogElement, miniMapElement } = card;
 
   // The events, read once: a new list means loading the page again.

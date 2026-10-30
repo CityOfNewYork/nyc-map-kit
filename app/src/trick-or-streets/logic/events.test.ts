@@ -4,7 +4,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import { loadLanguage } from "../../logic/i18n.ts";
 import { site } from "../../test/fixtures.ts";
 import {
-  EVENT_KINDS, EVENT_PINS, dayName, endedLast, eventKind, eventStatus, nycDay,
+  EVENT_KINDS, KIND_PINS, dayName, endedLast, eventKind, eventStatus, nycDay, withPins,
 } from "./events.ts";
 
 /** An event on Saturday, October 31, from 4 PM to 8 PM unless `details` say otherwise. */
@@ -67,8 +67,13 @@ describe("dayName", () => {
 
 describe("kinds", () => {
   test("each kind has a pin for the map, keyed by its type", () => {
-    expect(EVENT_PINS.field).toBe("type");
-    expect(Object.keys(EVENT_PINS.values)).toEqual([...EVENT_KINDS.keys()]);
+    expect(KIND_PINS.field).toBe("type");
+    expect(Object.keys(KIND_PINS.values)).toEqual([...EVENT_KINDS.keys()]);
+  });
+  test("an event that is over takes its kind's grey pin", () => {
+    const events = [event("over", { date: "2026-10-03" }), event("tomorrow", { date: "2026-11-01" })];
+    expect(withPins(events, "2026-10-31", FOUR_PM).map((f) => (f.properties as { pin?: string }).pin))
+      .toEqual(["partner-past", "partner"]);
   });
   test("eventKind reads the type, and is undefined for any other", () => {
     expect(eventKind(event("a", { type: "signature" }))?.label).toBe("Signature event");
