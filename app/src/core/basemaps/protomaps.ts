@@ -47,7 +47,7 @@ export function protomapsStyle(
       [SOURCE]: {
         type: "vector",
         url: `pmtiles://${tilesUrl}`,
-        attribution: `${OTI_CREDIT} | <a href="https://protomaps.com">Protomaps</a> © `
+        attribution: `${OTI_CREDIT} | © `
           + '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       },
     },

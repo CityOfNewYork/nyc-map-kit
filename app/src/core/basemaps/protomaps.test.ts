@@ -17,13 +17,13 @@ const filter = (id: string) => {
 const paint = (s: StyleSpecification, id: string) => s.layers.find((l) => l.id === id)?.paint;
 
 describe("the Protomaps basemap", () => {
-  test("reads its tiles from the PMTiles file, credited to OTI, Protomaps and OpenStreetMap", () => {
+  test("reads its tiles from the PMTiles file, credited to OTI and OpenStreetMap", () => {
     expect(style.sources.protomaps).toMatchObject({
       type: "vector", url: "pmtiles://https://example.test/nyc.pmtiles" });
     const credit = "attribution" in style.sources.protomaps
       ? style.sources.protomaps.attribution : "";
-    expect(credit?.startsWith(`${OTI_CREDIT} | `)).toBe(true);
-    expect(credit).toMatch(/>Protomaps<\/a> © <a href="https:\/\/www.openstreetmap.org\/copyright">/);
+    expect(credit).toBe(`${OTI_CREDIT} | © `
+      + '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>');
   });
 
   test("draws cemeteries apart from parks, directly above them, in the greyer green", () => {
