@@ -1,12 +1,24 @@
 import { expect, test } from "vitest";
 import type { LayerSpecification } from "maplibre-gl";
-import { warmTint } from "../basemap-style.ts";
+import { OTI_CREDIT, warmTint } from "../basemap-style.ts";
 import {
-  addCemeteries, addLandcoverParks, addParkNames, dropHistoricDistricts,
+  addCemeteries, addLandcoverParks, addParkNames, creditOpenFreeMap, dropHistoricDistricts,
 } from "./openfreemap.ts";
 
 const PALETTE = { water: "hsl(202, 42%, 80%)", park: "hsl(96, 30%, 84%)" };
 const CEMETERY = "hsl(96, 16%, 83%)";
+
+test("credit positron's tiles to OTI, then OpenFreeMap, OpenMapTiles and OpenStreetMap", () => {
+  const { openmaptiles } = creditOpenFreeMap({
+    version: 8,
+    sources: { openmaptiles: { type: "vector", url: "https://example.test/tiles.json" } },
+    layers: [],
+  }).sources;
+  const credit = "attribution" in openmaptiles ? openmaptiles.attribution : "";
+  expect(credit?.startsWith(`${OTI_CREDIT} | `)).toBe(true);
+  expect(credit?.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&")).toBe(
+    "NYC Office of Technology & Innovation | OpenFreeMap © OpenMapTiles © OpenStreetMap");
+});
 
 test("name positron's parks in the reader's language, below every other label", () => {
   const style = addParkNames({

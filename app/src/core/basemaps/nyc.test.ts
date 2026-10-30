@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
-import { OUTSIDE, warmTint } from "../basemap-style.ts";
+import { OTI_CREDIT, OUTSIDE, warmTint } from "../basemap-style.ts";
 import {
   addNycCemeteries, loadEsriStyle, NYC_BASEMAP_STYLE, nycBasemapPalette, nycLabels,
   nycRoadsAsLines, quietNycDetail, quietNycRegion,
@@ -77,7 +77,7 @@ function fixture(): StyleSpecification {
     ] as LayerSpecification[],
   };
 }
-test("load an Esri style without its service URL, credited in sentence case", async () => {
+test("load an Esri style without its service URL, credited to OTI by its full name", async () => {
   vi.stubGlobal("fetch", async () => new Response(JSON.stringify({
     version: 8,
     sources: { esri: { type: "vector", url: "https://example.test/VectorTileServer",
@@ -87,7 +87,7 @@ test("load an Esri style without its service URL, credited in sentence case", as
   try {
     const { esri } = (await loadEsriStyle("https://example.test/style.json")).sources;
     expect(esri).not.toHaveProperty("url");
-    expect(esri).toHaveProperty("attribution", "Source: NYC OTI");
+    expect(esri).toHaveProperty("attribution", OTI_CREDIT);
   } finally {
     vi.unstubAllGlobals();
   }

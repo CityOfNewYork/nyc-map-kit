@@ -10,7 +10,8 @@
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
   addBoroughLabels, addLandmarkLabels, addSubwayStations, and, greyOutsideCity,
-  hideLabelsOutsideCity, loadBasemapStyle, nameExpression, PARK_NAME_COLOR, warmTint,
+  hideLabelsOutsideCity, loadBasemapStyle, nameExpression, OTI_CREDIT, PARK_NAME_COLOR,
+  warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -18,7 +19,7 @@ const STYLE = "https://tiles.openfreemap.org/styles/positron";
 
 /** OpenFreeMap's positron, with every rule below applied, labels in `lang`. */
 export async function loadOpenFreeMap(lang: string, palette: Palette): Promise<StyleSpecification> {
-  const style = await loadBasemapStyle(STYLE, lang);
+  const style = creditOpenFreeMap(await loadBasemapStyle(STYLE, lang));
   const parkland = addLandcoverParks(dropHistoricDistricts(style));
   const ground = addCemeteries(parkland, palette.cemetery);
   const parks = addParkNames(lightenSideStreets(ground), lang);
@@ -30,6 +31,22 @@ export async function loadOpenFreeMap(lang: string, palette: Palette): Promise<S
 
 /** Labels of the water, which stay outside the city as inside it. */
 const WATER_LABELS = ["water_name", "waterway"];
+
+/**
+ * Credit the tiles, in place: OTI_CREDIT, as every basemap's credit starts, then
+ * OpenFreeMap, OpenMapTiles, whose schema the tiles follow, and OpenStreetMap, whose data
+ * they are. A credit set in the style takes the place of the one in the tiles' own
+ * description, "OpenFreeMap © OpenMapTiles Data from OpenStreetMap".
+ */
+export function creditOpenFreeMap(style: StyleSpecification): StyleSpecification {
+  const tiles = style.sources.openmaptiles;
+  if (tiles?.type === "vector") {
+    tiles.attribution = `${OTI_CREDIT} | <a href="https://openfreemap.org">OpenFreeMap</a> © `
+      + '<a href="https://www.openmaptiles.org/">OpenMapTiles</a> © '
+      + '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+  }
+  return style;
+}
 
 /**
  * Draw every land fill under the water, in place, so that greyOutsideCity's grey,

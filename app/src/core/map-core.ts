@@ -431,6 +431,13 @@ export function centredOn(center: LngLat, points: LngLat[]): [LngLat, LngLat] {
   return [[center[0] - dx, center[1] - dy], [center[0] + dx, center[1] + dy]];
 }
 
+/** Fold the map's credits into their (i) button, as MapLibre does when the reader drags
+ *  the map. `container` is the map's. */
+function foldCredits(container: HTMLElement): void {
+  container.querySelector(".maplibregl-ctrl-attrib.maplibregl-compact")
+    ?.classList.remove("maplibregl-compact-show");
+}
+
 export function createMap<P extends PointProperties>(
   container: HTMLElement, options: MapCoreOptions<P> = {},
 ): MapCore<P> {
@@ -857,8 +864,18 @@ export function createMap<P extends PointProperties>(
   // Until the reader moves the map, the view keeps within OPENING_BOUNDS, also when its
   // frame changes size, as when a page's layout around it changes. A camera move already
   // under way, such as framing a search, is left to finish: jumpTo would stop it short.
+  // The reader's first move also folds the credits, open until then: MapLibre folds them
+  // on a drag only, and a zoom, by wheel, pinch, button or key, is a move too. A move the
+  // page makes, such as framing a search, carries no originalEvent and folds nothing.
+  // Nor does the first wheel zoom's: MapLibre starts it before it has told a mouse wheel
+  // from a trackpad, without the event, so the wheel itself counts.
   let readerMoved = false;
-  map.on("movestart", (e) => { if (e.originalEvent) readerMoved = true; });
+  const readerMoves = () => {
+    readerMoved = true;
+    foldCredits(container);
+  };
+  map.on("movestart", (e) => { if (e.originalEvent) readerMoves(); });
+  map.on("wheel", readerMoves);
   map.on("resize", () => keepWithinOpening());
   function keepWithinOpening(): void {
     if (readerMoved || map.isMoving()) return;

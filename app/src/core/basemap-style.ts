@@ -242,6 +242,14 @@ export function addLandmarkLabels(style: StyleSpecification, lang: string): Styl
   return style;
 }
 
+/* ------------------------------------------------------------------------ credits */
+
+/** The credit every basemap's line starts with: the City office that makes these maps.
+ *  Each basemap writes it into its one credit line rather than adding it as a credit of
+ *  its own, because MapLibre lists credits shortest first. */
+export const OTI_CREDIT =
+  '<a href="https://www.nyc.gov/content/oti/pages/">NYC Office of Technology &amp; Innovation</a>';
+
 /* ---------------------------------------------------------------- subway stations */
 
 /** One point per station complex, from build/subway-stations.py. MapLibre resolves it
@@ -269,10 +277,7 @@ export function addSubwayStations(
   const layers = style.layers || [];
   if (layers.some((l) => l.id === "subway_station")) return style;
   style.sources = Object.assign({}, style.sources, {
-    subway: {
-      type: "geojson" as const, data: url,
-      attribution: 'Subway stations: <a href="https://data.ny.gov/d/5f5g-n3cz">MTA</a>',
-    },
+    subway: { type: "geojson" as const, data: url },
   });
   layers.push({
     id: "subway_station",

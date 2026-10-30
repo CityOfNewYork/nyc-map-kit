@@ -32,8 +32,8 @@ test("show labels only inside the city, except the ones kept", () => {
 
 test("draw the subway's stations from the MTA's file as the top layer, named from z14", () => {
   const s = addSubwayStations(addSubwayStations(style()));
-  expect(s.sources.subway).toMatchObject({ type: "geojson", data: "subway-stations.geojson" });
-  expect(JSON.stringify(s.sources.subway)).toMatch(/Subway stations: .*MTA/);
+  // No credit of their own: the map's credits name who made the map and its basemap.
+  expect(s.sources.subway).toEqual({ type: "geojson", data: "subway-stations.geojson" });
   expect(s.layers.filter((l) => l.id === "subway_station")).toHaveLength(1);
   const stations = s.layers.at(-1)!;
   expect(stations).toMatchObject({ id: "subway_station", minzoom: 13 });

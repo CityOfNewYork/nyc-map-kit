@@ -9,8 +9,8 @@
  */
 import type { StyleSpecification, SymbolLayerSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, addLandmarkLabels, addSubwayStations, and, flatBuildings, OUTSIDE,
-  PARK_NAME_COLOR, POSITRON_LAND, POSITRON_ROADS, reportUnmatched, warmTint,
+  addBoroughLabels, addLandmarkLabels, addSubwayStations, and, flatBuildings, OTI_CREDIT,
+  OUTSIDE, PARK_NAME_COLOR, POSITRON_LAND, POSITRON_ROADS, reportUnmatched, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -39,8 +39,9 @@ export const NYC_BASEMAP_STYLE =
  * Fetch an Esri vector tile style. Each vector source names its tiles twice: `tiles`
  * (absolute tile URLs) and `url`, the tile service's root. Given `url`, MapLibre
  * fetches it before the first tile, then lets `tiles` override what it says. Dropping
- * `url` saves that round trip. The source's own `attribution` is what the map credits,
- * set in sentence case like the rest of the attribution line: "Source: NYC OTI".
+ * `url` saves that round trip. The source's own `attribution` is what the map credits;
+ * OTI's, "SOURCE: NYC OTI", is written out as the office's name, OTI_CREDIT, as every
+ * basemap's credit starts. Any other credit is kept as published.
  */
 export async function loadEsriStyle(styleUrl: string): Promise<StyleSpecification> {
   const resp = await fetch(styleUrl);
@@ -48,9 +49,7 @@ export async function loadEsriStyle(styleUrl: string): Promise<StyleSpecificatio
   const style = await resp.json();
   for (const source of Object.values(style.sources || {}) as Record<string, unknown>[]) {
     if (source.type === "vector" && Array.isArray(source.tiles)) delete source.url;
-    if (typeof source.attribution === "string") {
-      source.attribution = source.attribution.replace(/^SOURCE:/, "Source:");
-    }
+    if (source.attribution === "SOURCE: NYC OTI") source.attribution = OTI_CREDIT;
   }
   return style;
 }

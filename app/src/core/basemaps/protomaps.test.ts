@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { StyleSpecification } from "maplibre-gl";
-import { POSITRON_LAND } from "../basemap-style.ts";
+import { OTI_CREDIT, POSITRON_LAND } from "../basemap-style.ts";
 import { protomapsStyle } from "./protomaps.ts";
 
 const PALETTE = { water: "hsl(202, 42%, 80%)", park: "hsl(96, 30%, 84%)", cemetery: "hsl(96, 16%, 83%)" };
@@ -17,10 +17,13 @@ const filter = (id: string) => {
 const paint = (s: StyleSpecification, id: string) => s.layers.find((l) => l.id === id)?.paint;
 
 describe("the Protomaps basemap", () => {
-  test("reads its tiles from the PMTiles file, credited to Protomaps and OpenStreetMap", () => {
+  test("reads its tiles from the PMTiles file, credited to OTI, Protomaps and OpenStreetMap", () => {
     expect(style.sources.protomaps).toMatchObject({
       type: "vector", url: "pmtiles://https://example.test/nyc.pmtiles" });
-    expect(JSON.stringify(style.sources.protomaps)).toMatch(/Protomaps.*OpenStreetMap/);
+    const credit = "attribution" in style.sources.protomaps
+      ? style.sources.protomaps.attribution : "";
+    expect(credit?.startsWith(`${OTI_CREDIT} | `)).toBe(true);
+    expect(credit).toMatch(/>Protomaps<\/a> © <a href="https:\/\/www.openstreetmap.org\/copyright">/);
   });
 
   test("draws cemeteries apart from parks, directly above them, in the greyer green", () => {

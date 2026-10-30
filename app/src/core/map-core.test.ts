@@ -9,7 +9,7 @@ const made = vi.hoisted(() => ({
   options: {} as Record<string, unknown>,
   touchRotationOff: false,
   keyboardRotationOff: false,
-  handlers: {} as Record<string, () => void>,
+  handlers: {} as Record<string, (e?: unknown) => void>,
   images: [] as unknown[][],
 }));
 // jsdom has no canvas to draw the station icon on.
@@ -27,7 +27,7 @@ vi.mock("maplibre-gl", () => ({
     keyboard = { disableRotation: () => { made.keyboardRotationOff = true; } };
     constructor(options: Record<string, unknown>) { made.options = options; }
     addControl() {}
-    on(type: string, handler: () => void) { made.handlers[type] = handler; }
+    on(type: string, handler: (e?: unknown) => void) { made.handlers[type] = handler; }
     hasImage() { return false; }
     addImage(...args: unknown[]) { made.images.push(args); }
     getCanvas() { return document.createElement("canvas"); }
@@ -39,6 +39,25 @@ test("the map stays north-up and flat: no gesture or key turns or tilts it", () 
   expect(made.options).toMatchObject({ dragRotate: false, touchPitch: false });
   expect(made.touchRotationOff).toBe(true);
   expect(made.keyboardRotationOff).toBe(true);
+});
+
+test("a zoom or pan of the reader's folds the credits; a move the page makes does not", () => {
+  const credits = () => {
+    const container = document.createElement("div");
+    container.innerHTML =
+      '<details class="maplibregl-ctrl-attrib maplibregl-compact maplibregl-compact-show"></details>';
+    createMap(container, {});
+    return container.firstElementChild!.classList;
+  };
+  const moved = credits();
+  made.handlers.movestart({});
+  expect(moved).toContain("maplibregl-compact-show");
+  made.handlers.movestart({ originalEvent: new Event("keydown") });
+  expect(moved).not.toContain("maplibregl-compact-show");
+  // The first wheel zoom's move comes without its event; the wheel itself folds them.
+  const wheeled = credits();
+  made.handlers.wheel();
+  expect(wheeled).not.toContain("maplibregl-compact-show");
 });
 
 test("the subway stations' icon is added with the style, before any tile is laid out", () => {

@@ -19,7 +19,7 @@ import type { ExpressionSpecification, LayerSpecification, StyleSpecification } 
 import {
   addBoroughLabels, addLandmarkLabels, addSubwayStations, and, dotCityLine, flatBuildings,
   nameExpression, PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND, OUTSIDE, POSITRON_ROADS,
-  greyOutsideCity, warmTint,
+  greyOutsideCity, OTI_CREDIT, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -47,7 +47,7 @@ export function protomapsStyle(
       [SOURCE]: {
         type: "vector",
         url: `pmtiles://${tilesUrl}`,
-        attribution: '<a href="https://protomaps.com">Protomaps</a> © '
+        attribution: `${OTI_CREDIT} | <a href="https://protomaps.com">Protomaps</a> © `
           + '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       },
     },
