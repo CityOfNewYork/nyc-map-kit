@@ -26,6 +26,10 @@ describe("track", () => {
       .toEqual(["event", "view_mode", "language", "ga_id", "gtm_id"]);
   });
 
+  test("the GA4 property is a measurement ID", () => {
+    expect(GA_ID).toMatch(/^G-[A-Z0-9]+$/);
+  });
+
   test("a desktop's layout is desktop, from 768 px", () => {
     stubScreen(true);
     track("card_open", NO_FEATURE);

@@ -15,7 +15,7 @@ import type { Config, SiteProperties } from "./types.ts";
  *  pages name this one. */
 export const GTM_ID = "GTM-W7Z4H9CG";
 /** The GA4 property the container's tags send to. */
-export const GA_ID = "";
+export const GA_ID = "G-RX85E7KWD4";
 
 /** The width from which the layout is a desktop's rather than a phone's (style.css). */
 const DESKTOP = "(min-width: 768px)";
