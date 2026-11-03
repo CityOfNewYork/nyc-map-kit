@@ -269,6 +269,7 @@ export default function App({ settings }: AppProps) {
           )}
           <Panel model={listed} list={settings.list} found={found}
                  onClearFilters={types.length ? clearTypes : undefined}
+                 none={model?.config.none && t(model.config.none)}
                  selectedId={feature && feature.properties.id} onOpen={card.openFromList}
                  label={t(model?.config.listLabel || "Volunteer sites")}
                  summary={<SiteCounts sites={listed && shown} count={model?.config.count} />}

@@ -90,7 +90,7 @@
   "Official websites use nyc.gov.": "Los sitios web oficiales usan nyc.gov.",
   "An nyc.gov website belongs to an official New York City government organization.": "Un sitio web nyc.gov pertenece a una organización oficial del gobierno de la ciudad de Nueva York.",
   "The map could not load.": "No se pudo cargar el mapa.",
-  "Location type": "Tipo de lugar",
+  "Center type": "Tipo de centro",
   "Select option": "Seleccione una opción",
   "More filters": "Más filtros",
   "Open now": "Abierto ahora",
@@ -112,7 +112,10 @@
   "See full map": "Ver el mapa completo",
   "Map of warming centers": "Mapa de centros de calentamiento",
   "Warming centers": "Centros de calentamiento",
-  "No locations match your filters.": "Ninguna ubicación coincide con sus filtros.",
+  "No centers match your filters.": "Ningún centro coincide con sus filtros.",
+  "No events match your filters.": "Ningún evento coincide con sus filtros.",
+  "No restaurants match your filters.": "Ningún restaurante coincide con sus filtros.",
+  "No sites match your filters.": "Ningún sitio coincide con sus filtros.",
   "Showing {shown} of {n} centers": {
     "one": "Mostrando {shown} de {n} centro",
     "other": "Mostrando {shown} de {n} centros"

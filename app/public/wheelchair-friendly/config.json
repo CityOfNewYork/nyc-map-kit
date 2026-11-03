@@ -4,6 +4,7 @@
   "listLabel": "Restaurants",
   "count": { "one": "{n} restaurant", "other": "{n} restaurants" },
   "show": { "one": "Show {n} restaurant", "other": "Show {n} restaurants" },
+  "none": "No restaurants match your filters.",
   "filterLabel": "Cuisine",
   "openInMaps": {
     "query": [

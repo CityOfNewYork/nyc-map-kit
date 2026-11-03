@@ -148,7 +148,7 @@ describe("translations", () => {
     for (const { config } of MAPS) {
       const c = json<Config>(config);
       for (const field of [...c.actions ?? [], ...c.facts ?? [], ...c.card ?? []]) out.add(field.label);
-      for (const label of [c.listLabel, c.filterLabel, c.count?.other, c.show?.other]) if (label) out.add(label);
+      for (const label of [c.listLabel, c.filterLabel, c.count?.other, c.show?.other, c.none]) if (label) out.add(label);
     }
     for (const field of [...CENTER_CONFIG.actions ?? [], ...CENTER_CONFIG.facts ?? [],
       ...CENTER_CONFIG.card ?? []]) out.add(field.label);

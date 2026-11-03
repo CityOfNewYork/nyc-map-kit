@@ -90,7 +90,7 @@
   "Official websites use nyc.gov.": "سرکاری ویب سائٹس nyc.gov استعمال کرتی ہیں۔",
   "An nyc.gov website belongs to an official New York City government organization.": "nyc.gov ویب سائٹ نیو یارک سٹی حکومت کے ایک سرکاری ادارے کی ہے۔",
   "The map could not load.": "نقشہ لوڈ نہیں ہو سکا۔",
-  "Location type": "مقام کی قسم",
+  "Center type": "مرکز کی قسم",
   "Select option": "ایک آپشن منتخب کریں",
   "More filters": "مزید فلٹرز",
   "Open now": "ابھی کھلا ہے",
@@ -112,7 +112,10 @@
   "See full map": "پورا نقشہ دیکھیں",
   "Map of warming centers": "گرمائش مراکز کا نقشہ",
   "Warming centers": "گرمائش مراکز",
-  "No locations match your filters.": "آپ کے فلٹرز سے کوئی مقام میل نہیں کھاتا۔",
+  "No centers match your filters.": "آپ کے فلٹرز سے کوئی مرکز میل نہیں کھاتا۔",
+  "No events match your filters.": "آپ کے فلٹرز سے کوئی تقریب میل نہیں کھاتی۔",
+  "No restaurants match your filters.": "آپ کے فلٹرز سے کوئی ریستوران میل نہیں کھاتا۔",
+  "No sites match your filters.": "آپ کے فلٹرز سے کوئی جگہ میل نہیں کھاتی۔",
   "Showing {shown} of {n} centers": {
     "one": "{n} مرکز میں سے {shown} دکھائے جا رہے ہیں",
     "other": "{n} مراکز میں سے {shown} دکھائے جا رہے ہیں"

@@ -35,7 +35,7 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
   return (
     <FiltersPanel id={id} shown={shown} onClear={() => onChange(NO_FILTERS)} onClose={onClose}
                   show={(n) => plural(n, "Show {n} center", "Show {n} centers")} modal>
-      <FilterDisclosure label={t("Location type")} chosen={chosen}>
+      <FilterDisclosure label={t("Center type")} chosen={chosen}>
         {[...CENTER_KINDS].map(([type, kind]) => (
           <Check key={type} className="filter-check" checked={filters.types.includes(type)}
                  onChange={(on) => toggleType(type, on)}>

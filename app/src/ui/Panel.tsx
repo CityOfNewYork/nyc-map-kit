@@ -33,6 +33,9 @@ interface PanelProps {
   /** Clears the filters; given while any are on. With no site left, the list says so and
    *  offers this. */
   onClearFilters?: () => void;
+  /** What the list says when the filters leave no site, translated, in the map's own
+   *  noun: "No centers match your filters." "No sites match your filters." when absent. */
+  none?: string;
   /** A row was chosen: the button that was pressed, and its site. */
   onOpen: (button: HTMLElement, feature: Site) => void;
   /** The list's name to a screen reader: "Volunteer sites". */
@@ -74,7 +77,7 @@ interface PanelProps {
  * nothing in it responds.
  */
 export function Panel({
-  model, list, selectedId, found, onClearFilters, onOpen, label, summary, action, row,
+  model, list, selectedId, found, onClearFilters, none, onOpen, label, summary, action, row,
   intro, marker, inOrder = false,
 }: PanelProps) {
   const origin = found && found.center;
@@ -235,7 +238,7 @@ export function Panel({
       <div className="list-head" inert={hidden}>
         {empty && (
           <p className="list-empty">
-            <span>{t("No locations match your filters.")}</span>{" "}
+            <span>{none ?? t("No sites match your filters.")}</span>{" "}
             <button type="button" className="filters-clear" onClick={onClearFilters}>
               <span>{t("Clear filters")}</span>
             </button>

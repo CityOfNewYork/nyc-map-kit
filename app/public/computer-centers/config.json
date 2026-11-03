@@ -4,6 +4,7 @@
   "listLabel": "Computer centers",
   "count": { "one": "{n} center", "other": "{n} centers" },
   "show": { "one": "Show {n} center", "other": "Show {n} centers" },
+  "none": "No centers match your filters.",
   "filterLabel": "Overseen by",
   "pins": { "field": "org_type" },
   "openInMaps": {

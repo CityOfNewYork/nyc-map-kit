@@ -90,7 +90,7 @@
   "Official websites use nyc.gov.": "אָפֿיציעלע וועבזײַטלעך ניצן nyc.gov.",
   "An nyc.gov website belongs to an official New York City government organization.": "אַ nyc.gov וועבזײַטל געהערט צו אַן אָפֿיציעלער אָרגאַניזאַציע פֿון דער ניו יאָרק שטאָט־רעגירונג.",
   "The map could not load.": "די מאַפּע האָט נישט געקענט אַרויפֿלאָדן.",
-  "Location type": "סאָרט אָרט",
+  "Center type": "סאָרט צענטער",
   "Select option": "קלײַבט אויס אַן אָפּציע",
   "More filters": "מער פֿילטערס",
   "Open now": "איצט אָפֿן",
@@ -112,7 +112,10 @@
   "See full map": "זען די גאַנצע מאַפּע",
   "Map of warming centers": "מאַפּע פֿון וואַרעמונג־צענטערס",
   "Warming centers": "וואַרעמונג־צענטערס",
-  "No locations match your filters.": "קיין ערטער פּאַסן נישט צו אײַערע פֿילטערס.",
+  "No centers match your filters.": "קיין צענטערס פּאַסן נישט צו אײַערע פֿילטערס.",
+  "No events match your filters.": "קיין אונטערנעמונגען פּאַסן נישט צו אײַערע פֿילטערס.",
+  "No restaurants match your filters.": "קיין רעסטאָראַנען פּאַסן נישט צו אײַערע פֿילטערס.",
+  "No sites match your filters.": "קיין ערטער פּאַסן נישט צו אײַערע פֿילטערס.",
   "Showing {shown} of {n} centers": {
     "one": "מען ווײַזט {shown} פֿון {n} צענטער",
     "other": "מען ווײַזט {shown} פֿון {n} צענטערס"

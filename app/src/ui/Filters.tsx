@@ -128,7 +128,7 @@ export function FiltersPanel(
 }
 
 interface FilterDisclosureProps {
-  /** The filter's name: "Location type". */
+  /** The filter's name: "Center type". */
   label: string;
   /** The names of the options checked, which the box shows. */
   chosen: string[];

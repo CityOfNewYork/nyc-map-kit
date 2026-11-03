@@ -97,7 +97,7 @@ describe("FilterPanel", () => {
       .toEqual(["Warming bus", "Open now", "Wheelchair accessible", "Pets allowed"]);
     expect(within(screen.getByRole("group", { name: "Show only" })).getAllByRole("button"))
       .toHaveLength(3);
-    fireEvent.click(screen.getByRole("button", { name: "Location type Warming bus" }));
+    fireEvent.click(screen.getByRole("button", { name: "Center type Warming bus" }));
     expect(screen.getByRole("checkbox", { name: "Warming bus" })).toBeChecked();
     fireEvent.click(screen.getByRole("checkbox", { name: "Warming bus" }));
     expect(onChange).toHaveBeenLastCalledWith(NO_FILTERS);

@@ -145,8 +145,11 @@ describe("Panel", () => {
   test("says when no site matches the filters, and offers to clear them", () => {
     const onClearFilters = vi.fn();
     renderPanel({ model: model({}, []), onClearFilters });
-    expect(screen.getByText("No locations match your filters.")).toBeInTheDocument();
+    expect(screen.getByText("No sites match your filters.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(onClearFilters).toHaveBeenCalled();
+    cleanup();
+    renderPanel({ model: model({}, []), onClearFilters, none: "No centers match your filters." });
+    expect(screen.getByText("No centers match your filters.")).toBeInTheDocument();
   });
 });

@@ -93,6 +93,7 @@ export function MapPage({
       <div className="side">
         <Panel model={listed} list="on" found={found} selectedId={selectedId}
                onClearFilters={active > 0 ? () => onFilters(NO_FILTERS) : undefined}
+               none={t("No centers match your filters.")}
                onOpen={onOpen} intro={<CodeBlueNotice />}
                label={t("Warming centers")}
                summary={<ListCount total={model && model.features.length} shown={shown.length}
