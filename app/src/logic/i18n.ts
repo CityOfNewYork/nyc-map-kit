@@ -10,6 +10,10 @@
  * after it (`loadLanguage`); a page re-renders on the change (ui/useLanguage.ts). The
  * words live in src/i18n/<code>.json, keyed by the English text; a string with no
  * translation shows in English. `{name}` in a string is filled in by `t`'s second argument.
+ *
+ * The sites' data is English. Its longer text, such as a center's entry instructions, is
+ * translated the same way, from src/i18n/data/<code>.json (see `dataText`). Names and
+ * addresses stay as their source gives them (see `AS_GIVEN`).
  */
 
 export interface Language {
@@ -84,6 +88,7 @@ type Entry = string | Partial<Record<Intl.LDMLPluralRule, string>>;
 
 let current = "en";
 let words: Record<string, Entry> = {};
+let dataWords: Record<string, string> = {};
 const listeners = new Set<() => void>();
 
 /** Call `listener` whenever the language changes; returns the way to stop. */
@@ -93,14 +98,23 @@ export function onLanguageChange(listener: () => void): () => void {
 }
 
 const LOADERS = import.meta.glob<{ default: Record<string, Entry> }>("../i18n/*.json");
+const DATA_LOADERS = import.meta.glob<{ default: Record<string, string> }>("../i18n/data/*.json");
+
+/** What `load` brings in, or nothing when there is no file to load. */
+async function loaded<T extends object>(load: (() => Promise<{ default: T }>) | undefined): Promise<T> {
+  return load ? (await load()).default : {} as T;
+}
 
 /** Load `code`'s words, mark the page as written in it (`<html lang>` and `dir`), and
  *  tell whoever listens. Resolves once the words are in; English has none to load. */
 export async function loadLanguage(code: string): Promise<void> {
-  const load = LOADERS[`../i18n/${code}.json`];
-  const next = load ? (await load()).default : {};
+  const [next, nextData] = await Promise.all([
+    loaded(LOADERS[`../i18n/${code}.json`]),
+    loaded(DATA_LOADERS[`../i18n/data/${code}.json`]),
+  ]);
   current = code;
   words = next;
+  dataWords = nextData;
   document.documentElement.lang = code;
   document.documentElement.dir = RTL.has(code) ? "rtl" : "ltr";
   for (const listener of listeners) listener();
@@ -122,6 +136,24 @@ export function t(text: string, vars?: Record<string, string | number>): string 
   const entry = words[text];
   return fill(typeof entry === "string" ? entry : text, vars);
 }
+
+/**
+ * A value from the sites' data, such as a center's entry instructions, in the language
+ * being shown: its translation from src/i18n/data/<code>.json, keyed by the value's
+ * English. Without one, the English, with `lang: "en"` for the element that shows it, so
+ * a screen reader reads it as English. A value edited at its source no longer matches its
+ * key, so it shows in English until it is translated again, never as a translation of
+ * what it used to say.
+ */
+export function dataText(value: string): { text: string; lang?: "en" } {
+  const translated = dataWords[value];
+  return translated ? { text: translated } : { text: value, lang: "en" };
+}
+
+/** The attributes of text shown as its source gives it, such as a site's name or address:
+ *  English, for a screen reader's voice, and left alone by a translation tool, since a
+ *  reader matches it against a sign or reads it to a driver. */
+export const AS_GIVEN = { lang: "en", translate: "no" } as const;
 
 /**
  * The form of a phrase that counts `n` things: English's `one` or `other`, or the

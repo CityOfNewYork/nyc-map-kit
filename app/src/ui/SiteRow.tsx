@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { number, t } from "../logic/i18n.ts";
+import { AS_GIVEN, number, t } from "../logic/i18n.ts";
 import type { Site } from "../logic/types.ts";
 
 const METRES_PER_MILE = 1609.344;
@@ -29,8 +29,8 @@ export function SiteRow({ feature, row, marker, metres = null, current = false, 
     <>
       {row ? row(feature) : (
         <>
-          <span className="name">{p.org}</span>
-          <span className="addr">{p.address}</span>
+          <span className="name" {...AS_GIVEN}>{p.org}</span>
+          <span className="addr" {...AS_GIVEN}>{p.address}</span>
         </>
       )}
       {metres != null && (

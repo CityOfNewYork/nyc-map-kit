@@ -3,13 +3,15 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import places from "../../public/places.json";
+import { loadLanguage } from "../logic/i18n.ts";
+import type { Found } from "../logic/places.ts";
 import { pushed } from "../test/fixtures.ts";
 
 // Search reads the key when it loads: set it first, so the test does not depend on a
 // developer's .env.local. Without a key the box finds boroughs, neighborhoods and ZIP
 // codes from places.json. Search.geoclient.test.tsx covers the box with a key.
 vi.hoisted(() => vi.stubEnv("VITE_GEOCLIENT_KEY", ""));
-const { Search } = await import("./Search.tsx");
+const { PlaceName, Search } = await import("./Search.tsx");
 
 let fetch: ReturnType<typeof vi.fn>;
 
@@ -31,10 +33,11 @@ beforeEach(() => {
   window.dataLayer = [];
   vi.spyOn(console, "log").mockImplementation(() => {});
 });
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+  await loadLanguage("en");
 });
 
 describe("Search without a Geoclient key", () => {
@@ -113,5 +116,32 @@ describe("Search without a Geoclient key", () => {
       fail?.({ code: 1 } as GeolocationPositionError));
     fireEvent.click(screen.getByRole("button", { name: "Use my location" }));
     expect(screen.getByRole("status")).toHaveTextContent("We couldn't get your location.");
+  });
+
+  test("names the reader's location in their language", async () => {
+    vi.stubGlobal("navigator", { ...navigator, geolocation: {
+      getCurrentPosition: (ok: PositionCallback) =>
+        ok({ coords: { longitude: -73.95, latitude: 40.8 } } as GeolocationPosition),
+    } });
+    await loadLanguage("es");
+    renderSearch();
+    fireEvent.click(screen.getByRole("button", { name: "Usar mi ubicación" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Más cercano a su ubicación");
+  });
+});
+
+describe("PlaceName", () => {
+  test("marks a place's own names as given, and translates the words between them", async () => {
+    await loadLanguage("es");
+    const corner: Found = {
+      kind: "intersection", name: "Broadway", cross: "West 34 Street", borough: "Manhattan",
+      center: [-73.988, 40.75], bbox: null,
+    };
+    render(<p><PlaceName place={corner} inline /></p>);
+    for (const name of ["Broadway", "West 34 Street", "Manhattan"]) {
+      expect(screen.getByText(name)).toHaveAttribute("lang", "en");
+      expect(screen.getByText(name)).toHaveAttribute("translate", "no");
+    }
+    expect(screen.getByText("y")).not.toHaveAttribute("lang");
   });
 });

@@ -4,7 +4,7 @@ import { Pause } from "../../ui/Pause.tsx";
 import { CENTER_MARK, centerDetails, centerKind, centerStatus } from "../logic/centers.ts";
 import { WheelchairIcon } from "./FeatureIcons.tsx";
 import { OpenStatusLine } from "./OpenStatusLine.tsx";
-import { t } from "../../logic/i18n.ts";
+import { AS_GIVEN, t } from "../../logic/i18n.ts";
 
 /** A center's lines in a list: its name, what kind of center it is, whether it is open at
  *  `minute`, with the wheelchair symbol after it where the center is accessible, and its
@@ -17,7 +17,7 @@ export function centerRow(feature: Site, minute: number) {
   const { wheelchair } = centerDetails(feature);
   return (
     <>
-      <span className="name">{p.org}</span>
+      <span className="name" {...AS_GIVEN}>{p.org}</span>
       {kind && <><Pause /><span className="type">{t(kind.label)}</span></>}
       {(status || wheelchair) && (
         <>
@@ -35,7 +35,7 @@ export function centerRow(feature: Site, minute: number) {
         </>
       )}
       <Pause />
-      <span className="addr">{p.address}</span>
+      <span className="addr" {...AS_GIVEN}>{p.address}</span>
     </>
   );
 }

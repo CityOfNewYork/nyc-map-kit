@@ -10,6 +10,7 @@ import { EVENT_CONFIG, EVENT_KINDS, eventWhen } from "../trick-or-streets/logic/
 import { CENTER_CONFIG, CENTER_KINDS } from "../warming/logic/centers.ts";
 import { DATASETS } from "../warming/logic/dataset.ts";
 import { minutesOf } from "../warming/logic/hours.ts";
+import { parseStructure } from "./card.ts";
 import { normalizeOrgs } from "./data.ts";
 import type { Config, FieldRef, OrgsDoc, SiteCollection } from "./types.ts";
 
@@ -171,5 +172,21 @@ describe("translations", () => {
   });
   test("every language file has the same keys", () => {
     for (const file of languages) expect(keys(file), file).toEqual(keys(languages[0]));
+  });
+
+  // The data's own text, translated in src/i18n/data/ (see dataText in i18n.ts).
+  const dataFiles = readdirSync(new URL("src/i18n/data/", APP)).filter((f) => f.endsWith(".json"));
+  const instructions = new Set(WARMING.flatMap((file) => json<SiteCollection>(file).features
+    .map((f) => (f.properties as { instructions?: string }).instructions)
+    .filter((s): s is string => Boolean(s))));
+
+  test("each language has a file of the data's text", () => {
+    expect(dataFiles).toEqual(languages);
+  });
+  test.each(dataFiles)("%s translates every center's entry instructions, keeping their shape", (file) => {
+    const words = json<Record<string, string>>(`src/i18n/data/${file}`);
+    expect([...instructions].filter((s) => !words[s])).toEqual([]);
+    // A line break or a ";" the English does not have would turn a sentence into a list.
+    for (const s of instructions) expect(parseStructure(words[s]).kind, s).toBe(parseStructure(s).kind);
   });
 });

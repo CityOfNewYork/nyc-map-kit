@@ -8,7 +8,7 @@ import {
 } from "../logic/card.ts";
 import type { CardAction, CardField } from "../logic/card.ts";
 import { metresBetween } from "../logic/data.ts";
-import { language, number, t } from "../logic/i18n.ts";
+import { AS_GIVEN, dataText, language, number, t } from "../logic/i18n.ts";
 import type { LngLat } from "../logic/places.ts";
 import type { FactIcon, Model, Site } from "../logic/types.ts";
 import { siteUrl } from "./useSiteCard.ts";
@@ -54,7 +54,7 @@ export function Card({ feature, model, origin = null, meta, status, hours }: Car
 
   return (
     <div className="site-card">
-      <h2 id="card-title" tabIndex={-1}>{p.org}</h2>
+      <h2 id="card-title" tabIndex={-1} {...AS_GIVEN}>{p.org}</h2>
       {meta && <p className="card-meta">{meta}</p>}
       {(status || miles !== null) && (
         <div className="card-status">
@@ -164,8 +164,9 @@ function Fact({ icon, label, children }: {
   );
 }
 
-/** One field's value: a link, or text broken into paragraphs and lists. `block` sets a
- *  single line as a paragraph, for a section rather than a fact row. */
+/** One field's value: a link, or text broken into paragraphs and lists, translated where
+ *  it has a translation (see dataText in logic/i18n.ts). `block` sets a single line as a
+ *  paragraph, for a section rather than a fact row. */
 function FieldValue({ field, about, block = false }: {
   field: CardField; about: FeatureFields; block?: boolean;
 }) {
@@ -187,14 +188,20 @@ function FieldValue({ field, about, block = false }: {
     );
   }
 
-  const s = parseStructure(value);
+  // In the language being shown where it has a translation; marked English where not.
+  const { text, lang } = dataText(value);
+  const s = parseStructure(text);
   const list = (items: string[]) => (
-    <ul>{items.map((item, i) => <li key={i}><span>{item}</span></li>)}</ul>
+    <ul lang={lang}>{items.map((item, i) => <li key={i}><span>{item}</span></li>)}</ul>
   );
-  if (s.kind === "intro-list") return <><p><span>{s.intro}</span></p>{list(s.items)}</>;
-  if (s.kind === "paragraphs") return s.items.map((line, i) => <p key={i}><span>{line}</span></p>);
+  if (s.kind === "intro-list") {
+    return <><p lang={lang}><span>{s.intro}</span></p>{list(s.items)}</>;
+  }
+  if (s.kind === "paragraphs") {
+    return s.items.map((line, i) => <p key={i} lang={lang}><span>{line}</span></p>);
+  }
   if (s.kind === "list") return list(s.items);
-  return block ? <p><span>{s.text}</span></p> : <span>{s.text}</span>;
+  return block ? <p lang={lang}><span>{s.text}</span></p> : <span lang={lang}>{s.text}</span>;
 }
 
 /** "Updated Oct 4, 2026", and past STALE_DAYS, when set, a warning to call first. */
@@ -255,7 +262,7 @@ function CopyAddress({ address }: { address: string }) {
   return (
     <>
       <button type="button" className="copy-address" onClick={copy}>
-        <span>{address}</span>{" "}
+        <span {...AS_GIVEN}>{address}</span>{" "}
         <span className="copy-address-mark">
           <Icon name={result === "copied" ? "check" : "copy"} size={16} />
           {result === "copied" ? <span>{t("Copied")}</span>

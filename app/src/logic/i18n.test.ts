@@ -2,8 +2,8 @@
 
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
-  chooseLanguage, language, loadLanguage, number, onLanguageChange, plural, supportedLanguage, t,
-  translateMarked,
+  chooseLanguage, dataText, language, loadLanguage, number, onLanguageChange, plural,
+  supportedLanguage, t, translateMarked,
 } from "./i18n.ts";
 
 afterEach(() => loadLanguage("en"));
@@ -79,6 +79,23 @@ describe("t", () => {
     expect(t("Address")).toBe("Dirección");
     expect(t("{miles} mi away", { miles: "1.5" })).toBe("a 1.5 mi");
     expect(t("A string with no translation")).toBe("A string with no translation");
+  });
+});
+
+describe("dataText", () => {
+  const text = "Check in at the security desk in the lobby. No appointment needed.";
+  test("shows the data's translation, keyed by its English", async () => {
+    await loadLanguage("es");
+    expect(dataText(text)).toEqual({
+      text: "Regístrese en el mostrador de seguridad del vestíbulo. No necesita cita.",
+    });
+  });
+  test("shows English marked as English where there is no translation", async () => {
+    expect(dataText(text)).toEqual({ text, lang: "en" });
+    await loadLanguage("es");
+    // As if the source had edited the text since it was translated.
+    const edited = "Check in at the security desk in the lobby.";
+    expect(dataText(edited)).toEqual({ text: edited, lang: "en" });
   });
 });
 

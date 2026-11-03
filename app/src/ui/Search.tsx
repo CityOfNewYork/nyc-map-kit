@@ -5,7 +5,7 @@ import { geocode } from "../logic/geocode.ts";
 import type { Suggestion } from "../logic/geocode.ts";
 import { placeMatcher } from "../logic/places.ts";
 import type { Found, PlacesDoc } from "../logic/places.ts";
-import { t } from "../logic/i18n.ts";
+import { AS_GIVEN, t } from "../logic/i18n.ts";
 
 /** Geoclient's subscription key, from VITE_GEOCLIENT_KEY at build time. Without one the
  *  box still finds boroughs, neighborhoods and ZIP codes, and says that is all it finds. */
@@ -193,7 +193,7 @@ export function Search({ onFound, onClear, landmark = true }: SearchProps) {
     status.type === "suggest" ? status.suggestions.map((s) => ({
       key: s.query,
       label: <>
-        <span className="place-name"><span>{s.house}</span> <span>{s.street}</span></span>
+        <span className="place-name" {...AS_GIVEN}><span>{s.house}</span> <span>{s.street}</span></span>
         <span className="place-boro">{s.borough}</span>
       </>,
       pick: () => retry(s),
@@ -345,22 +345,26 @@ function StatusLine({ status }: { status: Status }) {
 }
 
 /** A found place's name, each part its own element: "ZIP code" next to "10027", "and"
- *  between an intersection's streets, the borough after a comma. */
+ *  between an intersection's streets, the borough after a comma. The reader's own
+ *  location is named in their language; a place's own names are English, as given. */
 export function PlaceName({ place, inline = false }: { place: Found; inline?: boolean }) {
   const name = place.kind === "zip" ? (
     <span className="place-name"><span>{t("ZIP code")}</span> <span>{place.name}</span></span>
   ) : place.kind === "intersection" ? (
     <span className="place-name">
-      <span>{place.name}</span> <span>{t("and")}</span> <span>{place.cross}</span>
+      <span {...AS_GIVEN}>{place.name}</span> <span>{t("and")}</span>{" "}
+      <span {...AS_GIVEN}>{place.cross}</span>
     </span>
+  ) : place.kind === "location" ? (
+    <span className="place-name"><span>{t("your location")}</span></span>
   ) : (
-    <span className="place-name"><span>{place.name}</span></span>
+    <span className="place-name"><span {...AS_GIVEN}>{place.name}</span></span>
   );
   if (!place.borough) return name;
   return inline ? (
-    <>{name}, <span className="place-boro">{place.borough}</span></>
+    <>{name}, <span className="place-boro" {...AS_GIVEN}>{place.borough}</span></>
   ) : (
-    <>{name}<span className="place-boro">{place.borough}</span></>
+    <>{name}<span className="place-boro" {...AS_GIVEN}>{place.borough}</span></>
   );
 }
 

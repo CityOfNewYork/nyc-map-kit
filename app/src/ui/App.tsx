@@ -11,8 +11,9 @@
  * 1. LANGUAGE. Every visible string, screen-reader copy included, goes through `t` or
  *    `plural` (logic/i18n.ts), whole: a phrase with a number or a name in it is one
  *    template, "Show {n} locations", never words glued around a value, because each
- *    language orders them its own way. The interface's words are in src/i18n/; the data's
- *    own text, such as names, addresses and descriptions, is shown as it comes.
+ *    language orders them its own way. The interface's words are in src/i18n/. The data's
+ *    longer text, such as descriptions, goes through `dataText`, from src/i18n/data/;
+ *    names and addresses are shown as they come, marked `AS_GIVEN`.
  *
  *    Each changing string sits alone in its own element. A translator working in the
  *    browser (Chrome's, say) swaps text nodes for elements of its own. When a string is
@@ -53,7 +54,7 @@ import { SiteDialog } from "./SiteDialog.tsx";
 import { useLanguage } from "./useLanguage.ts";
 import { useMapCore } from "./useMapCore.ts";
 import { siteUrl, useSiteCard } from "./useSiteCard.ts";
-import { plural, t } from "../logic/i18n.ts";
+import { AS_GIVEN, plural, t } from "../logic/i18n.ts";
 
 /** The heading until config.json or `?title=` names the map: the page's own <title>. */
 const DEFAULT_TITLE = document.title;
@@ -377,7 +378,7 @@ function siteRow(feature: Site, styles: Map<string, PinStyle> | null) {
   const p = feature.properties;
   return (
     <>
-      <span className="name">{p.org}</span>
+      <span className="name" {...AS_GIVEN}>{p.org}</span>
       {p.org_type && (
         <>
           <Pause />
@@ -388,7 +389,7 @@ function siteRow(feature: Site, styles: Map<string, PinStyle> | null) {
         </>
       )}
       <Pause />
-      <span className="addr">{p.address}</span>
+      <span className="addr" {...AS_GIVEN}>{p.address}</span>
     </>
   );
 }

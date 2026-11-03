@@ -2,6 +2,7 @@
 
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { loadLanguage } from "../../logic/i18n.ts";
 import { model, site } from "../../test/fixtures.ts";
 import { CENTER_CONFIG } from "../logic/centers.ts";
 import { CenterCard } from "./CenterCard.tsx";
@@ -24,9 +25,10 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-01-15T04:00:00Z"));
 });
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   vi.useRealTimers();
+  await loadLanguage("en");
 });
 
 describe("CenterCard", () => {
@@ -70,5 +72,30 @@ describe("CenterCard", () => {
     expect(screen.getByText("Updated Oct 5, 2026")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^Directions/ })).toHaveAttribute("href",
       "https://www.google.com/maps/search/?api=1&query=234%20East%20149th%20Street%2C%20Bronx");
+  });
+
+  test("says how to get in in the reader's language, or in English marked as English", async () => {
+    const translated = site("library", {
+      org: "Library", address: "1 Main Street, Queens",
+      instructions: "Check in at the security desk in the lobby. No appointment needed.",
+    });
+    const both = model(CENTER_CONFIG, [bus, translated]);
+    await loadLanguage("es");
+    render(<CenterCard feature={translated} model={both} origin={null} />);
+    expect(screen.getByRole("heading", { name: "Cómo entrar" })).toBeInTheDocument();
+    expect(screen.getByText("Regístrese en el mostrador de seguridad del vestíbulo. No necesita cita.")
+      .closest("p")).not.toHaveAttribute("lang");
+    cleanup();
+    render(<CenterCard feature={bus} model={both} origin={null} />);
+    expect(screen.getByText("Knock on the front door.").closest("p")).toHaveAttribute("lang", "en");
+  });
+
+  test("shows the name and address as given: English, and not for translating", async () => {
+    await loadLanguage("es");
+    render(<CenterCard feature={bus} model={centers} origin={null} />);
+    for (const el of [screen.getByRole("heading", { level: 2 }), screen.getByText(bus.properties.address)]) {
+      expect(el).toHaveAttribute("lang", "en");
+      expect(el).toHaveAttribute("translate", "no");
+    }
   });
 });
