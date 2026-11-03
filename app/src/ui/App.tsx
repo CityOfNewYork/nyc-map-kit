@@ -55,6 +55,7 @@ import { useLanguage } from "./useLanguage.ts";
 import { useMapCore } from "./useMapCore.ts";
 import { siteUrl, useSiteCard } from "./useSiteCard.ts";
 import { AS_GIVEN, plural, t } from "../logic/i18n.ts";
+import { moveFocus } from "./focus.ts";
 
 /** The heading until config.json or `?title=` names the map: the page's own <title>. */
 const DEFAULT_TITLE = document.title;
@@ -212,7 +213,7 @@ export default function App({ settings }: AppProps) {
   }
   function closeFilters() {
     setFiltering(false);
-    filterButton.current?.focus();
+    moveFocus(filterButton.current);
   }
 
   // ------------------------------------------------------------------------- render

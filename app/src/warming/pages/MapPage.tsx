@@ -14,6 +14,7 @@ import { useNycMinute } from "../components/useNycMinute.ts";
 import { activeFilters, NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
 import { language, number, plural, t } from "../../logic/i18n.ts";
+import { moveFocus } from "../../ui/focus.ts";
 
 interface MapPageProps {
   model: Model | null;
@@ -52,7 +53,7 @@ export function MapPage({
   }
   function closeFilters() {
     setFiltering(false);
-    opener.current?.focus();
+    moveFocus(opener.current);
   }
 
   return (
@@ -119,14 +120,14 @@ function ListCount({ total, shown, filtered }: {
 }) {
   return filtered ? (
     <span>
-      {plural(total ?? 0, "Showing {shown} of {n} location", "Showing {shown} of {n} locations",
+      {plural(total ?? 0, "Showing {shown} of {n} center", "Showing {shown} of {n} centers",
         { shown: number(shown) })}
     </span>
   ) : <CenterCount count={total} />;
 }
 
-/** "26 locations", in the form the language gives that number. Nothing until the data
+/** "26 centers", in the form the language gives that number. Nothing until the data
  *  is in. */
 function CenterCount({ count }: { count: number | null | undefined }) {
-  return count == null ? null : <span>{plural(count, "{n} location", "{n} locations")}</span>;
+  return count == null ? null : <span>{plural(count, "{n} center", "{n} centers")}</span>;
 }

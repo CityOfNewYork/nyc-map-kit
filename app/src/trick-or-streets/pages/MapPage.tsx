@@ -14,6 +14,7 @@ import { useNycNow } from "../components/useNycNow.ts";
 import { activeFilters, NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
 import { language, number, plural, t } from "../../logic/i18n.ts";
+import { moveFocus } from "../../ui/focus.ts";
 
 interface MapPageProps {
   model: Model | null;
@@ -52,7 +53,7 @@ export function MapPage({
   }
   function closeFilters() {
     setFiltering(false);
-    opener.current?.focus();
+    moveFocus(opener.current);
   }
 
   return (

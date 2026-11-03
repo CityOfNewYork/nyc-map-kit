@@ -101,13 +101,9 @@
   "Map of warming centers": "Mappa dei centri di riscaldamento",
   "Warming centers": "Centri di riscaldamento",
   "No locations match your filters.": "Nessun luogo corrisponde ai filtri.",
-  "Showing {shown} of {n} locations": {
-    "one": "{shown} di {n} luogo",
-    "other": "{shown} di {n} luoghi"
-  },
-  "{n} locations": {
-    "one": "{n} luogo",
-    "other": "{n} luoghi"
+  "Showing {shown} of {n} centers": {
+    "one": "{shown} di {n} centro",
+    "other": "{shown} di {n} centri"
   },
   "Prototype only.": "Solo un prototipo.",
   "To find a warming center, call 311.": "Per trovare un centro di riscaldamento, chiama il 311.",

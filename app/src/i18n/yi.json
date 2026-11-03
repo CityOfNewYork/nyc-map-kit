@@ -101,13 +101,9 @@
   "Map of warming centers": "מאַפּע פֿון וואַרעמונג־צענטערס",
   "Warming centers": "וואַרעמונג־צענטערס",
   "No locations match your filters.": "קיין ערטער פּאַסן נישט צו אײַערע פֿילטערס.",
-  "Showing {shown} of {n} locations": {
-    "one": "מען ווײַזט {shown} פֿון {n} אָרט",
-    "other": "מען ווײַזט {shown} פֿון {n} ערטער"
-  },
-  "{n} locations": {
-    "one": "{n} אָרט",
-    "other": "{n} ערטער"
+  "Showing {shown} of {n} centers": {
+    "one": "מען ווײַזט {shown} פֿון {n} צענטער",
+    "other": "מען ווײַזט {shown} פֿון {n} צענטערס"
   },
   "Prototype only.": "בלויז אַ פּראָטאָטיפּ.",
   "To find a warming center, call 311.": "כּדי צו געפֿינען אַ וואַרעמונג־צענטער, רופֿט 311.",

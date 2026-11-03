@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
 import { expect, test, vi } from "vitest";
-import { centredOn, createMap, pinFor, pinZoom } from "./map-core.ts";
+import { NYC_BOUNDS, centredOn, createMap, pinFor, pinZoom } from "./map-core.ts";
+import city from "./city-limits.json";
 
 // MapLibre draws with WebGL, which jsdom does not have. The stand-in records what the core
 // asks of it: the options the map is made with, and the handlers it turns off.
@@ -58,6 +59,20 @@ test("a zoom or pan of the reader's folds the credits; a move the page makes doe
   const wheeled = credits();
   made.handlers.wheel();
   expect(wheeled).not.toContain("maplibregl-compact-show");
+});
+
+test("the map opens on the whole city, centred on it, whatever the data covers", () => {
+  const points = (city.geometry.coordinates as number[][][][]).flat(2);
+  const [lngs, lats] = [points.map((p) => p[0]), points.map((p) => p[1])];
+  const [[west, south], [east, north]] = NYC_BOUNDS;
+  // Every borough inside the frame, Staten Island's west end included.
+  expect(west).toBeLessThan(Math.min(...lngs));
+  expect(east).toBeGreaterThan(Math.max(...lngs));
+  expect(south).toBeLessThan(Math.min(...lats));
+  expect(north).toBeGreaterThan(Math.max(...lats));
+  // Its centre within 0.01° (under 1 km) of the city's.
+  expect(Math.abs((west + east) / 2 - (Math.min(...lngs) + Math.max(...lngs)) / 2)).toBeLessThan(0.01);
+  expect(Math.abs((south + north) / 2 - (Math.min(...lats) + Math.max(...lats)) / 2)).toBeLessThan(0.01);
 });
 
 test("the subway stations' icon is added with the style, before any tile is laid out", () => {

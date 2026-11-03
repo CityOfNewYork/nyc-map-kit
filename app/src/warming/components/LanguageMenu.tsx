@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { FocusEvent, KeyboardEvent, MouseEvent } from "react";
 import { language, LANGUAGES, loadLanguage, t, translateMarked } from "../../logic/i18n.ts";
+import { moveFocus } from "../../ui/focus.ts";
 
 /** The translate symbol nyc.gov's header draws on its language button. */
 const TRANSLATE_ICON = "m14.417 7.335 3.667 9.166h-1.796l-1.001-2.5h-3.408l-1 2.5H9.085l3.666-9.166zM7.334.668v1.667h5V4h-1.64a15.2 15.2 0 0 1-3.017 5.251c.6.536 1.253 1.013 1.946 1.423l-.625 1.565A14.2 14.2 0 0 1 6.5 10.439a13.9 13.9 0 0 1-5.167 2.957l-.447-1.608a12.25 12.25 0 0 0 4.44-2.535 15 15 0 0 1-2.353-3.585h1.866A13.4 13.4 0 0 0 6.5 8.065a13.5 13.5 0 0 0 2.425-4.063H.667V2.334h5V.668zm6.25 9.07-1.04 2.597h2.077z";
@@ -45,7 +46,7 @@ export function LanguageMenu() {
     if (open && e.key === "Escape") {
       e.preventDefault();
       setOpen(false);
-      button.current?.focus();
+      moveFocus(button.current);
     }
   }
   // The address is read at the click, not the render: the page changes its own address
@@ -56,7 +57,7 @@ export function LanguageMenu() {
     history.replaceState(history.state, "", addressIn(code));
     await loadLanguage(code);
     translateMarked();
-    button.current?.focus();
+    moveFocus(button.current);
   }
 
   return (

@@ -1,6 +1,7 @@
 import { useId, useLayoutEffect, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode, Ref, SyntheticEvent } from "react";
 import { number, plural, t } from "../logic/i18n.ts";
+import { moveFocus } from "./focus.ts";
 
 interface FiltersButtonProps {
   ref: Ref<HTMLButtonElement>;
@@ -79,7 +80,7 @@ export function FiltersPanel(
     const dialog = panel.current!;
     if (!modal && matchMedia("(min-width: 768px)").matches) dialog.show();
     else dialog.showModal();
-    heading.current?.focus();
+    moveFocus(heading.current);
     return () => dialog.close();
   }, [modal]);
 

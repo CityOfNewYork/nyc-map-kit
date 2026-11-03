@@ -103,15 +103,7 @@
   "Map of warming centers": "خريطة مراكز التدفئة",
   "Warming centers": "مراكز التدفئة",
   "No locations match your filters.": "لا توجد أماكن تطابق عوامل التصفية.",
-  "Showing {shown} of {n} locations": "عرض {shown} من {n}",
-  "{n} locations": {
-    "zero": "{n} أماكن",
-    "one": "مكان واحد",
-    "two": "مكانان",
-    "few": "{n} أماكن",
-    "many": "{n} مكانًا",
-    "other": "{n} مكانًا"
-  },
+  "Showing {shown} of {n} centers": "عرض {shown} من {n}",
   "Prototype only.": "نموذج أولي فقط.",
   "To find a warming center, call 311.": "للعثور على مركز تدفئة، اتصل بالرقم 311.",
   "Prototype, not a City service.": "نموذج أولي، وليس خدمة تابعة للمدينة.",

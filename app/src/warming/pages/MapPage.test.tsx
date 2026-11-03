@@ -75,21 +75,21 @@ describe("MapPage", () => {
 
     test("shows the count, and how many of how many with filters on", () => {
       renderPage();
-      expect(screen.getAllByText("3 locations").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("3 centers").length).toBeGreaterThan(0);
       cleanup();
       renderPage({ filters: { ...NO_FILTERS, types: ["bus"] }, shown: [centers[1]] });
-      expect(screen.getAllByText("Showing 1 of 3 locations")).toHaveLength(2);
+      expect(screen.getAllByText("Showing 1 of 3 centers")).toHaveLength(2);
       expect(screen.getByRole("button", { name: /^Filters\s*1 filter on$/ })).toBeInTheDocument();
     });
 
     test("a screen reader hears what the filters left from outside the list", () => {
       renderPage({ filters: { ...NO_FILTERS, types: ["bus"] }, shown: [centers[1]] });
       expect(screen.getAllByRole("status").map((s) => s.textContent))
-        .toContain("Showing 1 of 3 locations");
+        .toContain("Showing 1 of 3 centers");
       // Not in the list, which hides all but its top line while shut.
       expect(within(screen.getByRole("region", { name: "Warming centers" }))
         .queryAllByRole("status").map((s) => s.textContent))
-        .not.toContain("Showing 1 of 3 locations");
+        .not.toContain("Showing 1 of 3 centers");
     });
 
     test("choosing a row opens that center", () => {

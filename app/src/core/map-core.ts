@@ -369,7 +369,9 @@ const PIN_IMAGE = { base: "pin-base", dimmed: "pin-dimmed", selected: "pin-selec
 // the set countable. The option stays for the scale where even the shape stops reading.
 const CLUSTER_MAX_ZOOM = 14;   // with cluster:true, above this points draw individually
 const CLUSTER_RADIUS = 40;
-const NYC_BOUNDS: [LngLat, LngLat] = [[-74.30, 40.47], [-73.65, 40.95]];
+// The five boroughs' outline (core/city-limits.json) and about 2 km either side,
+// centred on the city: the view a map opens on.
+const NYC_BOUNDS: [LngLat, LngLat] = [[-74.28, 40.46], [-73.68, 40.94]];
 // The zoom a selection made off the map — from the list, or through the API — eases in
 // to, if the map is further out. z15 is where individual blocks read: ~4.7 m per pixel at
 // NYC's latitude, so a Manhattan block is ~17 × 57 px. A map already closer than this is
@@ -852,11 +854,12 @@ export function createMap<P extends PointProperties>(
     }
 
     ready = true;
-    // Frame the data rather than a hardcoded bounding box. For the full 185 sites this
-    // lands on roughly the same view as NYC_BOUNDS; for a one-point map it is the
-    // difference between a legible location and a speck in the middle of the region.
-    // Instant, so there is no camera animation on first paint.
-    fitToIds([], 0);
+    // Open on the whole city, whatever the data covers: the five boroughs, centred, so a
+    // map whose sites lean east still shows Staten Island. Framed again now that the
+    // client has set its padding, such as a desktop list's (ui/layout.ts). Instant, so
+    // there is no camera animation on first paint.
+    measure();
+    map.fitBounds(NYC_BOUNDS, { padding: 24, duration: 0 });
     keepWithinOpening();
     while (pending.length) pending.shift()!();
   });

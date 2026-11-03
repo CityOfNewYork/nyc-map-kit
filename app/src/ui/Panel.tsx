@@ -6,6 +6,7 @@ import type { Settings } from "../logic/params.ts";
 import type { Found } from "../logic/places.ts";
 import type { Model, Site } from "../logic/types.ts";
 import { PlaceName } from "./Search.tsx";
+import { moveFocus } from "./focus.ts";
 import { SiteRow } from "./SiteRow.tsx";
 
 /** How many rows the list shows at first, and how many more each "Show more" adds. Every
@@ -15,6 +16,8 @@ const LIST_PAGE = 50;
 
 /** The bottom sheet's two heights on a phone; the handle switches between them. */
 const SHEET_HEIGHTS = { collapsed: "48px", half: "45dvh" };
+/** Collapsed after a search, the handle's two lines: the count, and the place found. */
+const COLLAPSED_WITH_PLACE = "66px";
 type SheetStep = keyof typeof SHEET_HEIGHTS;
 const NEXT_STEP: Record<SheetStep, SheetStep> = { collapsed: "half", half: "collapsed" };
 /** Wider than this the list is a panel, not a sheet (see style.css). */
@@ -96,8 +99,10 @@ export function Panel({
   // The sheet's height is a CSS variable on <html>, because the map's own controls read
   // it too, to stay clear of the sheet (see the phone layout in style.css).
   useEffect(() => {
-    if (model) document.documentElement.style.setProperty("--sheet-h", SHEET_HEIGHTS[step]);
-  }, [model, step]);
+    if (!model) return;
+    const height = step === "collapsed" && found ? COLLAPSED_WITH_PLACE : SHEET_HEIGHTS[step];
+    document.documentElement.style.setProperty("--sheet-h", height);
+  }, [model, step, found]);
 
   // Sorted again only when the sites or the place searched change. The apps hand over a
   // new `model` on each of their renders, but the same `features` until a filter changes.
@@ -129,7 +134,7 @@ export function Panel({
   // where the new rows start.
   useEffect(() => {
     if (firstNew.current === null) return;
-    scrollRef.current?.querySelectorAll<HTMLElement>(".site-button")[firstNew.current]?.focus();
+    moveFocus(scrollRef.current?.querySelectorAll<HTMLElement>(".site-button")[firstNew.current]);
     firstNew.current = null;
   }, [count]);
 
@@ -205,7 +210,15 @@ export function Panel({
               </>
             ) : (
               <>
-                <span className="counts">{summary}</span>
+                <span className="counts">
+                  {summary}
+                  {/* On a phone, where the list's own head is hidden (see style.css). */}
+                  {found && (
+                    <span className="counts-closest">
+                      <span>{t("Closest to")}</span>{" "}<PlaceName place={found} inline />
+                    </span>
+                  )}
+                </span>
                 <span className="chev" aria-hidden="true">{step === "half" ? "▼" : "▲"}</span>
                 <span className="visually-hidden">{t("Show or hide the list")}</span>
               </>
@@ -216,9 +229,9 @@ export function Panel({
       </div>
 
       {/* Under the count, on a desktop: that no site matches the filters, and after a
-          search, the place the rows are ordered from. The place line stands in for the
-          search box's own on screen (see style.css); the search box's line, always in
-          the page, is the one a screen reader hears. */}
+          search, the place the rows are ordered from (on a phone, the handle says it).
+          The place line stands in for the search box's own on screen (see style.css);
+          the search box's line, always in the page, is the one a screen reader hears. */}
       <div className="list-head" inert={hidden}>
         {empty && (
           <p className="list-empty">

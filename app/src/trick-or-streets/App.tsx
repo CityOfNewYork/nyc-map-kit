@@ -21,6 +21,7 @@ import { LandingPage } from "./pages/LandingPage.tsx";
 import { MapPage } from "./pages/MapPage.tsx";
 import { plural, t } from "../logic/i18n.ts";
 import { useLanguage } from "../ui/useLanguage.ts";
+import { moveFocus } from "../ui/focus.ts";
 
 /** How long the hero takes to fold away: .hero's transition in warming.css. */
 const HERO_EXIT_MS = 300;
@@ -102,7 +103,7 @@ export default function App({ lang, basemap }: AppProps) {
   useEffect(() => {
     if (view !== "map" || !focusMapHeading.current) return;
     focusMapHeading.current = false;
-    document.getElementById("map-heading")?.focus();
+    moveFocus(document.getElementById("map-heading"));
   }, [view]);
 
   function onMapReady(map: MapCore<SiteProperties>, basemap: StyleSpecification) {
@@ -190,7 +191,7 @@ export default function App({ lang, basemap }: AppProps) {
                         feature={card.feature} group={card.group} model={model}
                         choices={card.choices} onChoose={card.choose}
                         choosing={{
-                          heading: (n) => <span>{plural(n, "{n} location", "{n} locations")}</span>,
+                          heading: (n) => <span>{plural(n, "{n} event", "{n} events")}</span>,
                           intro: <span>{t("These events are in the same place.")}</span>,
                           row: (f) => eventRow(f, now), marker: eventMarker,
                         }}

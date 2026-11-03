@@ -180,7 +180,7 @@ describe("warming App", () => {
       act(() => stub.props!.onSelect!(pair.features[1], { via: "map" }));
       const dialog = document.getElementById("site-dialog")!;
       expect(dialog).toHaveAttribute("open");
-      expect(within(dialog).getByRole("heading", { level: 2 })).toHaveTextContent("2 locations");
+      expect(within(dialog).getByRole("heading", { level: 2 })).toHaveTextContent("2 centers");
       expect(dialog).toHaveAccessibleDescription("These warming centers are in the same place.");
       const choices = [...dialog.querySelectorAll<HTMLElement>(".site-button")];
       expect(choices.map((b) => b.dataset.siteId)).toEqual(["lincoln-bus", "lincoln"]);

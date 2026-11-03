@@ -54,6 +54,20 @@ describe("Panel", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 
+  test("on a phone, the sheet's handle says the place found, and grows a line for it", () => {
+    stubScreen(false);
+    renderPanel();
+    const handle = screen.getByRole("button", { name: /3 sites/ });
+    const height = () => document.documentElement.style.getPropertyValue("--sheet-h");
+    expect(handle.querySelector(".counts-closest")).toBeNull();
+    expect(height()).toBe("48px");
+    cleanup();
+    renderPanel({ found: harlem });
+    expect(screen.getByRole("button", { name: /3 sites/ }).querySelector(".counts-closest"))
+      .toHaveTextContent("Closest to Harlem, Manhattan");
+    expect(height()).toBe("66px");
+  });
+
   test("with inOrder, keeps the sites' own order, until a search orders them nearest first", () => {
     renderPanel({ inOrder: true });
     expect(rows().map((r) => r.dataset.siteId)).toEqual(["a", "b", "c"]);

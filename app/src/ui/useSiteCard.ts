@@ -43,6 +43,7 @@ import { coincidentWith } from "../logic/data.ts";
 import type { Model, Site, SiteProperties } from "../logic/types.ts";
 import type { StepDirection } from "./SiteDialog.tsx";
 import { t } from "../logic/i18n.ts";
+import { moveFocus } from "./focus.ts";
 
 interface SiteCardOptions {
   /** null until the data has loaded. */
@@ -160,7 +161,7 @@ export function useSiteCard({
       : dialog.querySelector<HTMLElement>(`.step-${stepFocus.current ?? "next"}`);
     stepFocus.current = null;
     chosen.current = false;
-    (arrow || dialog.querySelector<HTMLElement>("#card-title")!).focus();
+    moveFocus(arrow || dialog.querySelector<HTMLElement>("#card-title"));
   });
 
   function showMiniMap(feature: Site) {
@@ -215,7 +216,7 @@ export function useSiteCard({
   const showChoices = useEffectEvent(() => {
     const dialog = dialogRef.current!;
     if (!dialog.open) dialog.showModal();
-    dialog.querySelector<HTMLElement>("#card-title")!.focus();
+    moveFocus(dialog.querySelector<HTMLElement>("#card-title"));
   });
 
   useLayoutEffect(() => {
@@ -283,8 +284,8 @@ export function useSiteCard({
     mainMap()?.select(null);           // clears the selection
     const back = returnFocusTo.current;
     returnFocusTo.current = null;
-    if (back && document.contains(back)) back.focus();
-    else if (focusLost(dialog)) closedCardFocus(id)?.focus();
+    if (back && document.contains(back)) moveFocus(back);
+    else if (focusLost(dialog)) moveFocus(closedCardFocus(id));
   }
 
   const onPopState = useEffectEvent(() => {

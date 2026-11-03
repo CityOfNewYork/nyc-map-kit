@@ -101,13 +101,9 @@
   "Map of warming centers": "گرمائش مراکز کا نقشہ",
   "Warming centers": "گرمائش مراکز",
   "No locations match your filters.": "آپ کے فلٹرز سے کوئی مقام میل نہیں کھاتا۔",
-  "Showing {shown} of {n} locations": {
-    "one": "{n} مقام میں سے {shown} دکھائے جا رہے ہیں",
-    "other": "{n} مقامات میں سے {shown} دکھائے جا رہے ہیں"
-  },
-  "{n} locations": {
-    "one": "{n} مقام",
-    "other": "{n} مقامات"
+  "Showing {shown} of {n} centers": {
+    "one": "{n} مرکز میں سے {shown} دکھائے جا رہے ہیں",
+    "other": "{n} مراکز میں سے {shown} دکھائے جا رہے ہیں"
   },
   "Prototype only.": "صرف ایک پروٹوٹائپ۔",
   "To find a warming center, call 311.": "گرمائش کا مرکز تلاش کرنے کے لیے 311 پر کال کریں۔",

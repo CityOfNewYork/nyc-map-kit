@@ -1,6 +1,6 @@
 import type { MouseEvent, ReactNode, Ref, SyntheticEvent } from "react";
 import type { LngLat } from "../logic/places.ts";
-import type { Model, Site } from "../logic/types.ts";
+import type { Config, Model, Site } from "../logic/types.ts";
 import { Card } from "./Card.tsx";
 import { SiteRow } from "./SiteRow.tsx";
 import { number, plural, t } from "../logic/i18n.ts";
@@ -97,7 +97,9 @@ export function SiteDialog(
           {feature && (card ? card(feature)
             : <Card feature={feature} model={model!} origin={origin} />)}
         </div>
-        {choosingNow && <Choices sites={choices} onChoose={onChoose!} {...choosing} />}
+        {choosingNow && (
+          <Choices sites={choices} onChoose={onChoose!} count={model?.config.count} {...choosing} />
+        )}
         <button className="card-close" id="card-close" type="button" onClick={onClose}>
           <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20">
             <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2.2"
@@ -112,15 +114,20 @@ export function SiteDialog(
 
 /** The sites at one place, to choose one from: the heading the dialog is named by (its
  *  `card-title`, as a card's name is), the app's line under it, and a row for each. */
-function Choices({ sites, onChoose, heading, intro, row, marker }: ChoosingProps & {
+function Choices({ sites, onChoose, heading, intro, row, marker, count }: ChoosingProps & {
   sites: Site[]; onChoose: (feature: Site) => void;
+  /** The map's own words for its count, as config.json's `count` gives them. */
+  count?: Config["count"];
 }) {
   return (
     <div className="choices">
       <div className="choices-head">
         <h2 id="card-title" tabIndex={-1}>
-          {heading ? heading(sites.length)
-            : <span>{plural(sites.length, "{n} site", "{n} sites")}</span>}
+          {heading ? heading(sites.length) : (
+            <span>
+              {plural(sites.length, count?.one ?? "{n} site", count?.other ?? "{n} sites")}
+            </span>
+          )}
         </h2>
         {intro && <p id="choices-intro">{intro}</p>}
       </div>

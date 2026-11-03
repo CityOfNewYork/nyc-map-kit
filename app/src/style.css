@@ -682,18 +682,25 @@ legend.filter-label { margin-bottom: 8px; }
     margin-bottom: -10px;
   }
   .panel-top + .list-head { padding-top: 0; padding-bottom: 12px; }
-  .stage .search-found {
-    position: absolute;
-    width: 1px; height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-  .stage .search-status:has(> .search-found) { margin: 0; padding: 0; box-shadow: none; }
+  .sheet-handle .counts-closest { display: none; }
 }
-/* On a phone the search box keeps its line, and the sheet's handle the count. */
+/* The place the list is ordered from shows under the count, so the search box's own line
+   is only moved out of sight: it is the live region a screen reader hears. */
+.stage .search-found {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.stage .search-status:has(> .search-found) { margin: 0; padding: 0; box-shadow: none; }
+/* On a phone the sheet's handle says it all, the count and the place found, and the list
+   below is only rows. */
 @media (max-width: 767px) {
   .list-head { display: none; }
+  .sheet-handle .counts { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .sheet-handle .counts-closest { font-size: 0.8125rem; color: var(--ink-muted); }
+  .sheet-handle:has(.counts-closest) { min-height: 66px; padding-top: 8px; }
 }
 /* With a mark, such as an icon, beside the lines rather than above them. */
 .site-button.marked { flex-direction: row; gap: 12px; }

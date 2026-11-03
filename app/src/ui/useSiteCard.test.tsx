@@ -189,6 +189,14 @@ describe("useSiteCard", () => {
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Alpha");
   });
 
+  test("the list of sites at one place is headed in the map's own words", () => {
+    const centers = model({ coLocationRadiusM: 35, count: { one: "{n} center", other: "{n} centers" } },
+      sites);
+    render(<Harness data={centers} />);
+    clickPin("Alpha");
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("2 centers");
+  });
+
   test("a pin that holds several sites opens on a list of them, with no address of its own", () => {
     render(<Harness data={theModel()} />);
     const length = history.length;

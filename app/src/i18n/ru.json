@@ -109,17 +109,11 @@
   "Map of warming centers": "Карта пунктов обогрева",
   "Warming centers": "Пункты обогрева",
   "No locations match your filters.": "Нет мест, соответствующих фильтрам.",
-  "Showing {shown} of {n} locations": {
-    "one": "Показано {shown} из {n} места",
-    "few": "Показано {shown} из {n} мест",
-    "many": "Показано {shown} из {n} мест",
-    "other": "Показано {shown} из {n} места"
-  },
-  "{n} locations": {
-    "one": "{n} место",
-    "few": "{n} места",
-    "many": "{n} мест",
-    "other": "{n} места"
+  "Showing {shown} of {n} centers": {
+    "one": "Показано {shown} из {n} центра",
+    "few": "Показано {shown} из {n} центров",
+    "many": "Показано {shown} из {n} центров",
+    "other": "Показано {shown} из {n} центра"
   },
   "Prototype only.": "Только прототип.",
   "To find a warming center, call 311.": "Чтобы найти пункт обогрева, звоните 311.",
