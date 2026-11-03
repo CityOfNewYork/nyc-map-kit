@@ -41,9 +41,21 @@
     "one": "{n} filtro attivo",
     "other": "{n} filtri attivi"
   },
-  "Show {n} locations": {
-    "one": "Mostra {n} luogo",
-    "other": "Mostra {n} luoghi"
+  "Show {n} centers": {
+    "one": "Mostra {n} centro",
+    "other": "Mostra {n} centri"
+  },
+  "Show {n} events": {
+    "one": "Mostra {n} evento",
+    "other": "Mostra {n} eventi"
+  },
+  "Show {n} restaurants": {
+    "one": "Mostra {n} ristorante",
+    "other": "Mostra {n} ristoranti"
+  },
+  "Show {n} sites": {
+    "one": "Mostra {n} sede",
+    "other": "Mostra {n} sedi"
   },
   "Enter an address or neighborhood": "Inserisci un indirizzo o un quartiere",
   "Neighborhood, borough or ZIP code": "Quartiere, distretto o CAP",

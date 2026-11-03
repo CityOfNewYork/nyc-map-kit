@@ -102,7 +102,7 @@ describe("FilterPanel", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Warming bus" }));
     expect(onChange).toHaveBeenLastCalledWith(NO_FILTERS);
     expect(screen.getByRole("button", { name: "Open now" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Show 8 locations" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show 8 centers" })).toBeInTheDocument();
     onChange.mockClear();
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(onChange).toHaveBeenCalledWith(NO_FILTERS);

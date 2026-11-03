@@ -47,7 +47,25 @@
     "many": "Włączonych {n} filtrów",
     "other": "Włączone {n} filtra"
   },
-  "Show {n} locations": {
+  "Show {n} centers": {
+    "one": "Pokaż {n} centrum",
+    "few": "Pokaż {n} centra",
+    "many": "Pokaż {n} centrów",
+    "other": "Pokaż {n} centrum"
+  },
+  "Show {n} events": {
+    "one": "Pokaż {n} wydarzenie",
+    "few": "Pokaż {n} wydarzenia",
+    "many": "Pokaż {n} wydarzeń",
+    "other": "Pokaż {n} wydarzenia"
+  },
+  "Show {n} restaurants": {
+    "one": "Pokaż {n} restaurację",
+    "few": "Pokaż {n} restauracje",
+    "many": "Pokaż {n} restauracji",
+    "other": "Pokaż {n} restauracji"
+  },
+  "Show {n} sites": {
     "one": "Pokaż {n} miejsce",
     "few": "Pokaż {n} miejsca",
     "many": "Pokaż {n} miejsc",

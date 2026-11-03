@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { expect, test, vi } from "vitest";
-import { NYC_BOUNDS, centredOn, createMap, pinFor, pinZoom } from "./map-core.ts";
+import { CITY_NORTH_SOUTH, centredOn, createMap, pinFor, pinZoom } from "./map-core.ts";
 import city from "./city-limits.json";
 
 // MapLibre draws with WebGL, which jsdom does not have. The stand-in records what the core
@@ -61,18 +61,16 @@ test("a zoom or pan of the reader's folds the credits; a move the page makes doe
   expect(wheeled).not.toContain("maplibregl-compact-show");
 });
 
-test("the map opens on the whole city, centred on it, whatever the data covers", () => {
+test("the map opens on the city from north to south, on the line through its middle", () => {
   const points = (city.geometry.coordinates as number[][][][]).flat(2);
   const [lngs, lats] = [points.map((p) => p[0]), points.map((p) => p[1])];
-  const [[west, south], [east, north]] = NYC_BOUNDS;
-  // Every borough inside the frame, Staten Island's west end included.
-  expect(west).toBeLessThan(Math.min(...lngs));
-  expect(east).toBeGreaterThan(Math.max(...lngs));
-  expect(south).toBeLessThan(Math.min(...lats));
-  expect(north).toBeGreaterThan(Math.max(...lats));
-  // Its centre within 0.01° (under 1 km) of the city's.
-  expect(Math.abs((west + east) / 2 - (Math.min(...lngs) + Math.max(...lngs)) / 2)).toBeLessThan(0.01);
-  expect(Math.abs((south + north) / 2 - (Math.min(...lats) + Math.max(...lats)) / 2)).toBeLessThan(0.01);
+  const [[west, south], [east, north]] = CITY_NORTH_SOUTH;
+  // The city's own north and south, within 0.001° (about 100 m).
+  expect(Math.abs(south - Math.min(...lats))).toBeLessThan(0.001);
+  expect(Math.abs(north - Math.max(...lats))).toBeLessThan(0.001);
+  // No width of its own, at the city's middle, so the screen's width sets east and west.
+  expect(west).toBe(east);
+  expect(Math.abs(west - (Math.min(...lngs) + Math.max(...lngs)) / 2)).toBeLessThan(0.001);
 });
 
 test("the subway stations' icon is added with the style, before any tile is laid out", () => {

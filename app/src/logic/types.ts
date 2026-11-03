@@ -48,6 +48,9 @@ export interface Config {
   /** The count above the list, as a plural pair such as {"one": "{n} center", "other":
    *  "{n} centers"}. Without it the list counts organizations and sites. */
   count?: { one: string; other: string };
+  /** The filters' Show button, in the same noun as `count`: {"one": "Show {n} center",
+   *  "other": "Show {n} centers"}. "Show {n} sites" when absent. */
+  show?: { one: string; other: string };
   /** The heading over the filter of `org_type` values. "Organization type" when absent. */
   filterLabel?: string;
   /** Pins coloured by this property's values, from the pin stock in core/pins.ts, the most

@@ -369,15 +369,18 @@ const PIN_IMAGE = { base: "pin-base", dimmed: "pin-dimmed", selected: "pin-selec
 // the set countable. The option stays for the scale where even the shape stops reading.
 const CLUSTER_MAX_ZOOM = 14;   // with cluster:true, above this points draw individually
 const CLUSTER_RADIUS = 40;
-// The five boroughs' outline (core/city-limits.json) and about 2 km either side,
-// centred on the city: the view a map opens on.
-const NYC_BOUNDS: [LngLat, LngLat] = [[-74.28, 40.46], [-73.68, 40.94]];
+// The view a map opens on: the city from its northern tip to its southern
+// (core/city-limits.json), on the line through its middle. Only the height is fitted, so
+// the screen's shape sets how much of east and west shows: a laptop shows all five
+// boroughs, and a phone held upright the city's middle, with Staten Island and eastern
+// Queens running off its sides, at a zoom where the neighbourhoods read.
+const CITY_NORTH_SOUTH: [LngLat, LngLat] = [[-73.979, 40.477], [-73.979, 40.918]];
 // The zoom a selection made off the map — from the list, or through the API — eases in
 // to, if the map is further out. z15 is where individual blocks read: ~4.7 m per pixel at
 // NYC's latitude, so a Manhattan block is ~17 × 57 px. A map already closer than this is
 // left at its zoom, and so is a pin the reader clicked on the map (see applySelection).
 const STREET_ZOOM = 15;
-// The area the map opens within: NYC_BOUNDS plus roughly 10 km on each side, so Jersey
+// The area the map opens within: the city plus roughly 10 km on each side, so Jersey
 // City, Yonkers and the Nassau line are in frame as context. The opening view shows no
 // more than this, centred within it as far as it can be, until the reader moves the map.
 const OPENING_BOUNDS: [LngLat, LngLat] = [[-74.42, 40.39], [-73.53, 41.03]];
@@ -473,7 +476,7 @@ export function createMap<P extends PointProperties>(
   const map = new maplibregl.Map({
     container,
     style,
-    bounds: NYC_BOUNDS,
+    bounds: CITY_NORTH_SOUTH,
     fitBoundsOptions: { padding: 24 },
     maxBounds: MAX_BOUNDS,
     minZoom: 9,
@@ -854,12 +857,11 @@ export function createMap<P extends PointProperties>(
     }
 
     ready = true;
-    // Open on the whole city, whatever the data covers: the five boroughs, centred, so a
-    // map whose sites lean east still shows Staten Island. Framed again now that the
-    // client has set its padding, such as a desktop list's (ui/layout.ts). Instant, so
-    // there is no camera animation on first paint.
+    // Open on the city, centred, whatever the data covers (see CITY_NORTH_SOUTH). Framed
+    // again now that the client has set its padding, such as a desktop list's
+    // (ui/layout.ts). Instant, so there is no camera animation on first paint.
     measure();
-    map.fitBounds(NYC_BOUNDS, { padding: 24, duration: 0 });
+    map.fitBounds(CITY_NORTH_SOUTH, { padding: 24, duration: 0 });
     keepWithinOpening();
     while (pending.length) pending.shift()!();
   });
@@ -1070,4 +1072,4 @@ export function createMap<P extends PointProperties>(
   return api;
 }
 
-export { PIN, CLUSTER_MAX_ZOOM, NYC_BOUNDS };
+export { PIN, CLUSTER_MAX_ZOOM, CITY_NORTH_SOUTH };

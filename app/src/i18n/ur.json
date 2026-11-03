@@ -41,9 +41,21 @@
     "one": "{n} فلٹر فعال",
     "other": "{n} فلٹرز فعال"
   },
-  "Show {n} locations": {
-    "one": "{n} مقام دکھائیں",
-    "other": "{n} مقامات دکھائیں"
+  "Show {n} centers": {
+    "one": "{n} مرکز دکھائیں",
+    "other": "{n} مراکز دکھائیں"
+  },
+  "Show {n} events": {
+    "one": "{n} تقریب دکھائیں",
+    "other": "{n} تقریبات دکھائیں"
+  },
+  "Show {n} restaurants": {
+    "one": "{n} ریستوران دکھائیں",
+    "other": "{n} ریستوران دکھائیں"
+  },
+  "Show {n} sites": {
+    "one": "{n} جگہ دکھائیں",
+    "other": "{n} جگہیں دکھائیں"
   },
   "Enter an address or neighborhood": "پتہ یا محلہ درج کریں",
   "Neighborhood, borough or ZIP code": "محلہ، بورو یا زپ کوڈ",

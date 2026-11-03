@@ -179,7 +179,7 @@ describe("App", () => {
     });
     expect(location.search).toBe("?type=Library");
     expect(screen.getByText("1 organization")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Show 1 location" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show 1 site" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(rows()).toHaveLength(3);
     expect(location.search).toBe("");

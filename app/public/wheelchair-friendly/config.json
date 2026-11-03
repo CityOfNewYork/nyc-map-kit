@@ -3,6 +3,7 @@
   "title": "Wheelchair friendly restaurants",
   "listLabel": "Restaurants",
   "count": { "one": "{n} restaurant", "other": "{n} restaurants" },
+  "show": { "one": "Show {n} restaurant", "other": "Show {n} restaurants" },
   "filterLabel": "Cuisine",
   "openInMaps": {
     "query": [

@@ -10,7 +10,7 @@
  *
  * 1. LANGUAGE. Every visible string, screen-reader copy included, goes through `t` or
  *    `plural` (logic/i18n.ts), whole: a phrase with a number or a name in it is one
- *    template, "Show {n} locations", never words glued around a value, because each
+ *    template, "Show {n} centers", never words glued around a value, because each
  *    language orders them its own way. The interface's words are in src/i18n/. The data's
  *    longer text, such as descriptions, goes through `dataText`, from src/i18n/data/;
  *    names and addresses are shown as they come, marked `AS_GIVEN`.
@@ -220,6 +220,8 @@ export default function App({ settings }: AppProps) {
 
   const feature = card.feature;
   const countWords = model?.config.count;   // "{n} centers", where the config says so
+  const showWords = model?.config.show &&   // "Show {n} centers", likewise
+    ((n: number) => plural(n, model.config.show!.one, model.config.show!.other));
   return (
     <>
       {/* The stage is the page's <main>: the search, the list and the map. */}
@@ -252,7 +254,7 @@ export default function App({ settings }: AppProps) {
           </div>
           {filtering && model && (
             <FiltersPanel id="filters" shown={shown.length} onClose={closeFilters}
-                          onClear={clearTypes}>
+                          onClear={clearTypes} show={showWords}>
               <FilterDisclosure label={t(model.config.filterLabel || "Organization type")}
                                 chosen={types}>
                 {orgTypes(model.features).map(({ type }) => (

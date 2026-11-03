@@ -4,7 +4,7 @@ import { EVENT_KINDS } from "../logic/events.ts";
 import { NO_FILTERS } from "../logic/filters.ts";
 import type { Filters } from "../logic/filters.ts";
 import { FilterToggles } from "./FilterBar.tsx";
-import { t } from "../../logic/i18n.ts";
+import { plural, t } from "../../logic/i18n.ts";
 
 interface FilterPanelProps {
   id: string;
@@ -34,7 +34,7 @@ export function FilterPanel({ id, filters, shown, onChange, onClose }: FilterPan
 
   return (
     <FiltersPanel id={id} shown={shown} onClear={() => onChange(NO_FILTERS)} onClose={onClose}
-                  modal>
+                  show={(n) => plural(n, "Show {n} event", "Show {n} events")} modal>
       <FilterDisclosure label={t("Event type")} chosen={chosen}>
         {[...EVENT_KINDS].map(([type, kind]) => (
           <Check key={type} className="filter-check" checked={filters.types.includes(type)}

@@ -2,6 +2,7 @@
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { plural } from "../logic/i18n.ts";
 import { stubDialog, stubScreen } from "../test/fixtures.ts";
 import { FilterDisclosure, FiltersButton, FiltersPanel } from "./Filters.tsx";
 
@@ -62,12 +63,12 @@ describe("FiltersPanel", () => {
     expect(dialog.show).not.toHaveBeenCalled();
   });
 
-  test("Clear filters, Show n locations, the close button and Escape", () => {
+  test("Clear filters, Show n sites, the close button and Escape", () => {
     stubScreen(true);
     const { onClear, onClose } = renderPanel();
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(onClear).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole("button", { name: "Show 3 locations" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show 3 sites" }));
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(3);
@@ -84,10 +85,20 @@ describe("FiltersPanel", () => {
     }
   });
 
-  test("counts one location in the singular, and closes when it goes", () => {
+  test("says Show in the map's own noun", () => {
+    stubScreen(true);
+    render(
+      <FiltersPanel id="filters" shown={3} onClear={() => {}} onClose={() => {}}
+                    show={(n) => plural(n, "Show {n} center", "Show {n} centers")}>
+        <label><input type="checkbox" /> Open now</label>
+      </FiltersPanel>);
+    expect(screen.getByRole("button", { name: "Show 3 centers" })).toBeInTheDocument();
+  });
+
+  test("counts one site in the singular, and closes when it goes", () => {
     stubScreen(true);
     const { view } = renderPanel(1);
-    expect(screen.getByRole("button", { name: "Show 1 location" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show 1 site" })).toBeInTheDocument();
     const panel = screen.getByRole("dialog");
     view.unmount();
     expect(panel).not.toHaveAttribute("open");

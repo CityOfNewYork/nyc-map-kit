@@ -53,16 +53,19 @@ interface FiltersPanelProps {
   onClose: () => void;
   /** A modal card at every width, not only on a phone. */
   modal?: boolean;
+  /** The Show button's words for `n` sites, in the map's own noun: "Show 12 centers".
+   *  "Show 12 sites" when absent. */
+  show?: (n: number) => string;
   /** The filters themselves: fieldsets of checkboxes, say. */
   children: ReactNode;
 }
 
 /**
  * The panel the Filters button opens: a heading and a close button, the filters, then
- * Clear filters and "Show n locations", which closes the panel on the result. Each change
- * applies at once, to the list and the map together. Escape closes it too. The panel is
- * no taller than the room it has: the heading and the buttons stay put, and the filters
- * scroll between them.
+ * Clear filters and "Show n sites" in the map's own noun, which closes the panel on the
+ * result. Each change applies at once, to the list and the map together. Escape closes
+ * it too. The panel is no taller than the room it has: the heading and the buttons stay
+ * put, and the filters scroll between them.
  *
  * On a desktop it opens under the search box, in the column, with the map still in use.
  * On a phone, or on any screen when `modal`, it is a modal card over the blurred map, as
@@ -70,7 +73,7 @@ interface FiltersPanelProps {
  * it closes.
  */
 export function FiltersPanel(
-  { id, shown, onClear, onClose, modal = false, children }: FiltersPanelProps,
+  { id, shown, onClear, onClose, modal = false, show, children }: FiltersPanelProps,
 ) {
   const panel = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -117,7 +120,7 @@ export function FiltersPanel(
           <span>{t("Clear filters")}</span>
         </button>
         <button type="button" className="filters-show" onClick={onClose}>
-          <span>{plural(shown, "Show {n} location", "Show {n} locations")}</span>
+          <span>{show ? show(shown) : plural(shown, "Show {n} site", "Show {n} sites")}</span>
         </button>
       </div>
     </dialog>
