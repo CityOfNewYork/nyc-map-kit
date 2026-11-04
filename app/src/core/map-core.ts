@@ -572,7 +572,8 @@ export function createMap<P extends PointProperties>(
 
   /** The image for a pin in `state`: its category's, where it has one listed, and with
    *  its count, where it shares its spot. A counted image is drawn the first time the map
-   *  asks for it (see styleimagemissing below), so only the counts in use are made. */
+   *  asks for it (see the missing-image resolver below), so only the counts in use are
+   *  made. */
   const categoryValues = categories ? Object.keys(categories.values) : [];
   function pinIcon(state: keyof typeof PIN_IMAGE): ExpressionSpecification | string {
     let id: ExpressionSpecification | string = PIN_IMAGE[state];
@@ -596,9 +597,12 @@ export function createMap<P extends PointProperties>(
     return pinImage(shade[state], state === "selected" ? shade.halo : null, glyph, count, fill,
       accent);
   }
-  map.on("styleimagemissing", (e) => {
-    const image = imageFor(e.id);
-    if (image && !map.hasImage(e.id)) map.addImage(e.id, image, { pixelRatio: PIN_DPR });
+  // MapLibre waits on the resolver before it lays out the tile that needs the image, so the
+  // pin is drawn with its tile. Its styleimagemissing event comes after that layout, too
+  // late for this tile, which it would draw without the pin and then again with it.
+  map.setMissingStyleImageResolver((id) => {
+    const image = imageFor(id);
+    if (image && !map.hasImage(id)) map.addImage(id, image, { pixelRatio: PIN_DPR });
   });
   // The basemaps' subway stations (basemap-style.ts): their icon, added with the style,
   // before any tile is laid out, so no station is drawn without it.

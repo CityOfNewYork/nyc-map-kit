@@ -12,6 +12,7 @@ const made = vi.hoisted(() => ({
   keyboardRotationOff: false,
   handlers: {} as Record<string, (e?: unknown) => void>,
   images: [] as unknown[][],
+  resolver: null as ((id: string) => unknown) | null,
 }));
 // jsdom has no canvas to draw the station icon on.
 vi.mock("./station-icon.ts", async (actual) => ({
@@ -31,6 +32,7 @@ vi.mock("maplibre-gl", () => ({
     on(type: string, handler: (e?: unknown) => void) { made.handlers[type] = handler; }
     hasImage() { return false; }
     addImage(...args: unknown[]) { made.images.push(args); }
+    setMissingStyleImageResolver(resolver: (id: string) => unknown) { made.resolver = resolver; }
     getCanvas() { return document.createElement("canvas"); }
   },
 }));
@@ -71,6 +73,12 @@ test("the map opens on the city from north to south, on the line through its mid
   // No width of its own, at the city's middle, so the screen's width sets east and west.
   expect(west).toBe(east);
   expect(Math.abs(west - (Math.min(...lngs) + Math.max(...lngs)) / 2)).toBeLessThan(0.001);
+});
+
+test("pin images are made through MapLibre's missing-image resolver, before a tile is laid out", () => {
+  made.resolver = null;
+  createMap(document.createElement("div"), { counts: true });
+  expect(made.resolver).toEqual(expect.any(Function));
 });
 
 test("the subway stations' icon is added with the style, before any tile is laid out", () => {
