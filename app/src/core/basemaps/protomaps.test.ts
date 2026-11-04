@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { StyleSpecification } from "maplibre-gl";
-import { OTI_CREDIT, POSITRON_LAND } from "../basemap-style.ts";
+import { OTI_CREDIT, OUTSIDE, POSITRON_LAND } from "../basemap-style.ts";
 import { protomapsStyle } from "./protomaps.ts";
 
 const PALETTE = { water: "hsl(202, 42%, 80%)", park: "hsl(96, 30%, 84%)", cemetery: "hsl(96, 16%, 83%)" };
@@ -33,10 +33,10 @@ describe("the Protomaps basemap", () => {
     expect(paint(style, "landuse_park")).toEqual({ "fill-color": PALETTE.park });
   });
 
-  test("draws no land use but green ground, runways and piers, so none covers a park", () => {
+  test("draws no land use but green ground, airports and piers, and only airports over a park", () => {
     expect(ids.filter((id) => id.startsWith("landuse_")))
-      .toEqual(["landuse_park", "landuse_cemetery", "landuse_urban_green", "landuse_runway",
-        "landuse_pier"]);
+      .toEqual(["landuse_park", "landuse_cemetery", "landuse_urban_green", "landuse_aerodrome",
+        "landuse_runway", "landuse_pier"]);
   });
 
   test("shields Interstates and US routes only", () => {
@@ -82,6 +82,36 @@ describe("the Protomaps basemap", () => {
     expect(JSON.stringify(style.layers)).not.toContain('"within"');
   });
 
+  test("mutes the parks outside the city under the land's colour, above every green", () => {
+    const earth = layer("earth");
+    const land = earth?.type === "fill" ? earth.paint?.["fill-color"] : undefined;
+    expect(layer("outside_land")).toMatchObject({ source: "outside_city",
+      paint: { "fill-color": land, "fill-opacity": 1 - OUTSIDE.parks } });
+    expect(ids.indexOf("outside_land")).toBe(ids.indexOf("landuse_runway") - 1);
+    expect(ids.indexOf("outside_land")).toBeGreaterThan(ids.indexOf("landuse_urban_green"));
+  });
+
+  test("draws airports as positron does: grounds as land over the grass, runways one grey", () => {
+    const earth = layer("earth");
+    expect(layer("landuse_aerodrome")).toMatchObject({ "source-layer": "landuse",
+      filter: ["==", "kind", "aerodrome"],
+      paint: { "fill-color": earth?.type === "fill" ? earth.paint?.["fill-color"] : undefined } });
+    expect(ids.indexOf("landuse_aerodrome")).toBeGreaterThan(ids.indexOf("landuse_urban_green"));
+    expect(ids.indexOf("landuse_aerodrome")).toBeLessThan(ids.indexOf("roads_runway"));
+    const runway = (id: string) => {
+      const l = layer(id);
+      return l?.type === "line" ? l.paint?.["line-color"] : l?.type === "fill" ? l.paint?.["fill-color"] : null;
+    };
+    expect(runway("roads_taxiway")).toEqual(runway("roads_runway"));
+    expect(runway("landuse_runway")).toEqual(runway("roads_runway"));
+    expect(runway("roads_runway")).not.toBe("#fff");
+  });
+
+  test("draws river lines from street level, and no pools, fountains or basins", () => {
+    expect(layer("water_river")?.minzoom).toBe(12);
+    expect(filter("water")).toContainEqual(["!in", "kind", "swimming_pool", "fountain", "basin"]);
+  });
+
   test("draws the roads the file marks as outside the city pale, and unnamed", () => {
     expect(paint(style, "roads_minor")).toMatchObject({ "line-opacity":
       ["case", ["==", ["get", "outside_city"], true], 0.35, 1] });
@@ -89,8 +119,9 @@ describe("the Protomaps basemap", () => {
     expect(JSON.stringify(filter("roads_shields"))).not.toContain("outside_city");
   });
 
-  test("dots the city line where it crosses land, above the streets", () => {
+  test("dashes the city line where it crosses land, above the streets", () => {
     expect(ids.indexOf("city_line")).toBeGreaterThan(ids.indexOf("roads_major"));
     expect(ids.indexOf("city_line")).toBeLessThan(ids.indexOf("park_name"));
+    expect(layer("city_line")?.paint).toMatchObject({ "line-width": 2 / 3, "line-dasharray": [4, 6] });
   });
 });

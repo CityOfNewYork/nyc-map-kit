@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
-import { OTI_CREDIT, OUTSIDE, warmTint } from "../basemap-style.ts";
+import {
+  OTI_CREDIT, OUTSIDE, POSITRON_LAND, POSITRON_RUNWAY, warmTint,
+} from "../basemap-style.ts";
 import {
   addNycCemeteries, loadEsriStyle, NYC_BASEMAP_STYLE, nycBasemapPalette, nycLabels,
   nycRoadsAsLines, quietNycDetail, quietNycRegion,
@@ -43,7 +45,14 @@ function fixture(): StyleSpecification {
       fill("Sidewalks/Elevated Sidewalk/1", "Sidewalks"),
       fill("NYC Open Space", "NYC Open Space", { "fill-color": "#96A797" }),
       fill("Plaza/Plaza", "Plaza", { "fill-opacity": { stops: [[14, 0.25], [15, 1]] } }),
+      fill("Region Parks", "Region Parks", { "fill-color": "#B5C9A5" }),
       fill("Inland Hydrography", "Inland Hydrography", { "fill-color": "#88A9BC" }),
+      fill("Region Hydrography/Swamp or Marsh", "Region Hydrography",
+        { "fill-pattern": "Region Hydrography/Swamp or Marsh" }),
+      fill("NYC Airport Grounds", "NYC Airport Grounds", { "fill-color": "#EDECEB",
+        "fill-outline-color": "#B2B2B2", "fill-opacity": { stops: [[10, 0], [12, 1]] } }),
+      fill("NYC Airport Runways", "NYC Airport Runways", { "fill-color": "#B5B4B0",
+        "fill-opacity": { stops: [[10, 0.25], [12, 1]] } }),
       line("Roadbeds/Roadbed/1", "Roadbeds", { minzoom: 14 }),
       fill("Roadbeds/Roadbed/0", "Roadbeds"),
       line("Roadbed Edge", "Roadbed Edge"),
@@ -54,6 +63,8 @@ function fixture(): StyleSpecification {
       line("NYC Roads/Primary/1", "NYC Roads", { minzoom: 6, maxzoom: 14 }),
       line("NYC Roads/Primary/0", "NYC Roads", { minzoom: 6, maxzoom: 14 }),
       line("Region Roads/Local Road/0", "Region Roads", { minzoom: 12 }),
+      line("Region Roads/Secondary/0", "Region Roads", { minzoom: 10 }),
+      line("Region Roads/Primary/0", "Region Roads", { minzoom: 6 }),
       fill("Buildings/Building/2", "Buildings", { "fill-translate": [2, 2] }),
       fill("Buildings/Building/1", "Buildings", { "fill-color": "#DCDBDA" }),
       line("Buildings/Building/0", "Buildings"),
@@ -125,6 +136,15 @@ describe("the NYC basemap steps", () => {
     expect(paint("Buildings/Landmark Building/1")).toEqual(flat);
   });
 
+  test("draw airports as positron does: grounds as land, runways light grey, both opaque", () => {
+    const style = nycBasemapPalette(fixture(), PALETTE);
+    const paint = (id: string) => style.layers.find((l) => l.id === id)?.paint;
+    expect(paint("NYC Airport Grounds"))
+      .toEqual({ "fill-color": POSITRON_LAND, "fill-outline-color": POSITRON_LAND });
+    expect(paint("NYC Airport Runways"))
+      .toEqual({ "fill-color": POSITRON_RUNWAY });
+  });
+
   test("draw the cemeteries where the open-space layer was, below the ponds", () => {
     const style = styleNyc(fixture());
     const ids = style.layers.map((l) => l.id);
@@ -179,7 +199,7 @@ describe("the NYC basemap steps", () => {
     expect(park && "filter" in park && park.filter).toEqual(["all", ["!=", "_name", "NO NAME"]]);
   });
 
-  test("grey the land outside the city, fade its streets and name only its highways", () => {
+  test("grey the land outside the city, fade its streets and parks, name only its highways", () => {
     const style = styleNyc(fixture());
     const ids = style.layers.map((l) => l.id);
     expect(ids.indexOf("outside_city")).toBe(ids.indexOf("Inland Hydrography") - 1);
@@ -189,6 +209,12 @@ describe("the NYC basemap steps", () => {
     expect(ids).toContain("Region Road Labels/label/Interstate Shield");
     expect(style.layers.find((l) => l.id === "Region Roads/Local Road/0")?.paint)
       .toMatchObject({ "line-opacity": OUTSIDE.streets });
+    expect(style.layers.find((l) => l.id === "Region Parks")?.paint)
+      .toEqual({ "fill-color": PALETTE.park, "fill-opacity": OUTSIDE.parks });
+    expect(ids).not.toContain("Region Hydrography/Swamp or Marsh");
+    // Highways at every zoom; the region's other streets from z12, as on Protomaps.
+    const zoom = (id: string) => style.layers.find((l) => l.id === id)?.minzoom;
+    expect([zoom("Region Roads/Primary/0"), zoom("Region Roads/Secondary/0")]).toEqual([6, 12]);
   });
 
   test("hand the boroughs over to the neighbourhoods at z12", () => {

@@ -10,7 +10,8 @@
 import type { StyleSpecification, SymbolLayerSpecification } from "maplibre-gl";
 import {
   addBoroughLabels, addLandmarkLabels, addSubwayStations, and, flatBuildings, OTI_CREDIT,
-  OUTSIDE, PARK_NAME_COLOR, POSITRON_LAND, POSITRON_ROADS, reportUnmatched, warmTint,
+  OUTSIDE, PARK_NAME_COLOR, POSITRON_LAND, POSITRON_ROADS, POSITRON_RUNWAY, reportUnmatched,
+  warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -68,6 +69,9 @@ const NYC_PATH_OPACITY = 0.74;
 /** Station platforms: darker than the buildings, not the dark grey OTI draws. */
 const NYC_STATION = "rgb(191,191,187)";
 
+/** The rules whose layers are drawn opaque at every zoom, whatever the style fades. */
+const OPAQUE = ["water", "park", "airports", "runways"];
+
 /**
  * Repaint the NYC Basemap style in this block's palette, in place.
  *
@@ -96,11 +100,17 @@ const NYC_STATION = "rgb(191,191,187)";
  *
  * Sidewalks are drawn in the land colour, at NYC_PATH_OPACITY: on a block they cannot
  * be seen, and through a park they are its paths, as positron draws them.
+ *
+ * Airports are drawn as positron draws them, opaque at every zoom: the grounds in the land
+ * colour, the runways and taxiways in POSITRON_RUNWAY's light grey. The style draws the
+ * runways a mid grey, the heaviest thing on the map around JFK and LaGuardia.
  */
 export function nycBasemapPalette(
   style: StyleSpecification, options: { water: string; park: string },
 ): StyleSpecification {
-  const hits: Record<string, number> = { water: 0, park: 0, stations: 0, buildings: 0, paths: 0 };
+  const hits: Record<string, number> = {
+    water: 0, park: 0, stations: 0, buildings: 0, paths: 0, airports: 0, runways: 0,
+  };
   for (const key of NYC_LAND) hits[key] = 0;
   for (const layer of style.layers || []) {
     if (layer.type !== "fill" && layer.type !== "line") continue;
@@ -123,12 +133,14 @@ export function nycBasemapPalette(
     if (layer.id === "Parks/Pool" || NYC_WATER.includes(sourceLayer)) [rule, color] = ["water", options.water];
     else if (NYC_PARK.includes(sourceLayer)) [rule, color] = ["park", options.park];
     else if (sourceLayer === "Rail Stations") [rule, color] = ["stations", NYC_STATION];
+    else if (sourceLayer === "NYC Airport Grounds") [rule, color] = ["airports", NYC_LAND_COLOR];
+    else if (sourceLayer === "NYC Airport Runways") [rule, color] = ["runways", POSITRON_RUNWAY];
     else if (land) [rule, color] = [land, NYC_LAND_COLOR];
     if (!rule || !color) continue;
     hits[rule]++;
     for (const prop of Object.keys(paint)) {
       if (prop.includes("color")) paint[prop] = color;
-      else if (prop.endsWith("-opacity") && (rule === "water" || rule === "park")) delete paint[prop];
+      else if (prop.endsWith("-opacity") && OPAQUE.includes(rule)) delete paint[prop];
     }
   }
   reportUnmatched(style, hits);
@@ -356,6 +368,11 @@ export function nycLabels(style: StyleSpecification, lang: string): StyleSpecifi
   return style;
 }
 
+/** Region roads drawn at every zoom: the highways and their tunnels. The rest are drawn
+ *  from NYC_REGION_STREETS_ZOOM, as build/protomaps-outside.py keeps them on Protomaps. */
+const NYC_REGION_HIGHWAYS = ["Region Roads/Primary/", "Region Roads/Tunnel"];
+const NYC_REGION_STREETS_ZOOM = 12;
+
 /** Region labels kept outside the city: the highway shields. Water labels stay too. */
 const NYC_REGION_SHIELDS = [
   "Region Road Labels/label/Interstate Shield", "Region Road Labels/label/US Route",
@@ -370,12 +387,14 @@ const NYC_REGION_SHIELDS = [
  * OTI's own line, with no shape to test against. The grey is a copy of the region's
  * land in OUTSIDE's colour, laid over it and its parks, under the water: the tiles' sea
  * lies under the land, so a shape laid over everything would grey the harbour too.
- * Airport grounds outside the city are dropped, as positron leaves them out.
+ * The region's parks are muted to OUTSIDE.parks, its streets other than the highways held
+ * until NYC_REGION_STREETS_ZOOM, and its marsh pattern and airport grounds dropped, as
+ * positron leaves them out.
  */
 export function quietNycRegion(style: StyleSpecification): StyleSpecification {
   const hits: Record<string, number> = {
     "Land/Land_Region/1": 0, "Inland Hydrography": 0, "Region Roads": 0,
-    "City Labels/label/Region": 0,
+    "City Labels/label/Region": 0, "Region Parks": 0, "Region Hydrography/Swamp or Marsh": 0,
   };
   const land = style.layers.find((l) => l.id === "Land/Land_Region/1");
   const water = style.layers.findIndex((l) => "source-layer" in l
@@ -388,7 +407,7 @@ export function quietNycRegion(style: StyleSpecification): StyleSpecification {
   }
   style.layers = style.layers.filter((l) => {
     const sourceLayer = "source-layer" in l ? l["source-layer"] ?? "" : "";
-    if (l.id === "City Labels/label/Region") {
+    if (l.id === "City Labels/label/Region" || l.id === "Region Hydrography/Swamp or Marsh") {
       hits[l.id]++;
       return false;
     }
@@ -397,9 +416,16 @@ export function quietNycRegion(style: StyleSpecification): StyleSpecification {
       && !sourceLayer.startsWith("Region Hydrography") && !NYC_REGION_SHIELDS.includes(l.id));
   });
   for (const l of style.layers) {
+    if (l.type === "fill" && l["source-layer"] === "Region Parks") {
+      hits["Region Parks"]++;
+      l.paint = { ...l.paint, "fill-opacity": OUTSIDE.parks };
+    }
     if (l.type !== "line" || l["source-layer"] !== "Region Roads") continue;
     hits["Region Roads"]++;
     l.paint = { ...l.paint, "line-opacity": OUTSIDE.streets };
+    if (!NYC_REGION_HIGHWAYS.some((id) => l.id.startsWith(id))) {
+      l.minzoom = Math.max(l.minzoom ?? 0, NYC_REGION_STREETS_ZOOM);
+    }
   }
   reportUnmatched(style, hits);
   return style;

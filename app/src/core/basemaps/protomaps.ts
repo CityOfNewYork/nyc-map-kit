@@ -11,7 +11,8 @@
  * of colours. This file sets that table to positron's colours and the block's palette,
  * then applies the few rules a colour cannot express, the same ones the other basemaps
  * get: cemeteries apart from parks, park names, the borough labels, place labels
- * balanced on the city, and the land outside the city greyed.
+ * balanced on the city, and the land outside the city greyed and its parks muted. Its own
+ * rule: river lines only from street level, and no pools, fountains or basins.
  */
 import { layers, namedFlavor } from "@protomaps/basemaps";
 import type { Flavor } from "@protomaps/basemaps";
@@ -19,7 +20,7 @@ import type { ExpressionSpecification, LayerSpecification, StyleSpecification } 
 import {
   addBoroughLabels, addLandmarkLabels, addSubwayStations, and, dotCityLine, flatBuildings,
   nameExpression, PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND, OUTSIDE, POSITRON_ROADS,
-  greyOutsideCity, OTI_CREDIT, warmTint,
+  POSITRON_RUNWAY, greyOutsideCity, OTI_CREDIT, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -59,14 +60,71 @@ export function protomapsStyle(
   placeLabels(style, lang);
   paleRoadsOutside(style);
   dotCityLine(style, style.layers.findIndex((l) => l.type === "symbol"));
+  quietWater(style);
+  quietAirports(style);
   // Outside the city the file holds only land, water, parks and roads
-  // (build/protomaps-outside.py), so all that is left to do there is the grey, a touch
-  // darker than on the other basemaps: with streets this pale, the city line needs it.
-  return warmTint(greyOutsideCity(style, "water", OUTSIDE_GREY));
+  // (build/protomaps-outside.py), so all that is left to do there is the grey and the
+  // parks.
+  return warmTint(muteParksOutside(greyOutsideCity(style, "water")));
 }
 
-/** How strongly the grey covers the land outside the city on this basemap. */
-const OUTSIDE_GREY = 0.13;
+/** River lines from this zoom, not Protomaps' z9: below it the rivers wide enough to
+ *  matter are drawn as water, and the lines are every creek in the region. */
+const RIVER_LINE_ZOOM = 12;
+/** Water too small to draw: pools, fountains and retention basins. */
+const SMALL_WATER = ["swimming_pool", "fountain", "basin"];
+
+/** Draw river lines from RIVER_LINE_ZOOM, and no SMALL_WATER, in place. */
+function quietWater(style: StyleSpecification) {
+  for (const layer of style.layers) {
+    if (layer.id === "water_river") layer.minzoom = RIVER_LINE_ZOOM;
+    if (layer.id === "water" && layer.type === "fill") {
+      layer.filter = and(layer.filter, ["!in", "kind", ...SMALL_WATER]);
+    }
+  }
+}
+
+/** The runways and taxiways: as lines along the roads, and as areas in the land use. */
+const RUNWAY_LAYERS = ["roads_runway", "roads_taxiway", "landuse_runway"];
+
+/**
+ * Draw the airports as positron does, in place: the grounds in the land's colour, under
+ * the runways and taxiways in POSITRON_RUNWAY's grey. OpenStreetMap maps the grass
+ * between the runways as lawn, which this style draws as parkland, and the runways as
+ * roads, so without this an airport reads as a park striped with highways.
+ */
+function quietAirports(style: StyleSpecification) {
+  const earth = style.layers.find((l) => l.id === "earth");
+  const at = style.layers.findIndex((l) => RUNWAY_LAYERS.includes(l.id));
+  if (earth?.type !== "fill" || at < 0) return;
+  style.layers.splice(at, 0, {
+    id: "landuse_aerodrome", type: "fill", source: SOURCE, "source-layer": "landuse",
+    filter: ["==", "kind", "aerodrome"], paint: { "fill-color": earth.paint?.["fill-color"] },
+  });
+  for (const layer of style.layers) {
+    if (!RUNWAY_LAYERS.includes(layer.id)) continue;
+    if (layer.type === "line") layer.paint = { ...layer.paint, "line-color": POSITRON_RUNWAY };
+    if (layer.type === "fill") layer.paint = { ...layer.paint, "fill-color": POSITRON_RUNWAY };
+  }
+}
+
+/**
+ * Mute the parks outside the city to OUTSIDE.parks of their strength, in place, as
+ * quietNycRegion mutes the NYC basemap's. The file marks the roads outside the city but
+ * not the parks, so the land's colour is laid over the outside at the rest of that
+ * strength: above the parks, cemeteries and other green, under the runways and the grey.
+ * Its id has no "park" in it, or warmTint would paint it as one.
+ */
+function muteParksOutside(style: StyleSpecification): StyleSpecification {
+  const earth = style.layers.find((l) => l.id === "earth");
+  const at = style.layers.findIndex((l) => l.id === "landuse_runway");
+  if (earth?.type !== "fill" || at < 0 || !style.sources.outside_city) return style;
+  style.layers.splice(at, 0, {
+    id: "outside_land", type: "fill", source: "outside_city",
+    paint: { "fill-color": earth.paint?.["fill-color"], "fill-opacity": 1 - OUTSIDE.parks },
+  });
+  return style;
+}
 
 /** True for a road's part outside the city, as build/protomaps-outside.py marks it. */
 const OUTSIDE_ROAD = ["==", ["get", "outside_city"], true] as ExpressionSpecification;
