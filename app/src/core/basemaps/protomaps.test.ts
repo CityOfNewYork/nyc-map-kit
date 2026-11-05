@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import type { StyleSpecification } from "maplibre-gl";
 import { OTI_CREDIT, OUTSIDE, POSITRON_LAND } from "../basemap-style.ts";
@@ -7,7 +8,7 @@ const PALETTE = { water: "hsl(202, 42%, 80%)", park: "hsl(96, 30%, 84%)", cemete
 
 // The style @protomaps/basemaps writes is generated in code, so these run against the
 // real thing, with no network.
-const style = protomapsStyle("es", PALETTE, "https://example.test/nyc.pmtiles");
+const style = protomapsStyle("es", PALETTE, "https://example.test/maps/warming.html");
 const ids = style.layers.map((l) => l.id);
 const layer = (id: string) => style.layers.find((l) => l.id === id);
 const filter = (id: string) => {
@@ -19,11 +20,31 @@ const paint = (s: StyleSpecification, id: string) => s.layers.find((l) => l.id =
 describe("the Protomaps basemap", () => {
   test("reads its tiles from the PMTiles file, credited to OTI and OpenStreetMap", () => {
     expect(style.sources.protomaps).toMatchObject({
-      type: "vector", url: "pmtiles://https://example.test/nyc.pmtiles" });
+      type: "vector", url: "pmtiles://https://example.test/maps/nyc.pmtiles" });
     const credit = "attribution" in style.sources.protomaps
       ? style.sources.protomaps.attribution : "";
     expect(credit).toBe(`${OTI_CREDIT} | © `
       + '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>');
+  });
+
+  test("reads its fonts and icons from the page's own host", () => {
+    expect(style.glyphs).toBe("https://example.test/maps/protomaps/fonts/{fontstack}/{range}.pbf");
+    expect(style.sprite).toBe("https://example.test/maps/protomaps/sprites/v4/light");
+  });
+
+  test("ships every font the style names, and its icons at both pixel densities", () => {
+    const shipped = (path: string) =>
+      existsSync(new URL(`../../../public/protomaps/${path}`, import.meta.url));
+    const fonts = new Set(style.layers.flatMap((l) =>
+      l.type === "symbol" ? l.layout?.["text-font"] as string[] ?? [] : []));
+    expect(fonts.size).toBeGreaterThan(0);
+    for (const font of fonts) {
+      expect(shipped(`fonts/${font}/0-255.pbf`), font).toBe(true);
+      expect(shipped(`fonts/${font}/65280-65535.pbf`), font).toBe(true);
+    }
+    for (const name of ["light.json", "light.png", "light@2x.json", "light@2x.png"]) {
+      expect(shipped(`sprites/v4/${name}`), name).toBe(true);
+    }
   });
 
   test("draws cemeteries apart from parks, directly above them, in the greyer green", () => {

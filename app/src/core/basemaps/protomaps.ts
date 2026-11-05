@@ -5,7 +5,8 @@
  * build/protomaps.sh cuts the map's area out of a build into one file, nyc.pmtiles,
  * served next to the app. The browser reads the tiles it needs out of that file by HTTP
  * range request (the `pmtiles://` protocol, registered in map-core.ts), so there is no
- * tile server to run.
+ * tile server to run. The fonts and icons the style draws its labels with sit beside it,
+ * in protomaps/ (build/protomaps-assets.sh).
  *
  * The style is not fetched: @protomaps/basemaps writes it in code from a flavor, a table
  * of colours. This file sets that table to positron's colours and the block's palette,
@@ -26,24 +27,28 @@ import type { Palette } from "./index.ts";
 
 /** The basemap file, next to the page. Written by build/protomaps.sh. */
 const TILES = "nyc.pmtiles";
-/** Protomaps' fonts and icons, which its style is written against. */
-const ASSETS = "https://protomaps.github.io/basemaps-assets";
+/** Protomaps' fonts and icons, next to the page. Written by build/protomaps-assets.sh. */
+const ASSETS = "protomaps/";
 const SOURCE = "protomaps";
 
 /** The basemap, with labels in `lang` where OpenStreetMap has that language. */
 export async function loadProtomaps(lang: string, palette: Palette): Promise<StyleSpecification> {
-  return protomapsStyle(lang, palette, new URL(TILES, document.baseURI).href);
+  return protomapsStyle(lang, palette, document.baseURI);
 }
 
-/** The style itself, for a tile file at `tilesUrl`. Separate so it can be tested
- *  without a page. */
+/** The style itself, for the page at `pageUrl`, whose host serves the tiles, fonts and
+ *  icons. Separate so it can be tested without a page. */
 export function protomapsStyle(
-  lang: string, palette: Palette, tilesUrl: string,
+  lang: string, palette: Palette, pageUrl: string,
 ): StyleSpecification {
+  const tilesUrl = new URL(TILES, pageUrl).href;
+  // MapLibre needs these absolute. The placeholders are added after new URL, which would
+  // percent-encode their braces.
+  const assetsUrl = new URL(ASSETS, pageUrl).href;
   const style: StyleSpecification = {
     version: 8,
-    glyphs: `${ASSETS}/fonts/{fontstack}/{range}.pbf`,
-    sprite: `${ASSETS}/sprites/v4/light`,
+    glyphs: `${assetsUrl}fonts/{fontstack}/{range}.pbf`,
+    sprite: `${assetsUrl}sprites/v4/light`,
     sources: {
       [SOURCE]: {
         type: "vector",
