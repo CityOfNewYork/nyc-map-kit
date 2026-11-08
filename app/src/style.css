@@ -237,6 +237,9 @@ body {
   color: var(--ink);
 }
 .search-input:focus-visible { outline-offset: -4px; }
+/* A text box shows the ring on a click as well as from the keyboard. After a click or a
+   tap (ui/focus.ts) the search box leaves it off: the caret shows where typing goes. */
+:root[data-input="pointer"] .search-input:focus-visible { outline: none; }
 /* The hint in the empty box. It is the input's <label>, drawn where a placeholder would
    be, because a placeholder is an attribute the translation proxy cannot reach. Once
    there is text it is only moved out of sight, never removed, so the input keeps its

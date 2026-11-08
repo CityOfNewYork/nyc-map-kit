@@ -26,3 +26,23 @@ test("moving focus shows the ring after a key, not after a tap or a click", () =
   expect(focus).toHaveBeenLastCalledWith({ focusVisible: false });
   expect(heading).toHaveFocus();
 });
+
+test("the page records the last input, and typing in a text box is not keyboard use", () => {
+  const input = document.createElement("input");
+  document.body.append(input);
+  const type = (key: string) =>
+    input.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+  const last = () => document.documentElement.dataset.input;
+
+  input.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+  expect(last()).toBe("pointer");
+  type("a");
+  type("Enter");
+  expect(last()).toBe("pointer");
+  type("Tab");
+  expect(last()).toBe("key");
+
+  document.body.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+  document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  expect(last()).toBe("key");
+});
