@@ -14,7 +14,8 @@ import { TopBar } from "./components/TopBar.tsx";
 import { useNycMinute } from "./components/useNycMinute.ts";
 import { WarmingMap } from "./components/WarmingMap.tsx";
 import { CENTER_CONFIG, CENTER_MARK } from "./logic/centers.ts";
-import { DATASETS, datasetFromUrl } from "./logic/dataset.ts";
+import { DATASETS, LAYER, datasetFromUrl } from "./logic/dataset.ts";
+import { loadLayerCenters } from "./logic/layer.ts";
 import { filterChanges, filtersFromUrl, passes, withFilters } from "./logic/filters.ts";
 import type { Filters } from "./logic/filters.ts";
 import { viewFromUrl } from "./logic/view.ts";
@@ -57,16 +58,18 @@ export default function App({ lang, basemap }: AppProps) {
   const card = useSiteCard({ model, style, pin: CENTER_MARK, shown });
   const { attach, selectingFromUrl, dialogElement, miniMapElement } = card;
 
-  // The sample centers ?dataset= names (logic/dataset.ts), read once: changing them
-  // means loading the page again.
+  // The centers ?dataset= names (logic/dataset.ts), read once: changing them means
+  // loading the page again.
   useEffect(() => {
     let cancelled = false;
-    const url = DATASETS[datasetFromUrl(window.location.search)];
-    fetch(url)
-      .then((resp) => {
-        if (!resp.ok) throw new Error(`${url} returned ${resp.status}`);
+    const dataset = datasetFromUrl(window.location.search);
+    const loading = dataset === LAYER
+      ? loadLayerCenters()
+      : fetch(DATASETS[dataset]).then((resp) => {
+        if (!resp.ok) throw new Error(`${DATASETS[dataset]} returned ${resp.status}`);
         return resp.json() as Promise<SiteCollection>;
-      })
+      });
+    loading
       .then((data) => {
         if (!cancelled) {
           setModel({ config: CENTER_CONFIG, data, ...prepareData(CENTER_CONFIG, data, null) });

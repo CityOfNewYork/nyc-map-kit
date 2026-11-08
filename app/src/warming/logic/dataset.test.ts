@@ -6,6 +6,9 @@ describe("datasetFromUrl", () => {
     expect(datasetFromUrl("?dataset=1500")).toBe("1500");
     expect(datasetFromUrl("?dataset=10000")).toBe("10000");
   });
+  test("names the feature layer", () => {
+    expect(datasetFromUrl("?dataset=layer")).toBe("layer");
+  });
   test("is the 28 without the parameter, or for anything else", () => {
     expect(datasetFromUrl("")).toBe("28");
     expect(datasetFromUrl("?dataset=99")).toBe("28");

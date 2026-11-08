@@ -8,6 +8,7 @@ import { createMap } from "../core/map-core.ts";
 import type { SiteCollection } from "../logic/types.ts";
 import { pushed, site, stubDialog, stubScreen } from "../test/fixtures.ts";
 import App from "./App.tsx";
+import { LAYER_QUERY } from "./logic/layer.ts";
 import type { WarmingMap } from "./components/WarmingMap.tsx";
 
 // The search box without a Geoclient key, whatever a developer's .env.local holds.
@@ -201,6 +202,20 @@ describe("warming App", () => {
       await waitFor(() => expect(stub.props?.data).toEqual(centers));
       expect(fetch.mock.calls.filter(([url]) => url !== "places.json"))
         .toEqual([["warming/sample-centers-1500.geojson"]]);
+    });
+
+    test("reads the feature layer for ?dataset=layer", async () => {
+      const record = { id: "library", org: "Library", org_id: "library",
+        address: "1 Main Street, Bronx", opens: "09:00:00", closes: "17:00" };
+      const fetch = vi.fn(async (url: string) => ({ ok: true, json: async () => (
+        url === "places.json" ? places
+          : { type: "FeatureCollection", features: [
+            { geometry: { type: "Point", coordinates: [-73.9, 40.8] }, properties: record }] }) }));
+      vi.stubGlobal("fetch", fetch);
+      renderApp("/warming.html?dataset=layer");
+      await waitFor(() => expect(stub.props?.data?.features.map((f) => f.properties.org))
+        .toEqual(["Library"]));
+      expect(fetch.mock.calls.filter(([url]) => url !== "places.json")).toEqual([[LAYER_QUERY]]);
     });
 
     test("shows an error message when the data fails to load", async () => {

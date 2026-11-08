@@ -9,13 +9,17 @@ export const DATASETS = {
   "10000": "warming/sample-centers-10000.geojson",
 } as const;
 
-export type Dataset = keyof typeof DATASETS;
+/** ?dataset=layer reads an ArcGIS Online feature layer instead of a file (layer.ts). */
+export const LAYER = "layer";
+
+export type Dataset = keyof typeof DATASETS | typeof LAYER;
 
 /** The 28, which a page with no ?dataset= loads. */
 const DEFAULT_DATASET: Dataset = "28";
 
-/** The set ?dataset= names, or the 28 for anything else. */
+/** The set ?dataset= names, the layer, or the 28 for anything else. */
 export function datasetFromUrl(search: string): Dataset {
   const value = new URLSearchParams(search).get("dataset");
+  if (value === LAYER) return LAYER;
   return value && Object.hasOwn(DATASETS, value) ? value as Dataset : DEFAULT_DATASET;
 }
