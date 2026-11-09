@@ -7,7 +7,6 @@
 
 export const BASEMAP_NAMES = {
   protomaps: "Protomaps, self-hosted",
-  openfreemap: "OpenFreeMap",
   nyc: "OTI NYC Basemap, our palette",
   "nyc-original": "OTI NYC Basemap, its own colours",
 } as const;
@@ -16,11 +15,7 @@ export type BasemapId = keyof typeof BASEMAP_NAMES;
 
 export const DEFAULT_BASEMAP: BasemapId = "protomaps";
 
-/** Older links name OpenFreeMap by its style, positron. */
-const ALIASES: Record<string, BasemapId> = { positron: "openfreemap" };
-
 /** The basemap a `?basemap=` value names, or the default for anything else. */
 export function basemapId(value: string | null): BasemapId {
-  if (value && Object.hasOwn(BASEMAP_NAMES, value)) return value as BasemapId;
-  return (value && Object.hasOwn(ALIASES, value) && ALIASES[value]) || DEFAULT_BASEMAP;
+  return value && Object.hasOwn(BASEMAP_NAMES, value) ? value as BasemapId : DEFAULT_BASEMAP;
 }

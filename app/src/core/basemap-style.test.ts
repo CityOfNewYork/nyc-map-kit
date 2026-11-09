@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
-import { addSubwayStations, greyOutsideCity, hideLabelsOutsideCity } from "./basemap-style.ts";
+import { addSubwayStations, greyOutsideCity } from "./basemap-style.ts";
 import { STATION_ICON } from "./station-icon.ts";
 
 const style = (): StyleSpecification => ({
@@ -18,16 +18,6 @@ const style = (): StyleSpecification => ({
 test("grey the land outside the city directly under the water", () => {
   const ids = greyOutsideCity(style(), "water").layers.map((l) => l.id);
   expect(ids.slice(0, 3)).toEqual(["land", "outside_city", "water"]);
-});
-
-test("show labels only inside the city, except the ones kept", () => {
-  const layers = hideLabelsOutsideCity(style(), "tiles", (l) => l.id === "shields").layers;
-  const layer = (id: string) => layers.find((l) => l.id === id);
-  // The layer's own legacy filter, converted, and the test for the city.
-  const towns = layer("towns");
-  expect(towns && "filter" in towns && towns.filter)
-    .toEqual(["all", ["==", ["get", "kind"], "town"], ["within", expect.anything()]]);
-  expect(layer("shields")).not.toHaveProperty("filter");
 });
 
 test("draw the subway's stations from the MTA's file as the top layer, named from z14", () => {

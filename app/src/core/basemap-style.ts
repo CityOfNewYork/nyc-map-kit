@@ -16,7 +16,6 @@
  * lists them.
  */
 import type { Feature, FeatureCollection, MultiLineString, Point, Polygon } from "geojson";
-import { convertFilter } from "@maplibre/maplibre-gl-style-spec";
 import type {
   ExpressionSpecification, FillLayerSpecification, FilterSpecification, LayerSpecification,
   StyleSpecification,
@@ -45,20 +44,6 @@ export function resolveLang(explicit?: string | null): string {
 /** True if this text-field expression is a name label rather than, say, a road shield. */
 function readsAName(expr: unknown): boolean {
   return JSON.stringify(expr ?? "").includes('"name');
-}
-
-/**
- * Fetch the style JSON and return it with every name label switched to `lang`.
- * Returns a plain object, which is handed to MapLibre as `style:` — MapLibre never sees
- * the URL, so it never re-fetches and undoes the rewrite.
- */
-export async function loadBasemapStyle(
-  styleUrl: string, lang: string,
-): Promise<StyleSpecification> {
-  const resp = await fetch(styleUrl);
-  if (!resp.ok) throw new Error(`basemap style ${styleUrl} returned ${resp.status}`);
-  const style = await resp.json();
-  return setStyleLanguage(style, lang);
 }
 
 /**
@@ -189,7 +174,7 @@ export function addBoroughLabels(
 
 /**
  * Two landmarks in the harbour, as label points: the Statue of Liberty and Ellis Island.
- * No basemap's tiles name them as places: Protomaps and OpenFreeMap carry them as points
+ * No basemap's tiles name them as places: Protomaps carries them as points
  * of interest, which the block does not draw, and OTI's tiles name only the statue's
  * building, from z17. Names and translations are OpenStreetMap's, lifted from the
  * Protomaps tiles' points, as BOROUGH_LABELS' are; the points are the statue and the
@@ -450,9 +435,8 @@ function tintValue(value: unknown, counter: { n: number }): unknown {
 /**
  * Shift a style's neutral paint colours to a warm paper tone, in place.
  *
- * Exported separately from loadBasemapStyle so a caller holding a style object
- * — a self-hosted one, the PMTiles swap in the README — can warm it without a
- * fetch, and so it can be skipped entirely by passing `warm: false`.
+ * Exported so a caller holding a style object — a self-hosted one, the PMTiles swap
+ * in the README — can warm it, and so it can be skipped entirely by passing `warm: false`.
  */
 export function warmTint(
   style: StyleSpecification, options: { water?: string; park?: string } = {},
@@ -524,8 +508,7 @@ export function reportUnmatched(style: StyleSpecification, hits: Record<string, 
  * merged into one outline by build/city-limits.py. Each basemap empties the outside its
  * own way, as cheaply as its tiles allow: the Protomaps file is cut down when it is built
  * (build/protomaps-outside.py), so the browser has nothing to hide; OTI's tiles split
- * their layers at the city line (quietNycRegion); only OpenFreeMap, whose tiles we do not
- * build, hides its labels in the browser (hideLabelsOutsideCity).
+ * their layers at the city line (quietNycRegion).
  */
 
 /** The outside: a cool grey laid over the ground, how much of a road and of a park
@@ -583,31 +566,9 @@ export function dotCityLine(style: StyleSpecification, at: number): StyleSpecifi
   return style;
 }
 
-/**
- * Show the labels of `source` only inside the city, in place, except those `keep` names
- * (the highway shields and the water).
- *
- * This uses MapLibre's `within` test, which the browser runs on every label as its tile
- * loads, and which counts a label along a street that crosses the city line as outside.
- * It is for basemaps whose tiles we do not build; where we build the tiles, the labels
- * outside the city are left out of the file instead.
- */
-export function hideLabelsOutsideCity(style: StyleSpecification, source: string,
-  keep: (layer: LayerSpecification) => boolean): StyleSpecification {
-  const inside = ["within", CITY_LIMITS] as ExpressionSpecification;
-  for (const layer of style.layers) {
-    if (layer.type !== "symbol" || layer.source !== source || keep(layer)) continue;
-    // Expression and legacy filters cannot be mixed, so the layer's own is converted.
-    layer.filter = layer.filter
-      ? ["all", convertFilter(layer.filter) as ExpressionSpecification, inside]
-      : inside;
-  }
-  return style;
-}
-
 /* ---------------------------------------------------------- positron's look
 
- * Positron, the style OpenFreeMap serves, is the reference look: the other basemaps are
+ * Positron, a light OpenStreetMap style, is the reference look: the other basemaps are
  * repainted to its land, buildings and roads, so that switching basemap changes the
  * data underneath and not the design. Colours are as positron writes them, before
  * warmTint.

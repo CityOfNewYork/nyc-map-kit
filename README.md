@@ -19,7 +19,7 @@ npm run build   # type-check, then build the static site, in dist/
 The default basemap reads `app/public/nyc.pmtiles`, which is too large for git. To draw it
 locally, put the [pmtiles CLI](https://github.com/protomaps/go-pmtiles/releases) on your
 `PATH` and run `build/protomaps.sh` once (about 95 MB, five minutes); CI runs it before
-each deploy. `?basemap=openfreemap` and `?basemap=nyc` work without it, and
+each deploy. `?basemap=nyc` works without it, and
 `compare.html` shows any two basemaps side by side. `examples.html` shows the map embedded
 at several sizes, including phone width.
 
@@ -57,8 +57,8 @@ build reads the key from the repository's Actions secret `VITE_GEOCLIENT_KEY`.
 ## Attribution
 
 Basemap data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, in
-tiles built by [Protomaps](https://protomaps.com/) (the default) or served by
-[OpenFreeMap](https://openfreemap.org/); or OTI's NYC Basemap (`?basemap=nyc`). Map rendering by
+tiles built by [Protomaps](https://protomaps.com/) (the default); or OTI's NYC Basemap
+(`?basemap=nyc`). Map rendering by
 [MapLibre GL JS](https://maplibre.org/). Site locations geocoded by
 [NYC GeoSearch](https://geosearch.planninglabs.nyc/); search by NYC Geoclient. Neighborhood
 and borough boundaries from NYC Department of City Planning; ZIP code areas from NYC

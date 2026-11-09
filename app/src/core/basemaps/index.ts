@@ -9,7 +9,6 @@
 import type { StyleSpecification } from "maplibre-gl";
 import type { BasemapId } from "./names.ts";
 import { loadNyc, loadNycOriginal } from "./nyc.ts";
-import { loadOpenFreeMap } from "./openfreemap.ts";
 import { loadProtomaps } from "./protomaps.ts";
 
 /**
@@ -31,7 +30,6 @@ export type Palette = typeof BASEMAP_PALETTE;
 
 const LOADERS: Record<BasemapId, (lang: string) => Promise<StyleSpecification>> = {
   protomaps: (lang) => loadProtomaps(lang, BASEMAP_PALETTE),
-  openfreemap: (lang) => loadOpenFreeMap(lang, BASEMAP_PALETTE),
   nyc: (lang) => loadNyc(lang, BASEMAP_PALETTE),
   "nyc-original": () => loadNycOriginal(),
 };

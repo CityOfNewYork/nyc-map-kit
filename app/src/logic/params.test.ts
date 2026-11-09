@@ -25,8 +25,6 @@ describe("readSettings", () => {
 
   test("basemap is Protomaps unless it names another basemap", () => {
     expect(readSettings("", BASE, ORIGIN).basemap).toBe("protomaps");
-    expect(readSettings("?basemap=openfreemap", BASE, ORIGIN).basemap).toBe("openfreemap");
-    expect(readSettings("?basemap=positron", BASE, ORIGIN).basemap).toBe("openfreemap");
     expect(readSettings("?basemap=nyc", BASE, ORIGIN).basemap).toBe("nyc");
     expect(readSettings("?basemap=nyc-original", BASE, ORIGIN).basemap).toBe("nyc-original");
     expect(readSettings("?basemap=constructor", BASE, ORIGIN).basemap).toBe("protomaps");
