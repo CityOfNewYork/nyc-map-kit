@@ -144,6 +144,28 @@ describe("Search with a Geoclient key", () => {
     search("120 Broadway");
     await waitFor(() => expect(screen.getByRole("status"))
       .toHaveTextContent("Address search is not working right now."));
-    expect(window.dataLayer).toEqual([]);
+    expect(pushed()).toEqual([{ event: "map_search_error" }]);
+  });
+
+  test("reports no match when Geoclient finds nothing, and never the text typed", async () => {
+    vi.mocked(geocode).mockResolvedValue({ type: "none" });
+    const { search } = renderSearch();
+    search("120 Nowhere Street");
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("No match"));
+    expect(pushed()).toEqual([{ event: "map_search_no_match" }]);
+  });
+
+  test("a suggestion or a choice is not a failed search", async () => {
+    vi.mocked(geocode).mockResolvedValueOnce({
+      type: "suggest",
+      suggestions: [{ house: "120", street: "BROADWAY", borough: "Manhattan", query: "120 Broadway, Manhattan" }],
+    });
+    const { search } = renderSearch();
+    search("120 Brodway");
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Did you mean:"));
+    inTwoBoroughs();
+    search("120 Broadway");
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Which one do you mean?"));
+    expect(pushed()).toEqual([]);
   });
 });

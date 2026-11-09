@@ -98,6 +98,8 @@ export function Search({ onFound, onClear, landmark = true }: SearchProps) {
       onClear();
     }
     setStatus(next);
+    if (next.type === "none") track("map_search_no_match", {});
+    if (next.type === "error") track("map_search_error", {});
   }
 
   async function search(query: string) {

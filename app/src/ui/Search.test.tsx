@@ -62,15 +62,16 @@ describe("Search without a Geoclient key", () => {
     }]);
   });
 
-  test("a ZIP code reports the ZIP, and a search that finds nothing reports nothing", async () => {
+  test("a ZIP code reports the ZIP, and a search that finds nothing reports only that", async () => {
     const { onFound, input } = renderSearch();
     search(input, "120 Broadway");
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("No match"));
     search(input, "10027");
     await waitFor(() => expect(onFound).toHaveBeenCalled());
-    expect(pushed()).toEqual([{
-      event: "map_search", search_zip: "10027", search_borough: null, search_neighborhood: null,
-    }]);
+    expect(pushed()).toEqual([
+      { event: "map_search_no_match" },
+      { event: "map_search", search_zip: "10027", search_borough: null, search_neighborhood: null },
+    ]);
   });
 
   test("says when nothing matches, and drops the place it showed before", async () => {

@@ -50,6 +50,11 @@ export interface Events {
     search_borough: string | null;
     search_neighborhood: string | null;
   };
+  /** A search matched no place. The name carries the outcome, and starts with `map_search`
+   *  for the container's trigger, so this needs no field or tag of its own. */
+  map_search_no_match: Record<string, never>;
+  /** Address search could not answer. Named as map_search_no_match is. */
+  map_search_error: Record<string, never>;
 }
 
 /** Push `event` with `fields`, after the fields every push carries. */
