@@ -25,6 +25,11 @@ describe("centerFromRecord", () => {
   test("reads 1 as yes", () => {
     expect(centerFromRecord({ ...record, pets: 1 })).toMatchObject({ wheelchair: true, pets: true });
   });
+  test("leaves out empty hours and yes-or-no fields", () => {
+    const properties = centerFromRecord({ ...record, opens: null, wheelchair: null });
+    expect(properties).not.toHaveProperty("opens");
+    expect(properties).not.toHaveProperty("wheelchair");
+  });
 });
 
 describe("centersFromLayer", () => {
@@ -32,6 +37,9 @@ describe("centersFromLayer", () => {
     const data = { features: [{ geometry: null, properties: record }, ...layer.features] };
     expect(centersFromLayer(data).features).toEqual([
       { type: "Feature", geometry: jacobi.geometry, properties: jacobi.properties }]);
+  });
+  test("is empty for an answer without records", () => {
+    expect(centersFromLayer({}).features).toEqual([]);
   });
 });
 
@@ -55,6 +63,12 @@ describe("loadLayerCenters", () => {
   test("fails on an error the layer reports with a 200 status", async () => {
     answer({ error: { code: 400, message: "", details: ["'Invalid field: x' parameter is invalid"] } });
     await expect(loadLayerCenters()).rejects.toThrow("Invalid field");
+  });
+  test("fails on an error with only a message, or an answer without records", async () => {
+    answer({ error: { code: 498, message: "Invalid token." } });
+    await expect(loadLayerCenters()).rejects.toThrow("Invalid token.");
+    answer({ type: "FeatureCollection" });
+    await expect(loadLayerCenters()).rejects.toThrow("no features");
   });
   test("fails rather than show part of the list when the answer is cut short", async () => {
     answer({ ...layer, properties: { exceededTransferLimit: true } });
