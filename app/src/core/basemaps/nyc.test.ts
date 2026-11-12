@@ -85,6 +85,8 @@ function fixture(): StyleSpecification {
       label("City Labels/label/NYC", "City Labels", "NimbusSanL Bold"),
       label("Neighborhoods/label/Default", "Neighborhoods", "NimbusSanL Bold"),
       label("Boundaries/Counties/label/Default", "Counties", "Source Sans Pro Regular"),
+      label("Buildings/label/Buildings", "Buildings/label", "NimbusSanL Regular"),
+      label("Buildings/label/Landmark Building", "Buildings/label", "NimbusSanL Regular"),
     ] as LayerSpecification[],
   };
 }
@@ -224,6 +226,23 @@ describe("the NYC basemap steps", () => {
     expect(ids).not.toContain("Boundaries/Counties/label/Default");
     expect(style.layers.find((l) => l.id === "borough_label")?.maxzoom).toBe(12);
     expect(style.layers.find((l) => l.id === "Neighborhoods/label/Default")?.minzoom).toBe(12);
+  });
+
+  test("name neighbourhoods from the block's list, as the Protomaps basemap does", () => {
+    const style = nycLabels(fixture(), "en");
+    const layer = style.layers.find((l) => l.id === "Neighborhoods/label/Default");
+    expect(style.sources.neighbourhoods)
+      .toEqual({ type: "geojson", data: "neighborhoods.geojson" });
+    expect(layer).toMatchObject({ source: "neighbourhoods",
+      layout: { "text-field": ["get", "name"], "text-font": ["Noto Sans Italic"] } });
+    expect(layer).not.toHaveProperty("source-layer");
+    expect(layer).not.toHaveProperty("filter");
+  });
+
+  test("drop building names", () => {
+    const ids = nycLabels(fixture(), "en").layers.map((l) => l.id);
+    expect(ids).not.toContain("Buildings/label/Buildings");
+    expect(ids).not.toContain("Buildings/label/Landmark Building");
   });
 
   test("draw the subway's stations above OTI's labels, under the landmarks and boroughs", () => {

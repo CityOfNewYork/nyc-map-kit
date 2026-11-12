@@ -17,6 +17,8 @@ import type { Palette } from "./index.ts";
 
 /** The city's cemeteries, written by build/cemeteries.py. */
 const CEMETERIES = "cemeteries.geojson";
+/** OTI's neighbourhood names with the block's edits, written by build/neighborhoods.py. */
+const NEIGHBOURHOODS = "neighborhoods.geojson";
 
 /** OTI's style repainted in the block's palette, with every rule below applied. Only the
  *  borough names follow `lang`; the tiles carry no other language. */
@@ -308,8 +310,11 @@ const NYC_NEIGHBOURHOOD_TYPE: SymbolLayerSpecification["layout"] = {
  *      pins, all at once. So the tiles' borough names give way to BOROUGH_LABELS,
  *      anchored on open ground and translated, until neighbourhood names take over at
  *      NYC_NEIGHBOURHOOD_ZOOM, and county names are dropped. Neighbourhood names are set
- *      in NYC_NEIGHBOURHOOD_TYPE. Highway shields wait until NYC_SHIELD_ZOOM. Places
- *      outside the city are not named at all (quietNycRegion).
+ *      in NYC_NEIGHBOURHOOD_TYPE, and read from NEIGHBOURHOODS, as the Protomaps basemap
+ *      reads them: the tiles' names, with the edits build/neighborhoods.py makes so
+ *      the names match search's. Building names are dropped: no other basemap prints
+ *      them, and at street level they crowd the pins. Highway shields wait until
+ *      NYC_SHIELD_ZOOM. Places outside the city are not named at all (quietNycRegion).
  *   4. Placeholders. A few features in the data are named "NO NAME", and the style
  *      prints the placeholder. Those labels are filtered out.
  *   5. The Statue of Liberty and Ellis Island are named (addLandmarkLabels).
@@ -322,8 +327,10 @@ export function nycLabels(style: StyleSpecification, lang: string): StyleSpecifi
     "place labels": 0, "water labels": 0, "park labels": 0,
     "City Labels/label/NYC": 0,
     "Neighborhoods/label/Default": 0, "Boundaries/Counties/label/Default": 0,
+    "Buildings/label/Buildings": 0, "Buildings/label/Landmark Building": 0,
   };
-  const dropped = ["City Labels/label/NYC", "Boundaries/Counties/label/Default"];
+  const dropped = ["City Labels/label/NYC", "Boundaries/Counties/label/Default",
+    "Buildings/label/Buildings", "Buildings/label/Landmark Building"];
   style.layers = (style.layers || []).filter((l) => {
     if (!dropped.includes(l.id)) return true;
     hits[l.id]++;
@@ -354,11 +361,14 @@ export function nycLabels(style: StyleSpecification, lang: string): StyleSpecifi
     });
   }
 
-  const neighbourhoods = style.layers.find((l) => l.id === "Neighborhoods/label/Default");
+  const at = style.layers.findIndex((l) => l.id === "Neighborhoods/label/Default");
+  const neighbourhoods = style.layers[at];
   if (neighbourhoods?.type === "symbol") {
     hits["Neighborhoods/label/Default"]++;
-    neighbourhoods.minzoom = NYC_NEIGHBOURHOOD_ZOOM;
-    neighbourhoods.layout = { ...neighbourhoods.layout, ...NYC_NEIGHBOURHOOD_TYPE };
+    style.sources = { ...style.sources, neighbourhoods: { type: "geojson", data: NEIGHBOURHOODS } };
+    const { "source-layer": _, filter: __, ...kept } = neighbourhoods;
+    style.layers[at] = { ...kept, source: "neighbourhoods", minzoom: NYC_NEIGHBOURHOOD_ZOOM,
+      layout: { ...kept.layout, ...NYC_NEIGHBOURHOOD_TYPE, "text-field": ["get", "name"] } };
   }
   addSubwayStations(style);
   addLandmarkLabels(style, lang);

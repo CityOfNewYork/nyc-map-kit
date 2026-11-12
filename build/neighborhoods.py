@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-nyc-map-kit — the neighbourhood names OTI's basemap draws, for the Protomaps basemap.
+nyc-map-kit — the neighbourhood names OTI's basemap draws, for the block's basemaps.
 
     python3 build/neighborhoods.py
 
