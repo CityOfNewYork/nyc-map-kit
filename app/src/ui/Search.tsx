@@ -204,6 +204,11 @@ export function Search({ onFound, onClear, landmark = true }: SearchProps) {
   const active = status.type === "choices" || status.type === "suggest" ? status.active : -1;
 
   function onKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    // Enter held down repeats, and each repeat would submit again. One press, one search.
+    if (e.key === "Enter" && e.repeat) {
+      e.preventDefault();
+      return;
+    }
     if (status.type === "choices" || status.type === "suggest") {
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         e.preventDefault();

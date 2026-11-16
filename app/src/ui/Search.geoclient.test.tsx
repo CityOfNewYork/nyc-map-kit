@@ -147,6 +147,12 @@ describe("Search with a Geoclient key", () => {
     expect(pushed()).toEqual([{ event: "map_search_error" }]);
   });
 
+  test("Enter held down does not submit again with each repeat", () => {
+    const { input } = renderSearch();
+    expect(fireEvent.keyDown(input, { key: "Enter" })).toBe(true);
+    expect(fireEvent.keyDown(input, { key: "Enter", repeat: true })).toBe(false);
+  });
+
   test("reports no match when Geoclient finds nothing, and never the text typed", async () => {
     vi.mocked(geocode).mockResolvedValue({ type: "none" });
     const { search } = renderSearch();
