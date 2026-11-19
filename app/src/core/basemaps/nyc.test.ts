@@ -5,16 +5,18 @@ import {
 } from "../basemap-style.ts";
 import {
   addNycCemeteries, loadEsriStyle, NYC_BASEMAP_STYLE, nycBasemapPalette, nycLabels,
-  nycRoadsAsLines, quietNycDetail, quietNycRegion,
+  nycRoadsAsLines, nycShields, quietNycDetail, quietNycRegion,
 } from "./nyc.ts";
+import { protomapsStyle } from "./protomaps.ts";
 
 const PALETTE = { water: "hsl(202, 42%, 80%)", park: "hsl(96, 30%, 84%)" };
 const CEMETERY = "hsl(96, 16%, 83%)";
 
-/** The six NYC steps, in the order the app runs them. */
+/** The NYC steps, in the order the app runs them. */
 function styleNyc(style: StyleSpecification, lang = "en") {
   const quiet = nycRoadsAsLines(quietNycDetail(nycBasemapPalette(style, PALETTE)));
-  return quietNycRegion(nycLabels(addNycCemeteries(quiet, "cemeteries.geojson", CEMETERY), lang));
+  const labelled = nycShields(nycLabels(quiet, lang), "https://example.test/maps/warming.html");
+  return quietNycRegion(addNycCemeteries(labelled, "cemeteries.geojson", CEMETERY));
 }
 
 const unmatched = (style: StyleSpecification) =>
@@ -37,6 +39,7 @@ function fixture(): StyleSpecification {
   });
   return {
     version: 8,
+    sprite: "https://example.test/sprites/sprite",
     sources: { esri: { type: "vector", tiles: ["https://example.test/{z}/{y}/{x}.pbf"] } },
     layers: [
       fill("Land/Land_NYC/1", "Land", { "fill-color": "#F2F3F0" }),
@@ -64,7 +67,11 @@ function fixture(): StyleSpecification {
       line("NYC Roads/Primary/0", "NYC Roads", { minzoom: 6, maxzoom: 14 }),
       line("Region Roads/Local Road/0", "Region Roads", { minzoom: 12 }),
       line("Region Roads/Secondary/0", "Region Roads", { minzoom: 10 }),
+      line("Region Roads/Primary/1", "Region Roads", { minzoom: 6 }),
       line("Region Roads/Primary/0", "Region Roads", { minzoom: 6 }),
+      line("Boundaries/County Boundaries/1", "Boundaries/County Boundaries", { minzoom: 8 }),
+      line("Boundaries/County Boundaries/0", "Boundaries/County Boundaries", { minzoom: 8 }),
+      line("Boundaries/State Boundaries/0", "Boundaries/State Boundaries"),
       fill("Buildings/Building/2", "Buildings", { "fill-translate": [2, 2] }),
       fill("Buildings/Building/1", "Buildings", { "fill-color": "#DCDBDA" }),
       line("Buildings/Building/0", "Buildings"),
@@ -158,6 +165,21 @@ describe("the NYC basemap steps", () => {
       .toMatchObject({ "fill-color": CEMETERY });
   });
 
+  test("name the cemeteries as the parks are, from the zoom Protomaps names them", () => {
+    const style = styleNyc(fixture());
+    const ids = style.layers.map((l) => l.id);
+    expect(ids.indexOf("cemetery_name")).toBe(ids.indexOf("Parks/label/Default") + 1);
+    const names = style.layers.find((l) => l.id === "cemetery_name");
+    const parks = style.layers.find((l) => l.id === "Parks/label/Default");
+    if (names?.type !== "symbol" || parks?.type !== "symbol") throw new Error("no name layers");
+    expect(names.source).toBe("cemeteries");
+    expect(names.layout).toEqual({ ...parks.layout, "text-field": ["get", "name"] });
+    expect(names.paint).toEqual(parks.paint);
+    expect(names.filter).toEqual(["all", ["==", ["geometry-type"], "Point"],
+      [">=", ["zoom"], ["min", ["-", ["get", "min_zoom"], 1], 14]]]);
+    expect(unmatched(style)).not.toContain("Parks/label/Default");
+  });
+
   test("draw streets as centre lines at every zoom, not as roadbed", () => {
     const style = nycRoadsAsLines(fixture());
     const layer = (id: string) => style.layers.find((l) => l.id === id);
@@ -177,11 +199,26 @@ describe("the NYC basemap steps", () => {
     expect(layer("NYC Roads/Secondary/0")?.paint).toMatchObject({ "line-color": "#fff" });
   });
 
-  test("hold highway shields until z11", () => {
-    const style = nycLabels(fixture(), "en");
-    const minzoom = (id: string) => style.layers.find((l) => l.id === id)?.minzoom;
-    expect(minzoom("Region Road Labels/label/Interstate Shield")).toBe(11);
-    expect(minzoom("Region Road Labels/label/US Route")).toBe(11);
+  test("draw highway shields as the Protomaps basemap does, from z11", () => {
+    const style = nycShields(nycLabels(fixture(), "en"), "https://example.test/maps/warming.html");
+    const pm = protomapsStyle("en", { ...PALETTE, cemetery: CEMETERY }, "https://example.test/");
+    const pmShields = pm.layers.find((l) => l.id === "roads_shields");
+    if (pmShields?.type !== "symbol") throw new Error("no Protomaps shields");
+    const { "icon-image": _, "text-field": __, "text-font": ___, ...look } = pmShields.layout ?? {};
+    for (const [id, icon] of [["Region Road Labels/label/Interstate Shield", "US:I"],
+      ["Region Road Labels/label/US Route", "generic_shield"]]) {
+      const shield = style.layers.find((l) => l.id === id);
+      if (shield?.type !== "symbol") throw new Error(`no ${id}`);
+      expect(shield.minzoom).toBe(pmShields.minzoom);
+      expect(shield.layout).toMatchObject(look);
+      expect(shield.layout?.["icon-image"])
+        .toEqual(["concat", `protomaps:${icon}-`, ["length", ["get", "_name"]], "char"]);
+      expect(shield.paint).toEqual(pmShields.paint);
+    }
+    expect(style.sprite).toEqual([
+      { id: "default", url: "https://example.test/sprites/sprite" },
+      { id: "protomaps", url: "https://example.test/maps/protomaps/sprites/v4/light" },
+    ]);
   });
 
   test("set every label in Noto Sans, by kind", () => {
@@ -219,13 +256,33 @@ describe("the NYC basemap steps", () => {
     expect([zoom("Region Roads/Primary/0"), zoom("Region Roads/Secondary/0")]).toEqual([6, 12]);
   });
 
-  test("hand the boroughs over to the neighbourhoods at z12", () => {
+  test("draw the region's highways and the city line as the Protomaps basemap does", () => {
+    const style = styleNyc(fixture());
+    const pm = protomapsStyle("en", { ...PALETTE, cemetery: CEMETERY }, "https://example.test/");
+    const paintOf = (st: StyleSpecification, id: string) =>
+      (st.layers.find((l) => l.id === id)?.paint ?? {}) as Record<string, unknown>;
+    expect(paintOf(style, "Region Roads/Primary/0")["line-width"])
+      .toEqual(paintOf(pm, "roads_highway")["line-width"]);
+    const casing = paintOf(style, "Region Roads/Primary/1");
+    const pmCasing = paintOf(pm, "roads_highway_casing_late");
+    expect([casing["line-width"], casing["line-gap-width"]])
+      .toEqual([pmCasing["line-width"], pmCasing["line-gap-width"]]);
+    // The tiles' boundary lines give way to the city line, below the first label, as on
+    // Protomaps.
+    const ids = style.layers.map((l) => l.id);
+    expect(ids.filter((id) => id.startsWith("Boundaries/") && !id.includes("label"))).toEqual([]);
+    expect(ids.indexOf("city_line"))
+      .toBe(style.layers.findIndex((l) => l.type === "symbol") - 1);
+    expect(paintOf(warmTint(style), "city_line")).toEqual(paintOf(pm, "city_line"));
+  });
+
+  test("hand the boroughs over to the neighbourhoods at z13, as on Protomaps", () => {
     const style = nycLabels(fixture(), "es");
     const ids = style.layers.map((l) => l.id);
     expect(ids).not.toContain("City Labels/label/NYC");
     expect(ids).not.toContain("Boundaries/Counties/label/Default");
-    expect(style.layers.find((l) => l.id === "borough_label")?.maxzoom).toBe(12);
-    expect(style.layers.find((l) => l.id === "Neighborhoods/label/Default")?.minzoom).toBe(12);
+    expect(style.layers.find((l) => l.id === "borough_label")?.maxzoom).toBe(13);
+    expect(style.layers.find((l) => l.id === "Neighborhoods/label/Default")?.minzoom).toBe(13);
   });
 
   test("name neighbourhoods from the block's list, as the Protomaps basemap does", () => {

@@ -19,9 +19,10 @@ import { layers, namedFlavor } from "@protomaps/basemaps";
 import type { Flavor } from "@protomaps/basemaps";
 import type { ExpressionSpecification, LayerSpecification, StyleSpecification } from "maplibre-gl";
 import {
-  addBoroughLabels, addLandmarkLabels, addSubwayStations, and, dotCityLine, flatBuildings,
-  nameExpression, PARK_NAME_COLOR, POSITRON_BUILDING, POSITRON_LAND, OUTSIDE, POSITRON_ROADS,
-  POSITRON_RUNWAY, greyOutsideCity, OTI_CREDIT, warmTint,
+  addBoroughLabels, addLandmarkLabels, addSubwayStations, and, CEMETERY_HEAD_START,
+  dotCityLine, flatBuildings, nameExpression, NEIGHBOURHOOD_ZOOM, PARK_NAME_COLOR,
+  PARK_NAME_ZOOM, POSITRON_BUILDING, POSITRON_LAND, OUTSIDE, POSITRON_ROADS, POSITRON_RUNWAY,
+  greyOutsideCity, OTI_CREDIT, SHIELD_ZOOM, warmTint,
 } from "../basemap-style.ts";
 import type { Palette } from "./index.ts";
 
@@ -29,6 +30,8 @@ import type { Palette } from "./index.ts";
 const TILES = "nyc.pmtiles";
 /** Protomaps' fonts and icons, next to the page. Written by build/protomaps-assets.sh. */
 const ASSETS = "protomaps/";
+/** Protomaps' icons, which the NYC basemap borrows for its highway shields. */
+export const PROTOMAPS_SPRITE = `${ASSETS}sprites/v4/light`;
 const SOURCE = "protomaps";
 
 /** The basemap, with labels in `lang` where OpenStreetMap has that language. */
@@ -48,7 +51,7 @@ export function protomapsStyle(
   const style: StyleSpecification = {
     version: 8,
     glyphs: `${assetsUrl}fonts/{fontstack}/{range}.pbf`,
-    sprite: `${assetsUrl}sprites/v4/light`,
+    sprite: new URL(PROTOMAPS_SPRITE, pageUrl).href,
     sources: {
       [SOURCE]: {
         type: "vector",
@@ -247,9 +250,6 @@ function protomapsBuildings(style: StyleSpecification) {
  *  shields. Protomaps shields every numbered road, state, county and parkway, which
  *  at z11–12 puts some thirty shields over the city and New Jersey. */
 const SHIELD_NETWORKS = ["US:I", "US:US"];
-/** Highway shields wait until this zoom, as positron's do, so that at city zoom they are
- *  not among the pins. */
-const SHIELD_ZOOM = 11;
 
 /**
  * Streets in positron's widths and colours, as nycRoadsAsLines draws OTI's: side streets
@@ -287,8 +287,6 @@ function positronRoads(style: StyleSpecification) {
 
 /** The neighbourhood names OTI's basemap draws, written by build/neighborhoods.py. */
 const NEIGHBOURHOODS = "neighborhoods.geojson";
-/** Below this zoom the boroughs are named; from it, the neighbourhoods. */
-const NEIGHBOURHOOD_ZOOM = 13;
 /** Islands whose name repeats a borough's. */
 const ISLANDS_NAMED_FOR_BOROUGHS = ["Manhattan", "Staten Island", "Manhattan Island"];
 /** Points of interest named in the parks' green: parks, which include playgrounds in
@@ -296,14 +294,8 @@ const ISLANDS_NAMED_FOR_BOROUGHS = ["Manhattan", "Staten Island", "Manhattan Isl
  *  keeps apart as `garden`, are not named: in the Lower East Side they more than double
  *  the labels at z14. Each carries the zoom Protomaps would name it from, z15 for most
  *  parks; the big ones are named from it, and every one from PARK_NAME_ZOOM, as positron
- *  names parks. */
+ *  names parks, with cemeteries CEMETERY_HEAD_START sooner. */
 const PARK_KINDS = ["park", "cemetery"];
-const PARK_NAME_ZOOM = 14;
-/** Protomaps grades cemeteries by size on a scale that stops at z13, where its parks'
- *  goes on down: Green-Wood would be named a zoom after Prospect Park, which is about its
- *  size. A cemetery is named this many zooms before the tiles say, so Green-Wood is
- *  named from z12 as Prospect Park is. */
-const CEMETERY_HEAD_START = 1;
 /** Neighbourhood names, a point under a borough's name at the map's opening zoom on a
  *  desktop (see addBoroughLabels). Protomaps sizes places by population. */
 const NEIGHBOURHOOD_SIZE = 14;

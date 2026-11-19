@@ -133,6 +133,23 @@ export function and(existing: FilterSpecification | undefined, ...clauses: Filte
   return (existing ? ["all", existing, ...clauses] : ["all", ...clauses]) as FilterSpecification;
 }
 
+/** Every park and cemetery is named from this zoom, as positron names parks; big ones
+ *  sooner, from the zoom the Protomaps tiles give them (min_zoom). */
+export const PARK_NAME_ZOOM = 14;
+/** Protomaps grades cemeteries by size on a scale that stops at z13, where its parks'
+ *  goes on down: Green-Wood would be named a zoom after Prospect Park, which is about its
+ *  size. A cemetery is named this many zooms before its min_zoom, so Green-Wood is named
+ *  from z12 as Prospect Park is. build/cemeteries.py gives the NYC basemap's cemeteries
+ *  the same min_zoom, so both basemaps name them alike. */
+export const CEMETERY_HEAD_START = 1;
+
+/** Highway shields wait until this zoom on every basemap, as positron's do, so that at
+ *  city zoom they are not among the pins. */
+export const SHIELD_ZOOM = 11;
+
+/** Below this zoom every basemap names the boroughs; from it, the neighbourhoods. */
+export const NEIGHBOURHOOD_ZOOM = 13;
+
 /**
  * Add the five borough names from BOROUGH_LABELS as the top label layer, in place, up
  * to `maxzoom`: the zoom at which the basemap's neighbourhood names take over and a

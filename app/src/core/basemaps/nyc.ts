@@ -7,12 +7,16 @@
  * labels are English only: every label layer prints a single `_name` field, so
  * setStyleLanguage has nothing to switch to and is not applied.
  */
-import type { StyleSpecification, SymbolLayerSpecification } from "maplibre-gl";
+import type {
+  ExpressionSpecification, StyleSpecification, SymbolLayerSpecification,
+} from "maplibre-gl";
 import {
-  addBoroughLabels, addLandmarkLabels, addSubwayStations, and, flatBuildings, OTI_CREDIT,
-  OUTSIDE, PARK_NAME_COLOR, POSITRON_LAND, POSITRON_ROADS, POSITRON_RUNWAY, reportUnmatched,
+  addBoroughLabels, addLandmarkLabels, addSubwayStations, and, CEMETERY_HEAD_START,
+  dotCityLine, flatBuildings, NEIGHBOURHOOD_ZOOM, OTI_CREDIT, OUTSIDE, PARK_NAME_COLOR,
+  PARK_NAME_ZOOM, POSITRON_LAND, POSITRON_ROADS, POSITRON_RUNWAY, reportUnmatched, SHIELD_ZOOM,
   warmTint,
 } from "../basemap-style.ts";
+import { PROTOMAPS_SPRITE } from "./protomaps.ts";
 import type { Palette } from "./index.ts";
 
 /** The city's cemeteries, written by build/cemeteries.py. */
@@ -25,8 +29,8 @@ const NEIGHBOURHOODS = "neighborhoods.geojson";
 export async function loadNyc(lang: string, palette: Palette): Promise<StyleSpecification> {
   const style = await loadEsriStyle(NYC_BASEMAP_STYLE);
   const quiet = nycRoadsAsLines(quietNycDetail(nycBasemapPalette(style, palette)));
-  const cemeteries = addNycCemeteries(quiet, CEMETERIES, palette.cemetery);
-  return warmTint(quietNycRegion(nycLabels(cemeteries, lang)));
+  const labelled = nycShields(nycLabels(quiet, lang), document.baseURI);
+  return warmTint(quietNycRegion(addNycCemeteries(labelled, CEMETERIES, palette.cemetery)));
 }
 
 /** OTI's style as published, for comparison. */
@@ -193,7 +197,8 @@ export function quietNycDetail(style: StyleSpecification): StyleSpecification {
 }
 
 /**
- * Draw the city's cemeteries in `color` from the GeoJSON at `url`, in place.
+ * Draw the city's cemeteries in `color` from the GeoJSON at `url`, and name them, in
+ * place. Runs after nycLabels, whose park names the cemetery names copy.
  *
  * The open-space layer quietNycDetail drops is where the tiles keep the cemeteries. The
  * survey's own open-space data does tell a cemetery from a vacant lot, and
@@ -202,13 +207,18 @@ export function quietNycDetail(style: StyleSpecification): StyleSpecification {
  * the parks, directly below the lakes and ponds. The survey stops at the city line, so
  * cemeteries outside the city are not drawn. MapLibre resolves `url` against the page
  * and fetches it alongside the tiles, so the map does not wait for it.
+ *
+ * The same file holds a point for each named cemetery, with the zoom the Protomaps
+ * tiles would name it from. The names are set as the park names are, directly above
+ * them, from the zoom the Protomaps basemap names cemeteries: CEMETERY_HEAD_START before
+ * that, and every one from PARK_NAME_ZOOM.
  */
 export function addNycCemeteries(
   style: StyleSpecification, url: string, color: string,
 ): StyleSpecification {
   const layers = style.layers || [];
   if (layers.some((l) => l.id === "cemetery")) return style;
-  const hits = { "Inland Hydrography": 0 };
+  const hits = { "Inland Hydrography": 0, "Parks/label/Default": 0 };
   const at = layers.findIndex((l) => "source-layer" in l && l["source-layer"] === "Inland Hydrography");
   if (at >= 0) {
     hits["Inland Hydrography"]++;
@@ -220,6 +230,20 @@ export function addNycCemeteries(
       type: "fill",
       source: "cemeteries",
       paint: { "fill-color": color, "fill-antialias": false },
+    });
+  }
+  const parks = layers.findIndex((l) => l.id === "Parks/label/Default");
+  const parkNames = layers[parks];
+  if (at >= 0 && parkNames?.type === "symbol") {
+    hits["Parks/label/Default"]++;
+    layers.splice(parks + 1, 0, {
+      id: "cemetery_name",
+      type: "symbol",
+      source: "cemeteries",
+      filter: ["all", ["==", ["geometry-type"], "Point"],
+        [">=", ["zoom"], ["min", ["-", ["get", "min_zoom"], CEMETERY_HEAD_START], PARK_NAME_ZOOM]]],
+      layout: { ...parkNames.layout, "text-field": ["get", "name"] },
+      paint: { ...parkNames.paint },
     });
   }
   reportUnmatched(style, hits);
@@ -280,15 +304,14 @@ const NYC_LABEL_COLORS = {
   other: "#666",                 // positron's road labels; streets, airports, buildings
 };
 
-/** Highway shields wait until this zoom, as positron's do, so that at city zoom they are
- *  not among the pins. */
-const NYC_SHIELD_ZOOM = 11;
-
-/** Below this zoom the boroughs are named; from it, the neighbourhoods. The tiles carry
- *  neighbourhood names from z10, where they pile up with the borough names under the
- *  pins; by z12 the screen shows a few neighbourhoods, not the city, and theirs are the
- *  useful names. */
-const NYC_NEIGHBOURHOOD_ZOOM = 12;
+/** The Protomaps basemap's icon for each of OTI's shield layers: the Interstate shield,
+ *  and the plain shield it gives US routes. */
+const NYC_SHIELD_ICONS: Record<string, string> = {
+  "Region Road Labels/label/Interstate Shield": "US:I",
+  "Region Road Labels/label/US Route": "generic_shield",
+};
+/** The id the Protomaps icons are loaded under, beside OTI's own. */
+const PROTOMAPS_ICONS = "protomaps";
 
 /** Neighbourhood names in italic capitals, spaced a tenth of an em apart, as the Protomaps
  *  basemap sets them, so the two name a neighbourhood alike. */
@@ -304,17 +327,18 @@ const NYC_NEIGHBOURHOOD_TYPE: SymbolLayerSpecification["layout"] = {
  *      is positron's scheme; neighbourhood names are Italic too (step 3). Esri's font
  *      server carries Noto, so glyphs still come from the style's own `glyphs` URL.
  *   2. Colour. Each kind of label takes its NYC_LABEL_COLORS colour, on a white halo
- *      as positron's are. Highway shields keep theirs; the shield is the colour.
+ *      as positron's are. Highway shields are drawn as the Protomaps basemap draws
+ *      them (nycShields).
  *   3. Balance — the correction balancePlaceLabels makes to positron. At the opening
  *      zoom the tiles print neighbourhood names and borough names that land under the
  *      pins, all at once. So the tiles' borough names give way to BOROUGH_LABELS,
  *      anchored on open ground and translated, until neighbourhood names take over at
- *      NYC_NEIGHBOURHOOD_ZOOM, and county names are dropped. Neighbourhood names are set
+ *      NEIGHBOURHOOD_ZOOM, and county names are dropped. Neighbourhood names are set
  *      in NYC_NEIGHBOURHOOD_TYPE, and read from NEIGHBOURHOODS, as the Protomaps basemap
  *      reads them: the tiles' names, with the edits build/neighborhoods.py makes so
  *      the names match search's. Building names are dropped: no other basemap prints
- *      them, and at street level they crowd the pins. Highway shields wait until
- *      NYC_SHIELD_ZOOM. Places outside the city are not named at all (quietNycRegion).
+ *      them, and at street level they crowd the pins. Places outside the city are not
+ *      named at all (quietNycRegion).
  *   4. Placeholders. A few features in the data are named "NO NAME", and the style
  *      prints the placeholder. Those labels are filtered out.
  *   5. The Statue of Liberty and Ellis Island are named (addLandmarkLabels).
@@ -346,12 +370,7 @@ export function nycLabels(style: StyleSpecification, lang: string): StyleSpecifi
     if (JSON.stringify(layer.layout["text-field"]).includes("_name}")) {
       layer.filter = and(layer.filter, ["!=", "_name", "NO NAME"]);
     }
-    if (shield) {
-      if (layer["source-layer"] === "Region Road Labels/label") {
-        layer.minzoom = Math.max(layer.minzoom ?? 0, NYC_SHIELD_ZOOM);
-      }
-      continue;
-    }
+    if (shield) continue;
     const kind = (Object.keys(NYC_LABEL_KINDS) as (keyof typeof NYC_LABEL_KINDS)[])
       .find((k) => NYC_LABEL_KINDS[k].includes(layer["source-layer"] || ""));
     if (kind) hits[`${kind} labels`]++;
@@ -367,12 +386,12 @@ export function nycLabels(style: StyleSpecification, lang: string): StyleSpecifi
     hits["Neighborhoods/label/Default"]++;
     style.sources = { ...style.sources, neighbourhoods: { type: "geojson", data: NEIGHBOURHOODS } };
     const { "source-layer": _, filter: __, ...kept } = neighbourhoods;
-    style.layers[at] = { ...kept, source: "neighbourhoods", minzoom: NYC_NEIGHBOURHOOD_ZOOM,
+    style.layers[at] = { ...kept, source: "neighbourhoods", minzoom: NEIGHBOURHOOD_ZOOM,
       layout: { ...kept.layout, ...NYC_NEIGHBOURHOOD_TYPE, "text-field": ["get", "name"] } };
   }
   addSubwayStations(style);
   addLandmarkLabels(style, lang);
-  addBoroughLabels(style, lang, NYC_NEIGHBOURHOOD_ZOOM);
+  addBoroughLabels(style, lang, NEIGHBOURHOOD_ZOOM);
 
   reportUnmatched(style, hits);
   return style;
@@ -382,6 +401,49 @@ export function nycLabels(style: StyleSpecification, lang: string): StyleSpecifi
  *  from NYC_REGION_STREETS_ZOOM, as build/protomaps-outside.py keeps them on Protomaps. */
 const NYC_REGION_HIGHWAYS = ["Region Roads/Primary/", "Region Roads/Tunnel"];
 const NYC_REGION_STREETS_ZOOM = 12;
+/** The Protomaps basemap's highway widths (roads_highway, and its casing from z12, which
+ *  is within 0.2 px of its casing below), for the region's highways: a fill, and a casing
+ *  one pixel wide each side of it. */
+const PROTOMAPS_HIGHWAY = {
+  fill: ["interpolate", ["exponential", 1.6], ["zoom"], 3, 0, 6, 1.1, 12, 1.6, 15, 5, 18, 15],
+  casing: ["interpolate", ["exponential", 1.6], ["zoom"], 7, 0, 7.5, 1, 20, 15],
+  gap: ["interpolate", ["exponential", 1.6], ["zoom"], 3, 0, 3.5, 0.5, 18, 15],
+} as const satisfies Record<string, ExpressionSpecification>;
+
+/**
+ * Draw the highway shields as the Protomaps basemap draws them, in place: its icons,
+ * loaded from the page's host beside OTI's, its sizes and spacing, numbers in the
+ * road names' grey, from SHIELD_ZOOM. Interstates get Protomaps' Interstate shield and
+ * US routes its plain one. Protomaps sets the numbers in Noto Sans Medium, which
+ * Esri's font server does not carry, so here they are in Noto Sans Bold.
+ */
+export function nycShields(style: StyleSpecification, pageUrl: string): StyleSpecification {
+  const hits: Record<string, number> = Object.fromEntries(
+    Object.keys(NYC_SHIELD_ICONS).map((id) => [id, 0]));
+  const own = style.sprite;
+  const borrowed = { id: PROTOMAPS_ICONS, url: new URL(PROTOMAPS_SPRITE, pageUrl).href };
+  style.sprite = typeof own === "string" ? [{ id: "default", url: own }, borrowed]
+    : [...(own ?? []), borrowed];
+  for (const layer of style.layers) {
+    const icon = NYC_SHIELD_ICONS[layer.id];
+    if (!icon || layer.type !== "symbol") continue;
+    hits[layer.id]++;
+    layer.minzoom = SHIELD_ZOOM;
+    layer.layout = {
+      "icon-image": ["concat", `${PROTOMAPS_ICONS}:${icon}-`, ["length", ["get", "_name"]], "char"],
+      "text-field": layer.layout?.["text-field"] ?? "",
+      "text-font": ["Noto Sans Bold"],
+      "text-size": 8,
+      "icon-size": 0.8,
+      "symbol-placement": "line",
+      "icon-rotation-alignment": "viewport",
+      "text-rotation-alignment": "viewport",
+    };
+    layer.paint = { "text-color": NYC_LABEL_COLORS.other };
+  }
+  reportUnmatched(style, hits);
+  return style;
+}
 
 /** Region labels kept outside the city: the highway shields. Water labels stay too. */
 const NYC_REGION_SHIELDS = [
@@ -399,12 +461,18 @@ const NYC_REGION_SHIELDS = [
  * lies under the land, so a shape laid over everything would grey the harbour too.
  * The region's parks are muted to OUTSIDE.parks, its streets other than the highways held
  * until NYC_REGION_STREETS_ZOOM, and its marsh pattern and airport grounds dropped, as
- * positron leaves them out.
+ * positron leaves them out. Its highways are drawn at the Protomaps basemap's highway
+ * widths (PROTOMAPS_HIGHWAY), narrower than the major roads the tiles file them with.
+ *
+ * The tiles' boundary lines go: county, state and national, inside the city and out.
+ * The city line is drawn in their place by dotCityLine, as on the Protomaps basemap, in
+ * the county lines' own dashes, so the two basemaps draw the same one line.
  */
 export function quietNycRegion(style: StyleSpecification): StyleSpecification {
   const hits: Record<string, number> = {
     "Land/Land_Region/1": 0, "Inland Hydrography": 0, "Region Roads": 0,
     "City Labels/label/Region": 0, "Region Parks": 0, "Region Hydrography/Swamp or Marsh": 0,
+    Boundaries: 0, "Region Roads/Primary/": 0,
   };
   const land = style.layers.find((l) => l.id === "Land/Land_Region/1");
   const water = style.layers.findIndex((l) => "source-layer" in l
@@ -422,6 +490,10 @@ export function quietNycRegion(style: StyleSpecification): StyleSpecification {
       return false;
     }
     if (l.type === "fill" && sourceLayer === "Region Airports") return false;
+    if (l.type === "line" && l.id.startsWith("Boundaries/")) {
+      hits.Boundaries++;
+      return false;
+    }
     return !(l.type === "symbol" && sourceLayer.startsWith("Region")
       && !sourceLayer.startsWith("Region Hydrography") && !NYC_REGION_SHIELDS.includes(l.id));
   });
@@ -433,10 +505,17 @@ export function quietNycRegion(style: StyleSpecification): StyleSpecification {
     if (l.type !== "line" || l["source-layer"] !== "Region Roads") continue;
     hits["Region Roads"]++;
     l.paint = { ...l.paint, "line-opacity": OUTSIDE.streets };
+    if (l.id.startsWith("Region Roads/Primary/")) {
+      hits["Region Roads/Primary/"]++;
+      const casing = l.id.endsWith("/1");
+      l.paint = { ...l.paint, "line-width": casing ? PROTOMAPS_HIGHWAY.casing : PROTOMAPS_HIGHWAY.fill,
+        ...(casing ? { "line-gap-width": PROTOMAPS_HIGHWAY.gap } : {}) };
+    }
     if (!NYC_REGION_HIGHWAYS.some((id) => l.id.startsWith(id))) {
       l.minzoom = Math.max(l.minzoom ?? 0, NYC_REGION_STREETS_ZOOM);
     }
   }
+  dotCityLine(style, style.layers.findIndex((l) => l.type === "symbol"));
   reportUnmatched(style, hits);
   return style;
 }
