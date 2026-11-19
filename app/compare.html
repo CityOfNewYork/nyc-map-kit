@@ -6,19 +6,16 @@
 <title>Basemap comparison</title>
 
 <!--
-  Two copies of the block side by side, each on a different basemap, with the camera kept
-  in step: pan, zoom or rotate either one and the other follows. It is for judging
-  basemap changes, and is published alongside the map.
+  Two basemaps side by side, with nothing drawn on them, and the camera kept in step:
+  pan or zoom either one and the other follows. It is for judging basemap changes, and
+  is published alongside the map.
 
     compare.html                              Protomaps | OTI's, in our palette
     compare.html?right=nyc-original           Protomaps | OTI's, in its own colours
-    compare.html?lang=es                      any other parameter goes to both frames
+    compare.html?lang=es                      the basemaps' labels in that language
 
-  The basemaps are listed in src/core/basemaps/names.ts.
-
-  The sync reaches into each frame's `nycMapKit` global (see App.tsx), which works because
-  the frames are same-origin. Only the camera is mirrored: a card opened on one side stays
-  on that side.
+  The basemaps are listed in src/core/basemaps/names.ts. Each side is the block's own
+  map (createMap) with no data, so it is the basemap exactly as the block shows it.
 -->
 <style>
   * { box-sizing: border-box; }
@@ -33,7 +30,8 @@
   section + section { border-left: 1px solid #d9d9d9; }
   label { padding: 6px 12px; border-bottom: 1px solid #d9d9d9; }
   select { font: inherit; }
-  iframe { flex: 1; width: 100%; border: 0; }
+  .map { flex: 1; position: relative; }
+  .mapcore-live { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   @media (max-width: 700px) {
     body { flex-direction: column; }
     section + section { border-left: 0; border-top: 1px solid #d9d9d9; }
@@ -42,56 +40,50 @@
 </head>
 
 <body>
-<section><label>Left <select></select></label><iframe title="Left map"></iframe></section>
-<section><label>Right <select></select></label><iframe title="Right map"></iframe></section>
+<section><label>Left <select></select></label><div class="map" role="region" aria-label="Left map"></div></section>
+<section><label>Right <select></select></label><div class="map" role="region" aria-label="Right map"></div></section>
 
 <script type="module">
+import { createMap } from "./src/core/map-core.ts";
+import { loadBasemap } from "./src/core/basemaps/index.ts";
 import { BASEMAP_NAMES, basemapId, DEFAULT_BASEMAP } from "./src/core/basemaps/names.ts";
 
 const SIDES = ["left", "right"];
 const DEFAULT = { left: DEFAULT_BASEMAP, right: "nyc" };
 
 const page = new URLSearchParams(location.search);
-const frames = [...document.querySelectorAll("iframe")];
+// The block's basemap labels are English in every language unless asked otherwise.
+const lang = page.get("lang") || "en";
+const containers = [...document.querySelectorAll(".map")];
 const selects = [...document.querySelectorAll("select")];
-const live = [null, null];   // each side's MapLibre map, once it has framed itself
-const loads = [0, 0];        // bumped on each reload, so a stale wait gives up
+const cores = [null, null];  // each side's map, once its style has loaded
+const loads = [0, 0];        // bumped on each load, so a stale one gives up
 let mirroring = false;
-
-function embedUrl(basemap) {
-  const params = new URLSearchParams(page);
-  for (const side of SIDES) params.delete(side);
-  if (!params.has("list")) params.set("list", "off");
-  params.set("basemap", basemap);
-  return `./?${params}`;
-}
 
 function mirror(from, to) {
   if (mirroring || !to) return;
   mirroring = true;   // to.jumpTo fires `move` on `to`, which must not echo back
   const c = from.getCenter();
-  to.jumpTo({ center: [c.lng, c.lat], zoom: from.getZoom(),
-    bearing: from.getBearing(), pitch: from.getPitch() });
+  to.jumpTo({ center: [c.lng, c.lat], zoom: from.getZoom() });
   mirroring = false;
 }
 
-// Wait for the frame's map, then for its own first framing (map-core's `ready` runs
-// after it), so a frame that loads late takes the other side's view instead of
-// snapping both back to the default.
-function attach(i, n) {
-  const poll = setInterval(() => {
-    if (loads[i] !== n) return clearInterval(poll);
-    const kit = frames[i].contentWindow?.nycMapKit;
-    if (!kit) return;
-    clearInterval(poll);
-    kit.ready(() => {
-      if (loads[i] !== n) return;
-      const map = kit.raw;
-      if (live[1 - i]) mirror(live[1 - i], map);
-      map.on("move", () => mirror(map, live[1 - i]));
-      live[i] = map;
-    });
-  }, 50);
+async function load(i) {
+  const n = ++loads[i];
+  const style = await loadBasemap(selects[i].value, lang);
+  if (loads[i] !== n) return;
+  const view = cores[i]?.raw;
+  cores[i]?.destroy();
+  cores[i] = null;
+  const core = createMap(containers[i], { style });
+  if (view) core.raw.jumpTo({ center: view.getCenter(), zoom: view.getZoom() });
+  core.ready(() => {
+    if (loads[i] !== n) return;
+    const other = cores[1 - i]?.raw;
+    if (other) mirror(other, core.raw);
+    core.raw.on("move", () => mirror(core.raw, cores[1 - i]?.raw));
+    cores[i] = core;
+  });
 }
 
 SIDES.forEach((side, i) => {
@@ -106,13 +98,6 @@ SIDES.forEach((side, i) => {
   });
   load(i);
 });
-
-function load(i) {
-  live[i] = null;
-  const n = ++loads[i];
-  frames[i].addEventListener("load", () => attach(i, n), { once: true });
-  frames[i].src = embedUrl(selects[i].value);
-}
 </script>
 </body>
 </html>
