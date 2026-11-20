@@ -37,20 +37,22 @@ vi.mock("./components/EventMap.tsx", async () => {
 });
 vi.mock("../core/map-core.ts", () => ({ createMap: vi.fn() }));
 
-// In file order, by day: one over, one on now, one later today, at 5 PM on Halloween.
+// In file order, by day: one over, one on now and one later today, at 5 PM on October 30,
+// the moment the page always shows.
 const events: SiteCollection = {
   type: "FeatureCollection",
   features: [
     site("castleton-10-03", { org: "Castleton Avenue", type: "partner", date: "2026-10-03",
       starts: "16:00", ends: "20:00", host: "Staten Island Business Outreach Center" }, [-74.12, 40.63]),
-    site("hillel-plaza-10-31", { org: "Hillel Plaza", type: "signature", date: "2026-10-31",
+    site("hillel-plaza-10-30", { org: "Hillel Plaza", type: "signature", date: "2026-10-30",
       starts: "14:00", ends: "18:00", host: "Flatbush Junction BID" }, [-73.95, 40.63]),
-    site("village-parade-10-31", { org: "Village Halloween Parade", type: "partner",
-      date: "2026-10-31", starts: "19:00", ends: "23:30", host: "Village Halloween Parade, Inc." },
+    site("village-parade-10-30", { org: "Village Halloween Parade", type: "partner",
+      date: "2026-10-30", starts: "19:00", ends: "23:30", host: "Village Halloween Parade, Inc." },
       [-74.0, 40.73]),
   ],
 };
-const HALLOWEEN_5PM = new Date("2026-10-31T21:00:00Z");
+// A later day, so the tests show the page keeps to October 30 whatever the date.
+const LATER = new Date("2026-11-20T17:00:00Z");
 
 function serve(ok = true) {
   const fetch = vi.fn(async (url: string) => (url === "places.json"
@@ -69,7 +71,7 @@ function renderApp(url = "/trick-or-streets.html") {
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
-  vi.setSystemTime(HALLOWEEN_5PM);
+  vi.setSystemTime(LATER);
   stub.props = null;
   stub.map = {
     select: vi.fn((id: string | null) => {
@@ -110,7 +112,7 @@ describe("Trick-or-Streets App", () => {
   test("the map view lists the events in date order, with those that are over at the end", async () => {
     renderApp("/trick-or-streets.html?view=map");
     await waitFor(() => expect(rows()).toHaveLength(3));
-    expect(rowIds()).toEqual(["hillel-plaza-10-31", "village-parade-10-31", "castleton-10-03"]);
+    expect(rowIds()).toEqual(["hillel-plaza-10-30", "village-parade-10-30", "castleton-10-03"]);
     expect(rows()[0]).toHaveTextContent("Happening now");
     expect(rows()[1]).toHaveTextContent("Today");
     expect(rows()[2]).toHaveTextContent("Ended");
@@ -121,7 +123,7 @@ describe("Trick-or-Streets App", () => {
     renderApp("/trick-or-streets.html?view=map&type=partner");
     await waitFor(() => expect(rows()).toHaveLength(2));
     expect(stub.props?.shown?.map((f) => f.properties.id))
-      .toEqual(["village-parade-10-31", "castleton-10-03"]);
+      .toEqual(["village-parade-10-30", "castleton-10-03"]);
     fireEvent.click(screen.getByRole("button", { name: "Happening now" }));
     expect(location.search).toBe("?view=map&type=partner&now=1");
     // At 5 PM the parade is still to come, so no partner event is on.
@@ -130,13 +132,13 @@ describe("Trick-or-Streets App", () => {
   });
 
   test("?site= opens that event's card: its kind, where it stands, its day and its host", async () => {
-    renderApp("/trick-or-streets.html?site=hillel-plaza-10-31");
+    renderApp("/trick-or-streets.html?site=hillel-plaza-10-30");
     await waitFor(() => expect(document.getElementById("site-dialog")).toHaveAttribute("open"));
     const dialog = document.getElementById("site-dialog")!;
     expect(within(dialog).getByRole("heading", { level: 2, name: "Hillel Plaza" })).toBeInTheDocument();
     expect(dialog).toHaveTextContent("Signature event");
     expect(dialog).toHaveTextContent("Happening now");
-    expect(dialog).toHaveTextContent("Saturday, October 31");
+    expect(dialog).toHaveTextContent("Friday, October 30");
     expect(dialog).toHaveTextContent("Flatbush Junction BID");
   });
 
